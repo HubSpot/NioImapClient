@@ -1,7 +1,9 @@
-package com.hubspot.imap.imap;
+package com.hubspot.imap.imap.command;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
+import com.hubspot.imap.imap.command.BaseCommand;
+import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.java.utils.Bytes;
 
 import java.util.List;

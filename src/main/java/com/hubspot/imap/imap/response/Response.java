@@ -1,4 +1,4 @@
-package com.hubspot.imap.imap;
+package com.hubspot.imap.imap.response;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;

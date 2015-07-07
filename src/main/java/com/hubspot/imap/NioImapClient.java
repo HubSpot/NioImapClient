@@ -2,7 +2,7 @@ package com.hubspot.imap;
 
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
-import com.hubspot.imap.imap.Response;
+import com.hubspot.imap.imap.response.Response;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -18,9 +18,7 @@ import io.netty.util.concurrent.Future;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -55,22 +53,12 @@ public class NioImapClient {
       ImapClient client = new ImapClient(channel, eventExecutor.next(), "zklapow@hubspot.com", "");
 
       Future<Response> future = null;
-      BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
       client.login();
       client.awaitLogin();
       while (!Thread.currentThread().isInterrupted()) {
-        String line = in.readLine();
-        if (line == null) {
-          break;
-        }
-
         future = client.noop();
-
-        if (line.toLowerCase().contains("bye")) {
-          channel.closeFuture().sync();
-          break;
-        }
+        Thread.sleep(10000);
       }
 
       if (future != null) {

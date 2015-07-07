@@ -1,7 +1,7 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.imap.BaseCommand;
-import com.hubspot.imap.imap.Response;
+import com.hubspot.imap.imap.command.BaseCommand;
+import com.hubspot.imap.imap.response.Response;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.slf4j.Logger;

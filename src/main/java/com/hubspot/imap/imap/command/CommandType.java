@@ -1,4 +1,4 @@
-package com.hubspot.imap.imap;
+package com.hubspot.imap.imap.command;
 
 public enum CommandType {
   LOGIN,

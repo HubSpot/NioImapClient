@@ -1,4 +1,4 @@
-package com.hubspot.imap.imap;
+package com.hubspot.imap.imap.command;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;

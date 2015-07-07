@@ -1,10 +1,10 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.imap.BaseCommand;
-import com.hubspot.imap.imap.Command;
-import com.hubspot.imap.imap.CommandType;
-import com.hubspot.imap.imap.Response;
-import com.hubspot.imap.imap.XOAuth2Command;
+import com.hubspot.imap.imap.command.BaseCommand;
+import com.hubspot.imap.imap.command.Command;
+import com.hubspot.imap.imap.command.CommandType;
+import com.hubspot.imap.imap.response.Response;
+import com.hubspot.imap.imap.command.XOAuth2Command;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

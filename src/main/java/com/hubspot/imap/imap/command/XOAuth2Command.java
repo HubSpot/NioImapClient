@@ -2,8 +2,6 @@ package com.hubspot.imap.imap.command;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
-import com.hubspot.imap.imap.command.BaseCommand;
-import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.java.utils.Bytes;
 
 import java.util.List;
@@ -16,8 +14,8 @@ public class XOAuth2Command extends BaseCommand {
   private final String userName;
   private final String accessToken;
 
-  public XOAuth2Command(String userName, String accessToken, int id) {
-    super(CommandType.AUTHENTICATE, id);
+  public XOAuth2Command(String userName, String accessToken, int tag) {
+    super(CommandType.AUTHENTICATE, tag);
 
     this.userName = userName;
     this.accessToken = accessToken;

@@ -1,13 +1,11 @@
 package com.hubspot.imap;
 
 import com.google.common.net.HostAndPort;
+import com.hubspot.imap.imap.ImapResponseDecoder;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.Delimiters;
-import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -16,7 +14,6 @@ import java.nio.charset.Charset;
 
 @Sharable
 public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
-  private static final StringDecoder STRING_DECODER = new StringDecoder(Charset.forName("UTF-8"));
   private static final StringEncoder STRING_ENCODER = new StringEncoder(Charset.forName("UTF-8"));
   private static final ImapCodec IMAP_CODEC = new ImapCodec();
 
@@ -36,8 +33,7 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
     ChannelPipeline channelPipeline = socketChannel.pipeline();
 
     channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(), hostAndPort.getHostText(), hostAndPort.getPortOrDefault(993)));
-    channelPipeline.addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()));
-    channelPipeline.addLast(STRING_DECODER);
+    channelPipeline.addLast(new ImapResponseDecoder());
     channelPipeline.addLast(STRING_ENCODER);
     channelPipeline.addLast(new IdleStateHandler(maxIdleTimeSeconds, maxIdleTimeSeconds, maxIdleTimeSeconds));
     channelPipeline.addLast(IMAP_CODEC);

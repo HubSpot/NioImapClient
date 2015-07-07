@@ -1,6 +1,8 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.imap.command.BaseCommand;
+import com.hubspot.imap.imap.response.RawResponse;
+import com.hubspot.imap.imap.response.BaseResponse;
 import com.hubspot.imap.imap.response.Response;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -11,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 @Sharable
-public class ImapCodec extends MessageToMessageCodec<String, BaseCommand> {
+public class ImapCodec extends MessageToMessageCodec<RawResponse, BaseCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
 
   @Override
@@ -22,9 +24,9 @@ public class ImapCodec extends MessageToMessageCodec<String, BaseCommand> {
   }
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
+  protected void decode(ChannelHandlerContext ctx, RawResponse msg, List<Object> out) throws Exception {
     LOGGER.debug("IMAP RECEIVE: {}", msg);
-    Response response = Response.parse(msg);
+    Response response = new BaseResponse().fromRawResponse(msg);
     out.add(response);
   }
 }

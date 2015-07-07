@@ -4,5 +4,6 @@ public enum CommandType {
   LOGIN,
   NOOP,
   IDLE,
-  AUTHENTICATE;
+  AUTHENTICATE,
+  LIST;
 }

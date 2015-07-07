@@ -3,8 +3,8 @@ package com.hubspot.imap;
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.Command;
 import com.hubspot.imap.imap.command.CommandType;
-import com.hubspot.imap.imap.response.Response;
 import com.hubspot.imap.imap.command.XOAuth2Command;
+import com.hubspot.imap.imap.response.Response;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -91,11 +91,7 @@ public class ImapClient {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
       Response response = ((Response) msg);
-      if (!response.isAnonymous()) {
-        if (response.getId().equalsIgnoreCase(lastCommand.get().getId())) {
-          lastCommandPromise.setSuccess(response);
-        }
-      }
+      lastCommandPromise.setSuccess(response);
     }
 
     @Override

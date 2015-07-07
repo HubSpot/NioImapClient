@@ -1,8 +1,10 @@
 package com.hubspot.imap;
 
+import com.hubspot.imap.imap.BaseCommand;
 import com.hubspot.imap.imap.Command;
 import com.hubspot.imap.imap.CommandType;
 import com.hubspot.imap.imap.Response;
+import com.hubspot.imap.imap.XOAuth2Command;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -23,7 +25,7 @@ public class ImapClient {
   private final Channel channel;
   private final EventExecutor executor;
   private final String userName;
-  private final String password;
+  private final String oauthToken;
 
   private final AtomicInteger commandCount;
   private final CountDownLatch loginLatch;
@@ -31,14 +33,14 @@ public class ImapClient {
   private final AtomicReference<Command> lastCommand;
   private Promise<Response> lastCommandPromise;
 
-  public ImapClient(Channel channel, EventExecutor executor, String userName, String password) {
+  public ImapClient(Channel channel, EventExecutor executor, String userName, String oauthToken) {
     this.channel = channel;
     this.channel.pipeline().addLast(new InboundHandler());
     this.channel.pipeline().addLast(new OutboundHandler());
 
     this.executor = executor;
     this.userName = userName;
-    this.password = password;
+    this.oauthToken = oauthToken;
 
     commandCount = new AtomicInteger(0);
     loginLatch = new CountDownLatch(1);
@@ -46,8 +48,7 @@ public class ImapClient {
   }
 
   public Future<Response> login() {
-    send(CommandType.LOGIN, userName, password);
-
+    send(new XOAuth2Command(userName, oauthToken, commandCount.getAndIncrement()));
 
     lastCommandPromise.addListener(future -> loginLatch.countDown());
 
@@ -67,11 +68,15 @@ public class ImapClient {
   }
 
   public synchronized Future<Response> send(CommandType commandType, String... args) {
+    BaseCommand baseCommand = new BaseCommand(commandType, commandCount.getAndIncrement(), args);
+    return send(baseCommand);
+  }
+
+  public synchronized Future<Response> send(Command command) {
     if (lastCommandPromise != null) {
       lastCommandPromise.awaitUninterruptibly();
     }
 
-    Command command = new Command(commandType, commandCount.getAndIncrement(), args);
     lastCommand.set(command);
     lastCommandPromise = executor.newPromise();
     channel.writeAndFlush(command);

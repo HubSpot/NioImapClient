@@ -1,6 +1,6 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.imap.Command;
+import com.hubspot.imap.imap.BaseCommand;
 import com.hubspot.imap.imap.Response;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -9,12 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class ImapCodec extends MessageToMessageCodec<String, Command> {
+public class ImapCodec extends MessageToMessageCodec<String, BaseCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, Command msg, List<Object> out) throws Exception {
-    String data = msg.toString();
+  protected void encode(ChannelHandlerContext ctx, BaseCommand msg, List<Object> out) throws Exception {
+    String data = msg.commandString();
     LOGGER.debug("IMAP SEND: {}", data);
     out.add(data + "\r\n");
   }

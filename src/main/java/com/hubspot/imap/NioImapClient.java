@@ -57,13 +57,16 @@ public class NioImapClient {
 
       client.login();
       client.awaitLogin();
-      while (!Thread.currentThread().isInterrupted()) {
-        future = client.noop();
-        Thread.sleep(1000000);
-      }
+      client.noop();
+
+      future = client.list("", "[Gmail]/%");
 
       if (future != null) {
         future.sync();
+      }
+
+      while (Thread.currentThread().isAlive()) {
+        Thread.sleep(500);
       }
     } finally {
       eventLoopGroup.shutdownGracefully();

@@ -4,6 +4,7 @@ import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.BlankCommand;
 import com.hubspot.imap.imap.command.Command;
 import com.hubspot.imap.imap.command.CommandType;
+import com.hubspot.imap.imap.command.ListCommand;
 import com.hubspot.imap.imap.command.XOAuth2Command;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.response.ContinuationResponse;
@@ -28,7 +29,7 @@ public class ImapClient {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
   private final Channel channel;
-  private final EventExecutor executor;
+  private final EventExecutor executor; // DO NOT DO BLOCKING OPERATIONS ON THIS THREAD, LIKELY TO CAUSE DEADLOCKS
   private final String userName;
   private final String oauthToken;
 
@@ -75,6 +76,10 @@ public class ImapClient {
     return lastCommandPromise;
   }
 
+  public Future<Response> list(String context, String query) {
+    return send(new ListCommand(commandCount.getAndIncrement(), context, query));
+  }
+
   public Future<Response> noop() {
     return send(CommandType.NOOP);
   }
@@ -94,11 +99,10 @@ public class ImapClient {
 
   public synchronized Future<Response> send(Command command) {
     final Promise<Response> newPromise = executor.newPromise();
+    if (lastCommandPromise != null) {
+      lastCommandPromise.awaitUninterruptibly();
+    }
     executor.submit(() -> {
-      if (lastCommandPromise != null) {
-        lastCommandPromise.awaitUninterruptibly();
-      }
-
       lastCommand.set(command);
       lastCommandPromise = newPromise;
       channel.writeAndFlush(command);

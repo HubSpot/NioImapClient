@@ -1,0 +1,19 @@
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+*/target
+
+*.iml
+idea
+target/
+
+# IntelliJ
+.idea
+.project
+.settings
+.classpath
+.build-executable

@@ -22,9 +22,10 @@ import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.ExecutionException;
 
 public class NioImapClient {
-  public static void main(String[] args) throws InterruptedException, IOException {
+  public static void main(String[] args) throws InterruptedException, IOException, ExecutionException {
 
     final SslContext context;
     try {
@@ -56,13 +57,16 @@ public class NioImapClient {
 
       client.login();
       client.awaitLogin();
-      while (!Thread.currentThread().isInterrupted()) {
-        future = client.noop();
-        Thread.sleep(1000000);
-      }
+      client.noop();
+
+      future = client.list("", "[Gmail]/%");
 
       if (future != null) {
         future.sync();
+      }
+
+      while (Thread.currentThread().isAlive()) {
+        Thread.sleep(500);
       }
     } finally {
       eventLoopGroup.shutdownGracefully();

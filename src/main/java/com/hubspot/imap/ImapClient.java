@@ -1,9 +1,12 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.imap.command.BaseCommand;
+import com.hubspot.imap.imap.command.BlankCommand;
 import com.hubspot.imap.imap.command.Command;
 import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.imap.imap.command.XOAuth2Command;
+import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
+import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.Response;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,11 +15,12 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,7 +33,7 @@ public class ImapClient {
   private final String oauthToken;
 
   private final AtomicInteger commandCount;
-  private final CountDownLatch loginLatch;
+  private final Promise<Void> loginPromise;
 
   private final AtomicReference<Command> lastCommand;
   private Promise<Response> lastCommandPromise;
@@ -44,13 +48,29 @@ public class ImapClient {
     this.oauthToken = oauthToken;
 
     commandCount = new AtomicInteger(0);
-    loginLatch = new CountDownLatch(1);
+    loginPromise = executor.newPromise();
     lastCommand = new AtomicReference<>();
   }
 
   public Future<Response> login() {
     Future<Response> loginFuture = send(new XOAuth2Command(userName, oauthToken, commandCount.getAndIncrement()));
-    loginFuture.addListener(future -> loginLatch.countDown());
+    loginFuture.addListener(new FutureListener<Response>() {
+      @Override
+      public void operationComplete(Future<Response> future) throws Exception {
+        Response response = future.get();
+        if (response instanceof ContinuationResponse) {
+          loginPromise.setFailure(new AuthenticationFailedException(response.getMessage()));
+        } else {
+          loginPromise.setSuccess(null);
+        }
+      }
+    });
+
+    loginPromise.addListener(future ->  {
+      if (!future.isSuccess()) {
+        send(BlankCommand.INSTANCE);
+      }
+    });
 
     return lastCommandPromise;
   }
@@ -60,11 +80,11 @@ public class ImapClient {
   }
 
   public boolean isLoggedIn() {
-    return loginLatch.getCount() == 0 && channel.isOpen();
+    return loginPromise.isSuccess() && channel.isOpen();
   }
 
-  public void awaitLogin() throws InterruptedException {
-    loginLatch.await();
+  public void awaitLogin() throws InterruptedException, ExecutionException {
+    loginPromise.get();
   }
 
   public Future<Response> send(CommandType commandType, String... args) {

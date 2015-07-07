@@ -2,11 +2,13 @@ package com.hubspot.imap.imap.response;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.hubspot.imap.imap.response.Response.ResponseType;
 
 import java.util.List;
 
 public class RawResponse {
   private final List<String> untaggedLines;
+  private ResponseType type;
   private String tag;
   private ResponseCode responseCode;
   private String responseMessage;
@@ -47,10 +49,19 @@ public class RawResponse {
     this.responseMessage = responseMessage;
   }
 
+  public ResponseType getType() {
+    return type;
+  }
+
+  public void setType(ResponseType type) {
+    this.type = type;
+  }
+
   @Override
   public String toString() {
     return Objects.toStringHelper(this)
         .add("untaggedLines", untaggedLines)
+        .add("type", type)
         .add("tag", tag)
         .add("responseCode", responseCode)
         .add("responseMessage", responseMessage)

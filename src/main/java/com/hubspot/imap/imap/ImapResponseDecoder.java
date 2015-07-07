@@ -2,6 +2,7 @@ package com.hubspot.imap.imap;
 
 import com.google.seventeen.common.base.Splitter;
 import com.hubspot.imap.imap.response.RawResponse;
+import com.hubspot.imap.imap.response.Response.ResponseType;
 import com.hubspot.imap.imap.response.ResponseCode;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
@@ -18,6 +19,7 @@ public class ImapResponseDecoder extends ReplayingDecoder<Void> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapResponseDecoder.class);
   private static final Charset CHARSET = Charset.forName("UTF-8");
 
+  //private final AtomicReference<Command> currentCommand;
   private RawResponse response = new RawResponse();
 
   @Override
@@ -29,22 +31,38 @@ public class ImapResponseDecoder extends ReplayingDecoder<Void> {
       LOGGER.debug("IMAP RCV: {}", line);
       List<String> parts = SPLITTER.splitToList(line);
 
-      if (parts.get(0).equals("*") || parts.get(0).equals("+")) {
+      if (parts.get(0).equals("*")) {
         response.addUntaggedLine(parts.get(1));
         checkpoint();
+      } else if (parts.get(0).equals("+")) {
+        handleContinuation(parts.get(1), out);
       } else {
-        String tag = parts.get(0);
-        List<String> taggedResponseParts = SPLITTER.splitToList(parts.get(1));
-        ResponseCode code = ResponseCode.valueOf(taggedResponseParts.get(0));
-
-        response.setTag(tag);
-        response.setResponseCode(code);
-        response.setResponseMessage(taggedResponseParts.get(1));
-
-        out.add(response);
-        response = new RawResponse();
-        checkpoint();
+        handleTagged(parts.get(0), parts.get(1), out);
       }
     }
+  }
+
+  private void handleContinuation(String message, List<Object> out) {
+    response.setType(ResponseType.CONTINUATION);
+    response.setResponseMessage(message);
+    response.setResponseCode(ResponseCode.NONE);
+
+    out.add(response);
+    response = new RawResponse();
+    checkpoint();
+  }
+
+  private void handleTagged(String tag, String message, List<Object> out) {
+    List<String> taggedResponseParts = SPLITTER.splitToList(message);
+    ResponseCode code = ResponseCode.valueOf(taggedResponseParts.get(0));
+
+    response.setType(ResponseType.TAGGED);
+    response.setTag(tag);
+    response.setResponseCode(code);
+    response.setResponseMessage(taggedResponseParts.get(1));
+
+    out.add(response);
+    response = new RawResponse();
+    checkpoint();
   }
 }

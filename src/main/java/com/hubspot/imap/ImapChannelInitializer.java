@@ -1,6 +1,7 @@
 package com.hubspot.imap;
 
 import com.google.common.net.HostAndPort;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -12,7 +13,7 @@ import io.netty.handler.ssl.SslContext;
 
 import java.nio.charset.Charset;
 
-
+@Sharable
 public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
   private static final StringDecoder STRING_DECODER = new StringDecoder(Charset.forName("UTF-8"));
   private static final StringEncoder STRING_ENCODER = new StringEncoder(Charset.forName("UTF-8"));

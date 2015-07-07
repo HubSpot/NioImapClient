@@ -10,10 +10,12 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslContext;
 
+import java.nio.charset.Charset;
+
 
 public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
-  private static final StringDecoder STRING_DECODER = new StringDecoder();
-  private static final StringEncoder STRING_ENCODER = new StringEncoder();
+  private static final StringDecoder STRING_DECODER = new StringDecoder(Charset.forName("UTF-8"));
+  private static final StringEncoder STRING_ENCODER = new StringEncoder(Charset.forName("UTF-8"));
   private static final ImapCodec IMAP_CODEC = new ImapCodec();
 
   private final SslContext sslContext;

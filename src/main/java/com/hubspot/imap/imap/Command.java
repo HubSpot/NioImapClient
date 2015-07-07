@@ -19,7 +19,7 @@ public class Command {
   }
 
   public String toString() {
-    return String.format("%s %s %s", id, type.name(), JOINER.join(args));
+    return String.format("%s %s %s", id, type.name(), JOINER.join(args)).trim();
   }
 
   public CommandType getType() {

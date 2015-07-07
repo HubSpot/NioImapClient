@@ -23,8 +23,8 @@ public class ImapCodec extends MessageToMessageCodec<String, BaseCommand> {
 
   @Override
   protected void decode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
+    LOGGER.debug("IMAP RECEIVE: {}", msg);
     Response response = Response.parse(msg);
-    LOGGER.debug("IMAP RECEIVE: {}", response);
     out.add(response);
   }
 }

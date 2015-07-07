@@ -9,6 +9,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
@@ -48,9 +49,8 @@ public class ImapClient {
   }
 
   public Future<Response> login() {
-    send(new XOAuth2Command(userName, oauthToken, commandCount.getAndIncrement()));
-
-    lastCommandPromise.addListener(future -> loginLatch.countDown());
+    Future<Response> loginFuture = send(new XOAuth2Command(userName, oauthToken, commandCount.getAndIncrement()));
+    loginFuture.addListener(future -> loginLatch.countDown());
 
     return lastCommandPromise;
   }
@@ -67,21 +67,24 @@ public class ImapClient {
     loginLatch.await();
   }
 
-  public synchronized Future<Response> send(CommandType commandType, String... args) {
+  public Future<Response> send(CommandType commandType, String... args) {
     BaseCommand baseCommand = new BaseCommand(commandType, commandCount.getAndIncrement(), args);
     return send(baseCommand);
   }
 
   public synchronized Future<Response> send(Command command) {
-    if (lastCommandPromise != null) {
-      lastCommandPromise.awaitUninterruptibly();
-    }
+    final Promise<Response> newPromise = executor.newPromise();
+    executor.submit(() -> {
+      if (lastCommandPromise != null) {
+        lastCommandPromise.awaitUninterruptibly();
+      }
 
-    lastCommand.set(command);
-    lastCommandPromise = executor.newPromise();
-    channel.writeAndFlush(command);
+      lastCommand.set(command);
+      lastCommandPromise = newPromise;
+      channel.writeAndFlush(command);
+    });
 
-    return lastCommandPromise;
+    return newPromise;
   }
 
   private class InboundHandler extends ChannelInboundHandlerAdapter {
@@ -92,6 +95,13 @@ public class ImapClient {
         if (response.getId().equalsIgnoreCase(lastCommand.get().getId())) {
           lastCommandPromise.setSuccess(response);
         }
+      }
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+      if (evt instanceof IdleStateEvent) {
+        noop();
       }
     }
 

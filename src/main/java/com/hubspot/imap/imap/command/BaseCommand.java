@@ -38,6 +38,11 @@ public class BaseCommand implements Command {
     return id;
   }
 
+  @Override
+  public CommandType getCommandType() {
+    return type;
+  }
+
   public List<String> getArgs() {
     return args;
   }

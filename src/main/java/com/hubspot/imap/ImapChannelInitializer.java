@@ -10,6 +10,7 @@ import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslContext;
+import io.netty.handler.timeout.IdleStateHandler;
 
 import java.nio.charset.Charset;
 
@@ -22,9 +23,12 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
   private final SslContext sslContext;
   private final HostAndPort hostAndPort;
 
-  public ImapChannelInitializer(SslContext sslContext, HostAndPort hostAndPort) {
+  private final int maxIdleTimeSeconds;
+
+  public ImapChannelInitializer(SslContext sslContext, HostAndPort hostAndPort, int maxIdleTimeSeconds) {
     this.sslContext = sslContext;
     this.hostAndPort = hostAndPort;
+    this.maxIdleTimeSeconds = maxIdleTimeSeconds;
   }
 
   @Override
@@ -35,6 +39,7 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
     channelPipeline.addLast(new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()));
     channelPipeline.addLast(STRING_DECODER);
     channelPipeline.addLast(STRING_ENCODER);
+    channelPipeline.addLast(new IdleStateHandler(maxIdleTimeSeconds, maxIdleTimeSeconds, maxIdleTimeSeconds));
     channelPipeline.addLast(IMAP_CODEC);
   }
 }

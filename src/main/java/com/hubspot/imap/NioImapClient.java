@@ -47,7 +47,7 @@ public class NioImapClient {
           .channel(NioSocketChannel.class)
           .option(ChannelOption.SO_KEEPALIVE, true)
           .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-          .handler(new ImapChannelInitializer(context, HostAndPort.fromParts("imap.gmail.com", 993)));
+          .handler(new ImapChannelInitializer(context, HostAndPort.fromParts("imap.gmail.com", 993), 10));
 
       Channel channel = bootstrap.connect("imap.gmail.com", 993).sync().channel();
       ImapClient client = new ImapClient(channel, eventExecutor.next(), "zklapow@hubspot.com", "");
@@ -58,7 +58,7 @@ public class NioImapClient {
       client.awaitLogin();
       while (!Thread.currentThread().isInterrupted()) {
         future = client.noop();
-        Thread.sleep(10000);
+        Thread.sleep(1000000);
       }
 
       if (future != null) {

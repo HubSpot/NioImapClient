@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
+import com.hubspot.imap.imap.response.ListResponse;
 import com.hubspot.imap.imap.response.Response;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -60,6 +61,7 @@ public class NioImapClient {
       client.noop();
 
       future = client.list("", "[Gmail]/%");
+      ListResponse response = ((ListResponse) future.get());
 
       if (future != null) {
         future.sync();

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ImapClient {
+  public static final String IMAP_CODEC = "imapcodec";
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
   private final Channel channel;
@@ -41,16 +42,18 @@ public class ImapClient {
 
   public ImapClient(Channel channel, EventExecutor executor, String userName, String oauthToken) {
     this.channel = channel;
-    this.channel.pipeline().addLast(new InboundHandler());
-    this.channel.pipeline().addLast(new OutboundHandler());
 
     this.executor = executor;
     this.userName = userName;
     this.oauthToken = oauthToken;
 
+    lastCommand = new AtomicReference<>();
     commandCount = new AtomicInteger(0);
     loginPromise = executor.newPromise();
-    lastCommand = new AtomicReference<>();
+
+    this.channel.pipeline().addLast(new ImapCodec(lastCommand));
+    this.channel.pipeline().addLast(new InboundHandler());
+    this.channel.pipeline().addLast(new OutboundHandler());
   }
 
   public Future<Response> login() {

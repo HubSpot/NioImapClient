@@ -2,6 +2,7 @@ package com.hubspot.imap.imap.response;
 
 import com.google.common.base.Objects;
 import com.hubspot.imap.imap.command.CommandType;
+import com.hubspot.imap.imap.exceptions.ResponseParseException;
 
 public class BaseResponse implements Response {
   private ResponseType responseType;
@@ -27,7 +28,7 @@ public class BaseResponse implements Response {
     return rawResponse.getResponseMessage();
   }
 
-  public Response fromRawResponse(RawResponse input) {
+  public Response fromRawResponse(RawResponse input) throws ResponseParseException {
     this.responseType = input.getType();
     this.tag = input.getTag();
     this.contents = input.getResponseMessage();

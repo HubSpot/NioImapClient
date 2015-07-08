@@ -1,6 +1,7 @@
 package com.hubspot.imap.imap.response;
 
 import com.hubspot.imap.imap.command.CommandType;
+import com.hubspot.imap.imap.exceptions.ResponseParseException;
 
 public interface Response {
   CommandType getCommandType();
@@ -10,7 +11,7 @@ public interface Response {
   RawResponse getRawResponse();
   ResponseType getResponseType();
 
-  Response fromRawResponse(RawResponse input);
+  Response fromRawResponse(RawResponse input) throws ResponseParseException;
 
   enum ResponseType {
     TAGGED,

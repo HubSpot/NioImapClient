@@ -17,3 +17,4 @@ target/
 .settings
 .classpath
 .build-executable
+gen/

@@ -5,52 +5,77 @@ import com.hubspot.imap.grammar.ImapLexer;
 import com.hubspot.imap.grammar.ImapParser;
 import com.hubspot.imap.grammar.ImapParser.ArrayContext;
 import com.hubspot.imap.grammar.ImapParser.ListresponseContext;
-import com.hubspot.imap.imap.exceptions.ResponseParseException;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class Folder {
-  private static final Logger LOGGER = LoggerFactory.getLogger(Folder.class);
+public interface Folder {
+  List<FolderAttribute> getAttributes();
+  String getContext();
+  String getName();
 
-  private final List<FolderAttribute> attributes;
-  private String context;
-  private String name;
+  class Builder implements Folder {
 
-  public Folder() {
-    attributes = new ArrayList<>();
-  }
+    private final List<FolderAttribute> attributes = new ArrayList<>();
+    private String context;
+    private String name;
 
-  public static Folder parseFromListResponse(String untaggedResponse) throws ResponseParseException {
-    return new Folder().parse(untaggedResponse);
-  }
+    public Folder parseFrom(String untaggedResponse) {
+      ImapLexer lexer = new ImapLexer(new ANTLRInputStream(untaggedResponse));
+      ImapParser parser = new ImapParser(new CommonTokenStream(lexer));
 
-  public Folder parse(String untaggedResponse) {
-    ImapLexer lexer = new ImapLexer(new ANTLRInputStream(untaggedResponse));
-    ImapParser parser = new ImapParser(new CommonTokenStream(lexer));
-
-    parser.addParseListener(new Listener());
-    parser.listresponse();
-    return this;
-  }
-
-  private class Listener extends ImapBaseListener {
-    @Override
-    public void exitListresponse(ListresponseContext ctx) {
-      name = ctx.name.getText();
-      context = ctx.context.getText();
+      parser.addParseListener(new Listener());
+      parser.listresponse();
+      return build();
     }
 
-    @Override
-    public void exitArray(ArrayContext ctx) {
-      Optional<FolderAttribute> attributeOptional = FolderAttribute.getAttribute(ctx.value.getText());
-      if (attributeOptional.isPresent()) {
-        attributes.add(attributeOptional.get());
+    public Folder build() {
+      return this;
+    }
+
+    public List<FolderAttribute> getAttributes() {
+      return this.attributes;
+    }
+
+    public Builder addAttribute(FolderAttribute attribute) {
+      attributes.add(attribute);
+      return this;
+    }
+
+    public String getContext() {
+      return this.context;
+    }
+
+    public Builder setContext(String context) {
+      this.context = context;
+      return this;
+    }
+
+    public String getName() {
+      return this.name;
+    }
+
+    public Builder setName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    private class Listener extends ImapBaseListener {
+      @Override
+      public void exitListresponse(ListresponseContext ctx) {
+        setName(ctx.name.getText());
+        setContext(ctx.context.getText());
+      }
+
+      @Override
+      public void exitArray(ArrayContext ctx) {
+        Optional<FolderAttribute> attributeOptional = FolderAttribute.getAttribute(ctx.value.getText());
+        if (attributeOptional.isPresent()) {
+          attributes.add(attributeOptional.get());
+        }
       }
     }
   }

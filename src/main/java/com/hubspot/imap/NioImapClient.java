@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
+import com.hubspot.imap.imap.folder.Folder;
 import com.hubspot.imap.imap.response.ListResponse;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -51,7 +52,7 @@ public class NioImapClient {
           .handler(new ImapChannelInitializer(context, HostAndPort.fromParts("imap.gmail.com", 993), 10));
 
       Channel channel = bootstrap.connect("imap.gmail.com", 993).sync().channel();
-      ImapClient client = new ImapClient(channel, eventExecutor.next(), "zklapow@hubspot.com", "");
+      ImapClient client = new ImapClient(channel, eventExecutor.next(), "zklapow@hubspot.com", "ya29.qgEb8pRRj-8jsY5lAOd2TJUe9jst2Zo6YvDBLzSTbc70n5BHjq2FtdYSiawBtcHpkxa0oB0yHu1uEg");
 
       Future<ListResponse> future = null;
 
@@ -60,10 +61,9 @@ public class NioImapClient {
       client.noop();
 
       future = client.list("", "[Gmail]/%");
-      ListResponse response = ((ListResponse) future.get());
+      ListResponse response = future.get();
 
-      if (future != null) {
-        future.sync();
+      for (Folder folder: response.getFolders()) {
       }
 
       while (Thread.currentThread().isAlive()) {

@@ -20,7 +20,7 @@ public class ListResponse extends BaseResponse {
   private void parseFolders(List<String> untaggedResponses) throws ResponseParseException {
     List<Folder> folders = new ArrayList<>(untaggedResponses.size());
     for (String response: untaggedResponses) {
-      folders.add(Folder.parseFromListResponse(response));
+      folders.add(new Folder.Builder().parseFrom(response));
     }
 
     this.folders = folders;

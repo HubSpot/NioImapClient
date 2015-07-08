@@ -3,30 +3,29 @@ package com.hubspot.imap.imap.response;
 import com.hubspot.imap.imap.exceptions.ResponseParseException;
 import com.hubspot.imap.imap.folder.Folder;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class ListResponse extends BaseResponse {
-  private List<Folder> folders;
+public interface ListResponse extends Response {
+  List<Folder> getFolders();
 
-  @Override
-  public Response fromRawResponse(RawResponse input) throws ResponseParseException {
-    super.fromRawResponse(input);
-    parseFolders(input.getUntaggedLines());
+  class Builder extends Response.Builder implements ListResponse {
+    private List<Folder> folders;
 
-    return this;
-  }
+    public ListResponse fromResponse(Response input) throws ResponseParseException {
+      parseFolders(input.getUntagged());
 
-  private void parseFolders(List<String> untaggedResponses) throws ResponseParseException {
-    List<Folder> folders = new ArrayList<>(untaggedResponses.size());
-    for (String response: untaggedResponses) {
-      folders.add(new Folder.Builder().parseFrom(response));
+      return this;
     }
 
-    this.folders = folders;
-  }
+    private void parseFolders(List<String> untaggedResponses) throws ResponseParseException {
+      this.folders = untaggedResponses.stream()
+          .map(r -> new Folder.Builder().parseFrom(r))
+          .collect(Collectors.toList());
+    }
 
-  public List<Folder> getFolders() {
-    return folders;
+    public List<Folder> getFolders() {
+      return folders;
+    }
   }
 }

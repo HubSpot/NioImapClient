@@ -2,10 +2,8 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.Command;
-import com.hubspot.imap.imap.response.BaseResponse;
 import com.hubspot.imap.imap.response.ContinuationResponse;
-import com.hubspot.imap.imap.response.ListResponse;
-import com.hubspot.imap.imap.response.RawResponse;
+import com.hubspot.imap.imap.response.ListResponse.Builder;
 import com.hubspot.imap.imap.response.Response;
 import com.hubspot.imap.imap.response.Response.ResponseType;
 import io.netty.channel.ChannelHandlerContext;
@@ -16,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ImapCodec extends MessageToMessageCodec<RawResponse, BaseCommand> {
+public class ImapCodec extends MessageToMessageCodec<Response, BaseCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
 
   private final AtomicReference<Command> currentCommand;
@@ -33,23 +31,18 @@ public class ImapCodec extends MessageToMessageCodec<RawResponse, BaseCommand> {
   }
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, RawResponse msg, List<Object> out) throws Exception {
+  protected void decode(ChannelHandlerContext ctx, Response msg, List<Object> out) throws Exception {
     if (msg.getType() == ResponseType.TAGGED) {
-      Response response;
+      Response response = msg;
       switch (currentCommand.get().getCommandType()) {
         case LIST:
-          response = new ListResponse().fromRawResponse(msg);
+          response = new Builder().fromResponse(msg);
           break;
-        default:
-          response = new BaseResponse().fromRawResponse(msg);
       }
 
-      if (response != null) {
-        out.add(response);
-      }
-    } else if (msg.getType() == ResponseType.CONTINUATION) {
-      Response response = new ContinuationResponse().fromRawResponse(msg);
       out.add(response);
+    } else if (msg.getType() == ResponseType.CONTINUATION) {
+      out.add(new ContinuationResponse.Builder().fromResponse(msg));
     }
   }
 }

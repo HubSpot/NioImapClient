@@ -8,6 +8,7 @@ import com.hubspot.imap.imap.command.ListCommand;
 import com.hubspot.imap.imap.command.XOAuth2Command;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.response.ContinuationResponse;
+import com.hubspot.imap.imap.response.ListResponse;
 import com.hubspot.imap.imap.response.Response;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -38,7 +39,7 @@ public class ImapClient {
   private final Promise<Void> loginPromise;
 
   private final AtomicReference<Command> lastCommand;
-  private Promise<Response> lastCommandPromise;
+  private Promise lastCommandPromise;
 
   public ImapClient(Channel channel, EventExecutor executor, String userName, String oauthToken) {
     this.channel = channel;
@@ -76,14 +77,14 @@ public class ImapClient {
       }
     });
 
-    return lastCommandPromise;
+    return loginFuture;
   }
 
-  public Future<Response> list(String context, String query) {
+  public Future<ListResponse> list(String context, String query) {
     return send(new ListCommand(commandCount.getAndIncrement(), context, query));
   }
 
-  public Future<Response> noop() {
+  public Future<? extends Response> noop() {
     return send(CommandType.NOOP);
   }
 
@@ -95,13 +96,13 @@ public class ImapClient {
     loginPromise.get();
   }
 
-  public Future<Response> send(CommandType commandType, String... args) {
+  public Future<? extends Response> send(CommandType commandType, String... args) {
     BaseCommand baseCommand = new BaseCommand(commandType, commandCount.getAndIncrement(), args);
     return send(baseCommand);
   }
 
-  public synchronized Future<Response> send(Command command) {
-    final Promise<Response> newPromise = executor.newPromise();
+  public synchronized <T extends Response> Future<T> send(Command command) {
+    final Promise<T> newPromise = executor.newPromise();
     if (lastCommandPromise != null) {
       lastCommandPromise.awaitUninterruptibly();
     }
@@ -116,6 +117,7 @@ public class ImapClient {
 
   private class InboundHandler extends ChannelInboundHandlerAdapter {
     @Override
+    @SuppressWarnings("unchecked")
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
       Response response = ((Response) msg);
       lastCommandPromise.setSuccess(response);

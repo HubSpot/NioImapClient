@@ -3,7 +3,6 @@ package com.hubspot.imap;
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
 import com.hubspot.imap.imap.response.ListResponse;
-import com.hubspot.imap.imap.response.Response;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -54,7 +53,7 @@ public class NioImapClient {
       Channel channel = bootstrap.connect("imap.gmail.com", 993).sync().channel();
       ImapClient client = new ImapClient(channel, eventExecutor.next(), "zklapow@hubspot.com", "");
 
-      Future<Response> future = null;
+      Future<ListResponse> future = null;
 
       client.login();
       client.awaitLogin();

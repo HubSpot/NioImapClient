@@ -128,6 +128,8 @@ public class ImapClient {
       if (evt instanceof IdleStateEvent) {
         noop();
       }
+
+      super.userEventTriggered(ctx, evt);
     }
 
     @Override

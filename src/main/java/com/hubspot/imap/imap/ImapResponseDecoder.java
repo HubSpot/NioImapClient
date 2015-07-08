@@ -1,7 +1,7 @@
 package com.hubspot.imap.imap;
 
 import com.google.seventeen.common.base.Splitter;
-import com.hubspot.imap.imap.response.RawResponse;
+import com.hubspot.imap.imap.response.Response;
 import com.hubspot.imap.imap.response.Response.ResponseType;
 import com.hubspot.imap.imap.response.ResponseCode;
 import io.netty.buffer.ByteBuf;
@@ -11,16 +11,13 @@ import io.netty.handler.codec.ReplayingDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
 public class ImapResponseDecoder extends ReplayingDecoder<Void> {
   private static final Splitter SPLITTER = Splitter.on(" ").limit(2).omitEmptyStrings().trimResults();
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapResponseDecoder.class);
-  private static final Charset CHARSET = Charset.forName("UTF-8");
 
-  //private final AtomicReference<Command> currentCommand;
-  private RawResponse response = new RawResponse();
+  private Response.Builder responseBuilder = new Response.Builder();
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -32,7 +29,7 @@ public class ImapResponseDecoder extends ReplayingDecoder<Void> {
       List<String> parts = SPLITTER.splitToList(line);
 
       if (parts.get(0).equals("*")) {
-        response.addUntaggedLine(parts.get(1));
+        responseBuilder.addUntagged(parts.get(1));
         checkpoint();
       } else if (parts.get(0).equals("+")) {
         handleContinuation(parts.get(1), out);
@@ -43,26 +40,28 @@ public class ImapResponseDecoder extends ReplayingDecoder<Void> {
   }
 
   private void handleContinuation(String message, List<Object> out) {
-    response.setType(ResponseType.CONTINUATION);
-    response.setResponseMessage(message);
-    response.setResponseCode(ResponseCode.NONE);
+    responseBuilder.setType(ResponseType.CONTINUATION);
+    responseBuilder.setMessage(message);
+    responseBuilder.setCode(ResponseCode.NONE);
 
-    out.add(response);
-    response = new RawResponse();
-    checkpoint();
+    write(out);
   }
 
   private void handleTagged(String tag, String message, List<Object> out) {
     List<String> taggedResponseParts = SPLITTER.splitToList(message);
     ResponseCode code = ResponseCode.valueOf(taggedResponseParts.get(0));
 
-    response.setType(ResponseType.TAGGED);
-    response.setTag(tag);
-    response.setResponseCode(code);
-    response.setResponseMessage(taggedResponseParts.get(1));
+    responseBuilder.setType(ResponseType.TAGGED);
+    responseBuilder.setTag(tag);
+    responseBuilder.setCode(code);
+    responseBuilder.setMessage(taggedResponseParts.get(1));
 
-    out.add(response);
-    response = new RawResponse();
+    write(out);
+  }
+
+  private void write(List<Object> out) {
+    out.add(responseBuilder.build());
+    responseBuilder = new Response.Builder();
     checkpoint();
   }
 }

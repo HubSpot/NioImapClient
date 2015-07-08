@@ -1,43 +1,29 @@
 package com.hubspot.imap.imap.response;
 
-import com.hubspot.imap.imap.command.CommandType;
+public interface ContinuationResponse extends Response {
 
-public class ContinuationResponse implements Response {
-  private CommandType commandType;
-  private RawResponse rawResponse;
-  @Override
-  public CommandType getCommandType() {
-    return commandType;
-  }
+  class Builder extends Response.Builder implements ContinuationResponse {
 
-  @Override
-  public String getTag() {
-    return null;
-  }
+    public ContinuationResponse.Builder fromResponse(Response response) {
+      this.setMessage(response.getMessage())
+          .setUntagged(response.getUntagged());
 
-  @Override
-  public String getMessage() {
-    return rawResponse.getResponseMessage();
-  }
+      return this;
+    }
 
-  @Override
-  public ResponseCode getResponseCode() {
-    return ResponseCode.NONE;
-  }
+    @Override
+    public String getTag() {
+      return null;
+    }
 
-  @Override
-  public RawResponse getRawResponse() {
-    return rawResponse;
-  }
+    @Override
+    public ResponseCode getCode() {
+      return ResponseCode.NONE;
+    }
 
-  @Override
-  public ResponseType getResponseType() {
-    return ResponseType.CONTINUATION;
-  }
-
-  @Override
-  public Response fromRawResponse(RawResponse input) {
-    this.rawResponse = input;
-    return this;
+    @Override
+    public ResponseType getType() {
+      return ResponseType.CONTINUATION;
+    }
   }
 }

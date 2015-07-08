@@ -15,7 +15,6 @@ import java.nio.charset.Charset;
 @Sharable
 public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
   private static final StringEncoder STRING_ENCODER = new StringEncoder(Charset.forName("UTF-8"));
-  private static final ImapCodec IMAP_CODEC = new ImapCodec();
 
   private final SslContext sslContext;
   private final HostAndPort hostAndPort;
@@ -36,6 +35,5 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
     channelPipeline.addLast(new ImapResponseDecoder());
     channelPipeline.addLast(STRING_ENCODER);
     channelPipeline.addLast(new IdleStateHandler(maxIdleTimeSeconds, maxIdleTimeSeconds, maxIdleTimeSeconds));
-    channelPipeline.addLast(IMAP_CODEC);
   }
 }

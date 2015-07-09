@@ -5,5 +5,7 @@ public enum CommandType {
   NOOP,
   IDLE,
   AUTHENTICATE,
-  LIST;
+  LIST,
+  EXAMINE,
+  SELECT;
 }

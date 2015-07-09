@@ -54,7 +54,7 @@ public class ImapClientFactory implements AutoCloseable {
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {
     Channel channel = bootstrap.connect(hostAndPort.getHostText(), hostAndPort.getPort()).sync().channel();
-    return new ImapClient(channel, eventExecutor.next(), userName, oauthToken);
+    return new ImapClient(channel, eventExecutor, userName, oauthToken);
   }
 
   @Override

@@ -1,7 +1,6 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.imap.command.BaseCommand;
-import com.hubspot.imap.imap.command.Command;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ListResponse.Builder;
 import com.hubspot.imap.imap.response.Response;
@@ -12,15 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ImapCodec extends MessageToMessageCodec<Response, BaseCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
 
-  private final AtomicReference<Command> currentCommand;
+  private final ImapClient client;
 
-  public ImapCodec(AtomicReference<Command> currentCommand) {
-    this.currentCommand = currentCommand;
+  public ImapCodec(ImapClient client) {
+    this.client = client;
   }
 
   @Override
@@ -34,9 +32,9 @@ public class ImapCodec extends MessageToMessageCodec<Response, BaseCommand> {
   protected void decode(ChannelHandlerContext ctx, Response msg, List<Object> out) throws Exception {
     if (msg.getType() == ResponseType.TAGGED) {
       Response response = msg;
-      switch (currentCommand.get().getCommandType()) {
+      switch (client.getCurrentCommand().getCommandType()) {
         case LIST:
-          response = new Builder().fromResponse(msg);
+          response = new Builder().fromResponse(msg, client);
           break;
       }
 

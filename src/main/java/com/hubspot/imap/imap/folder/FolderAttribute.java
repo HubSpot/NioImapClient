@@ -21,7 +21,7 @@ public enum FolderAttribute {
     }
 
     try {
-      return Optional.of(FolderAttribute.valueOf(name));
+      return Optional.of(FolderAttribute.valueOf(name.toUpperCase()));
     } catch (IllegalArgumentException e) {
       return Optional.empty();
     }

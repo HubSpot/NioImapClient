@@ -11,11 +11,10 @@ import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ListResponse;
 import com.hubspot.imap.imap.response.Response;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
@@ -26,35 +25,37 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ImapClient {
-  public static final String IMAP_CODEC = "imapcodec";
+public class ImapClient extends ChannelDuplexHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
   private final Channel channel;
-  private final EventExecutor executor; // DO NOT DO BLOCKING OPERATIONS ON THIS THREAD, LIKELY TO CAUSE DEADLOCKS
+  private final EventExecutorGroup executorGroup;
   private final String userName;
   private final String oauthToken;
 
   private final AtomicInteger commandCount;
   private final Promise<Void> loginPromise;
 
-  private final AtomicReference<Command> lastCommand;
+  private final AtomicReference<Command> currentCommand;
   private Promise lastCommandPromise;
 
-  public ImapClient(Channel channel, EventExecutor executor, String userName, String oauthToken) {
+  public ImapClient(Channel channel, EventExecutorGroup executorGroup, String userName, String oauthToken) {
     this.channel = channel;
 
-    this.executor = executor;
+    this.executorGroup = executorGroup;
     this.userName = userName;
     this.oauthToken = oauthToken;
 
-    lastCommand = new AtomicReference<>();
+    currentCommand = new AtomicReference<>();
     commandCount = new AtomicInteger(0);
-    loginPromise = executor.newPromise();
+    loginPromise = executorGroup.next().newPromise();
 
-    this.channel.pipeline().addLast(new ImapCodec(lastCommand));
-    this.channel.pipeline().addLast(new InboundHandler());
-    this.channel.pipeline().addLast(new OutboundHandler());
+    this.channel.pipeline().addLast(new ImapCodec(this));
+    this.channel.pipeline().addLast(executorGroup, this);
+  }
+
+  public Command getCurrentCommand() {
+    return currentCommand.get();
   }
 
   public Future<Response> login() {
@@ -71,7 +72,7 @@ public class ImapClient {
       }
     });
 
-    loginPromise.addListener(future ->  {
+    loginPromise.addListener(future -> {
       if (!future.isSuccess()) {
         send(BlankCommand.INSTANCE);
       }
@@ -102,12 +103,12 @@ public class ImapClient {
   }
 
   public synchronized <T extends Response> Future<T> send(Command command) {
-    final Promise<T> newPromise = executor.newPromise();
+    final Promise<T> newPromise = executorGroup.next().newPromise();
     if (lastCommandPromise != null) {
       lastCommandPromise.awaitUninterruptibly();
     }
-    executor.submit(() -> {
-      lastCommand.set(command);
+    executorGroup.submit(() -> {
+      currentCommand.set(command);
       lastCommandPromise = newPromise;
       channel.writeAndFlush(command);
     });
@@ -115,30 +116,26 @@ public class ImapClient {
     return newPromise;
   }
 
-  private class InboundHandler extends ChannelInboundHandlerAdapter {
-    @Override
-    @SuppressWarnings("unchecked")
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-      Response response = ((Response) msg);
-      lastCommandPromise.setSuccess(response);
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-      if (evt instanceof IdleStateEvent) {
-        noop();
-      }
-
-      super.userEventTriggered(ctx, evt);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-      LOGGER.error("Error in inbound handler", cause);
-      super.exceptionCaught(ctx, cause);
-    }
+  @Override
+  @SuppressWarnings("unchecked")
+  public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    Response response = ((Response) msg);
+    lastCommandPromise.setSuccess(response);
   }
 
-  private class OutboundHandler extends ChannelOutboundHandlerAdapter {
+  @Override
+  public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+    if (evt instanceof IdleStateEvent) {
+      noop();
+    }
+
+    super.userEventTriggered(ctx, evt);
   }
+
+  @Override
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    LOGGER.error("Error in handler", cause);
+    super.exceptionCaught(ctx, cause);
+  }
+
 }

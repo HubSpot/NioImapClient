@@ -1,22 +1,49 @@
 grammar Imap;
 
-list: 'LIST' SPACE? array SPACE? context=quotedString SPACE? name=quotedString;
+list: 'LIST' SPACE? array SPACE? context=quotedString SPACE? name=quotedString ;
 
-select: (flags | exists | recent | uidnext | SPACE)+;
+select
+    : selectresponse+
+    ;
 
-flags: 'FLAGS' SPACE array;
-exists: value=INT SPACE 'EXISTS';
-recent: value=INT SPACE 'RECENT';
-uidnext: OK LBRACKET 'UIDNEXT' INT RBRACKET string;
+selectresponse
+    : flags
+    | exists
+    | recent
+    | uidnext
+    | uidvalidity
+    | permanentflags
+    | highestmodseq
+    | SPACE
+    ;
 
-array: LPAREN (SPACE? value+=string)* RPAREN;
+flags
+    : 'FLAGS' SPACE array NL ;
+exists
+    : value=INT SPACE 'EXISTS' NL ;
+recent
+    : value=INT SPACE 'RECENT' NL ;
+uidnext
+    : OK SPACE LBRACKET 'UIDNEXT' SPACE value=INT RBRACKET responseString ;
+permanentflags
+    : OK SPACE LBRACKET 'PERMANENTFLAGS' SPACE array RBRACKET responseString ;
+uidvalidity
+    : OK SPACE LBRACKET 'UIDVALIDITY' SPACE value=INT RBRACKET responseString ;
+highestmodseq
+    : OK SPACE LBRACKET 'HIGHESTMODSEQ' SPACE value=INT RBRACKET responseString ;
 
-string: (ALPHA | DIGIT | CONTROL_CHARACTER | UNDERSCORE | HYPHEN | DOT | UNICODE)+;
-quotedString : QUOTE (ESCAPED_QUOTE | ~QUOTE)*  QUOTE;
+array
+    : LPAREN (SPACE? value+=string)* RPAREN ;
 
-LPAREN : '(' ;
-RPAREN : ')' ;
+string
+    : (ALPHA | DIGIT | CONTROL_CHARACTER | UNDERSCORE | HYPHEN | DOT | UNICODE)+ ;
+quotedString
+    : QUOTE? (ESCAPED_QUOTE | ~QUOTE)*  QUOTE? ;
+responseString
+    : (SPACE? string)+ NL ;
 
+LPAREN   : '(' ;
+RPAREN   : ')' ;
 LBRACKET : '[' ;
 RBRACKET : ']' ;
 
@@ -36,4 +63,4 @@ DOT : '.';
 QUOTE : '"';
 ESCAPED_QUOTE : '\\"';
 
-NL: ('\r' | '\n')+ -> skip;
+NL: ('\r' | '\n')+;

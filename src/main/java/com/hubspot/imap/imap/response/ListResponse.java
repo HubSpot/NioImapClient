@@ -20,6 +20,10 @@ public interface ListResponse extends Response {
           .map(m -> new Folder(m, client))
           .collect(Collectors.toList());
 
+      setCode(input.getCode());
+      setMessage(input.getMessage());
+      setTag(input.getTag());
+
       return this;
     }
 

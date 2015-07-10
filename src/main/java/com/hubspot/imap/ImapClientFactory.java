@@ -22,14 +22,16 @@ import java.security.NoSuchAlgorithmException;
 
 public class ImapClientFactory implements AutoCloseable {
 
+  private final ImapConfiguration configuration;
   private final HostAndPort hostAndPort;
   private final Bootstrap bootstrap;
   private final EventLoopGroup eventLoopGroup;
   private final EventExecutorGroup eventExecutor;
   private final SslContext context;
 
-  public ImapClientFactory(String host, int port) {
-    this.hostAndPort = HostAndPort.fromParts(host, port);
+  public ImapClientFactory(ImapConfiguration configuration) {
+    this.configuration = configuration;
+    this.hostAndPort = configuration.getHostAndPort();
     this.bootstrap = new Bootstrap();
     this.eventLoopGroup = new NioEventLoopGroup();
     this.eventExecutor = new DefaultEventExecutorGroup(5);
@@ -54,7 +56,7 @@ public class ImapClientFactory implements AutoCloseable {
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {
     Channel channel = bootstrap.connect(hostAndPort.getHostText(), hostAndPort.getPort()).sync().channel();
-    return new ImapClient(channel, eventExecutor, userName, oauthToken);
+    return new ImapClient(configuration, channel, eventExecutor, userName, oauthToken);
   }
 
   @Override

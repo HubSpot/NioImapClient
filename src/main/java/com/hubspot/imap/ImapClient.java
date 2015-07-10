@@ -16,7 +16,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +27,11 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ImapClient extends ChannelDuplexHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
+  private final ImapConfiguration configuration;
   private final Channel channel;
   private final EventExecutorGroup executorGroup;
   private final String userName;
-  private final String oauthToken;
+  private final String authToken;
 
   private final AtomicInteger commandCount;
   private final Promise<Void> loginPromise;
@@ -39,12 +39,13 @@ public class ImapClient extends ChannelDuplexHandler {
   private final AtomicReference<Command> currentCommand;
   private Promise lastCommandPromise;
 
-  public ImapClient(Channel channel, EventExecutorGroup executorGroup, String userName, String oauthToken) {
+  public ImapClient(ImapConfiguration configuration, Channel channel, EventExecutorGroup executorGroup, String userName, String authToken) {
+    this.configuration = configuration;
     this.channel = channel;
 
     this.executorGroup = executorGroup;
     this.userName = userName;
-    this.oauthToken = oauthToken;
+    this.authToken = authToken;
 
     currentCommand = new AtomicReference<>();
     commandCount = new AtomicInteger(0);
@@ -59,16 +60,22 @@ public class ImapClient extends ChannelDuplexHandler {
   }
 
   public Future<Response> login() {
-    Future<Response> loginFuture = send(new XOAuth2Command(userName, oauthToken, commandCount.getAndIncrement()));
-    loginFuture.addListener(new FutureListener<Response>() {
-      @Override
-      public void operationComplete(Future<Response> future) throws Exception {
-        Response response = future.get();
-        if (response instanceof ContinuationResponse) {
-          loginPromise.setFailure(new AuthenticationFailedException(response.getMessage()));
-        } else {
-          loginPromise.setSuccess(null);
-        }
+    Future<Response> loginFuture;
+    switch (configuration.getAuthType()) {
+      case XOAUTH2:
+        loginFuture = oauthLogin();
+        break;
+      default:
+        loginFuture = passwordLogin();
+        break;
+    }
+
+    loginFuture.addListener(future -> {
+      Response response = ((Response) future.get());
+      if (response instanceof ContinuationResponse) {
+        loginPromise.setFailure(new AuthenticationFailedException(response.getMessage()));
+      } else {
+        loginPromise.setSuccess(null);
       }
     });
 
@@ -81,11 +88,19 @@ public class ImapClient extends ChannelDuplexHandler {
     return loginFuture;
   }
 
+  private Future<Response> passwordLogin() {
+    return send(new BaseCommand(CommandType.LOGIN, commandCount.getAndIncrement(), userName, authToken));
+  }
+
+  private Future<Response> oauthLogin() {
+    return send(new XOAuth2Command(userName, authToken, commandCount.getAndIncrement()));
+  }
+
   public Future<ListResponse> list(String context, String query) {
     return send(new ListCommand(commandCount.getAndIncrement(), context, query));
   }
 
-  public Future<? extends Response> noop() {
+  public <T extends Response> Future<T> noop() {
     return send(CommandType.NOOP);
   }
 
@@ -97,7 +112,7 @@ public class ImapClient extends ChannelDuplexHandler {
     loginPromise.get();
   }
 
-  public Future<? extends Response> send(CommandType commandType, String... args) {
+  public <T extends Response> Future<T> send(CommandType commandType, String... args) {
     BaseCommand baseCommand = new BaseCommand(commandType, commandCount.getAndIncrement(), args);
     return send(baseCommand);
   }

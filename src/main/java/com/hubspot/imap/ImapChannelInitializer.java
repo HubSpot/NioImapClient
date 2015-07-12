@@ -1,7 +1,7 @@
 package com.hubspot.imap;
 
 import com.google.common.net.HostAndPort;
-import com.hubspot.imap.imap.ImapResponseDecoder;
+import com.hubspot.imap.imap.ResponseDecoder;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -32,7 +32,8 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
     ChannelPipeline channelPipeline = socketChannel.pipeline();
 
     channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(), hostAndPort.getHostText(), hostAndPort.getPortOrDefault(993)));
-    channelPipeline.addLast(new ImapResponseDecoder());
+    channelPipeline.addLast(new ResponseDecoder());
+    //channelPipeline.addLast(new ImapResponseDecoder());
     channelPipeline.addLast(STRING_ENCODER);
     channelPipeline.addLast(new IdleStateHandler(maxIdleTimeSeconds, maxIdleTimeSeconds, maxIdleTimeSeconds));
   }

@@ -2,8 +2,8 @@ package com.hubspot.imap.imap.command;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
-import com.hubspot.java.utils.Bytes;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class XOAuth2Command extends BaseCommand {
@@ -32,6 +32,6 @@ public class XOAuth2Command extends BaseCommand {
   }
 
   public String getAuthenticateRequest() {
-    return B64.encode(Bytes.toBytes(String.format(SASL_FORMAT, userName, accessToken)));
+    return B64.encode(String.format(SASL_FORMAT, userName, accessToken).getBytes(StandardCharsets.UTF_8));
   }
 }

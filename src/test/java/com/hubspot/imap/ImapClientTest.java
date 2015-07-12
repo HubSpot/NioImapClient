@@ -1,6 +1,7 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.response.ListResponse;
 import com.hubspot.imap.imap.response.Response;
 import com.hubspot.imap.imap.response.ResponseCode;
@@ -49,6 +50,17 @@ public class ImapClientTest {
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getFolders().size()).isGreaterThan(0);
+  }
+
+  @Test
+  public void testGivenInvalidCredentials_doesThrowAuthenticationException() throws Exception {
+    ImapClient client = clientFactory.connect(USER_NAME, "");
+    try {
+      client.login();
+      client.awaitLogin();
+    } catch (ExecutionException e) {
+      assertThat(e).hasCauseInstanceOf(AuthenticationFailedException.class);
+    }
   }
 
   private ImapClient getLoggedInClient() throws ExecutionException, InterruptedException {

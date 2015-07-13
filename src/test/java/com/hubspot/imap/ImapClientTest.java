@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
+import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
@@ -52,6 +53,7 @@ public class ImapClientTest {
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getFolders().size()).isGreaterThan(0);
     assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
+    assertThat(response.getFolders()).extracting(FolderMetadata::getName).contains("[Gmail]/All Mail");
   }
 
   @Test

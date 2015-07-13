@@ -10,6 +10,7 @@ import com.hubspot.imap.imap.response.untagged.UntaggedValue;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
 import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
+import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;
 import com.hubspot.imap.utils.parsers.WordParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,6 +36,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
+  private final OptionallyQuotedStringParser quotedStringParser;
   private final ArrayParser arrayParser;
 
   private ImapClient client;
@@ -46,6 +48,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.charSeq = new AppendableCharSequence(8192);
     this.lineParser = new LineParser(charSeq, 8192);
     this.wordParser = new WordParser(charSeq, 8192);
+    this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 8192);
     this.arrayParser = new ArrayParser(charSeq);
 
     this.client = client;
@@ -157,8 +160,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .map(Optional::get)
         .collect(Collectors.toList());
 
-    String context = wordParser.parse(in).toString();
-    String name = wordParser.parse(in).toString();
+    String context = quotedStringParser.parse(in).toString();
+    String name = quotedStringParser.parse(in).toString();
 
     // Make sure we parse to the end of the line
     lineParser.parse(in);

@@ -11,6 +11,7 @@ public enum UntaggedResponseType {
   OK("OK"),
   CAPABILITY("CAPABILITY"),
   LIST("LIST"),
+  EXISTS("EXISTS"),
   UIDNEXT("[UIDNEXT"),
   UIDVALIDITY("UIDVALIDITY"),
   INVALID("-----");

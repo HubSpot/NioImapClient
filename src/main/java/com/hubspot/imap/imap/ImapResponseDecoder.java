@@ -1,8 +1,8 @@
 package com.hubspot.imap.imap;
 
 import com.google.seventeen.common.base.Splitter;
-import com.hubspot.imap.imap.response.Response;
-import com.hubspot.imap.imap.response.Response.ResponseType;
+import com.hubspot.imap.imap.response.TaggedResponse;
+import com.hubspot.imap.imap.response.TaggedResponse.ResponseType;
 import com.hubspot.imap.imap.response.ResponseCode;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
@@ -17,7 +17,7 @@ public class ImapResponseDecoder extends ReplayingDecoder<Void> {
   private static final Splitter SPLITTER = Splitter.on(" ").limit(2).omitEmptyStrings().trimResults();
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapResponseDecoder.class);
 
-  private Response.Builder responseBuilder = new Response.Builder();
+  private TaggedResponse.Builder responseBuilder = new TaggedResponse.Builder();
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -61,7 +61,7 @@ public class ImapResponseDecoder extends ReplayingDecoder<Void> {
 
   private void write(List<Object> out) {
     out.add(responseBuilder.build());
-    responseBuilder = new Response.Builder();
+    responseBuilder = new TaggedResponse.Builder();
     checkpoint();
   }
 }

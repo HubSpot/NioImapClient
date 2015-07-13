@@ -1,10 +1,10 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.imap.command.BaseCommand;
-import com.hubspot.imap.imap.response.ContinuationResponse;
-import com.hubspot.imap.imap.response.ListResponse.Builder;
-import com.hubspot.imap.imap.response.Response;
-import com.hubspot.imap.imap.response.Response.ResponseType;
+import com.hubspot.imap.imap.response.untagged.ContinuationResponse;
+import com.hubspot.imap.imap.response.untagged.ListResponse.Builder;
+import com.hubspot.imap.imap.response.TaggedResponse;
+import com.hubspot.imap.imap.response.TaggedResponse.ResponseType;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.slf4j.Logger;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class ImapCodec extends MessageToMessageCodec<Response, BaseCommand> {
+public class ImapCodec extends MessageToMessageCodec<TaggedResponse, BaseCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
 
   private final ImapClient client;
@@ -29,16 +29,16 @@ public class ImapCodec extends MessageToMessageCodec<Response, BaseCommand> {
   }
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, Response msg, List<Object> out) throws Exception {
+  protected void decode(ChannelHandlerContext ctx, TaggedResponse msg, List<Object> out) throws Exception {
     if (msg.getType() == ResponseType.TAGGED) {
-      Response response = msg;
+      TaggedResponse taggedResponse = msg;
       switch (client.getCurrentCommand().getCommandType()) {
         case LIST:
-          response = new Builder().fromResponse(msg, client);
+          taggedResponse = new Builder().fromResponse(msg, client);
           break;
       }
 
-      out.add(response);
+      out.add(taggedResponse);
     } else if (msg.getType() == ResponseType.CONTINUATION) {
       out.add(new ContinuationResponse.Builder().fromResponse(msg));
     }

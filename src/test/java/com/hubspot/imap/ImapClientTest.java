@@ -2,8 +2,8 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
-import com.hubspot.imap.imap.response.ListResponse;
-import com.hubspot.imap.imap.response.Response;
+import com.hubspot.imap.imap.response.untagged.ListResponse;
+import com.hubspot.imap.imap.response.TaggedResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.utils.GmailUtils;
 import org.junit.Before;
@@ -34,10 +34,10 @@ public class ImapClientTest {
   public void testLogin_doesAuthenticateConnection() throws Exception {
     ImapClient client = getLoggedInClient();
 
-    Future<Response> noopResponseFuture = client.noop();
-    Response response = noopResponseFuture.get();
+    Future<TaggedResponse> noopResponseFuture = client.noop();
+    TaggedResponse taggedResponse = noopResponseFuture.get();
 
-    assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
+    assertThat(taggedResponse.getCode()).isEqualTo(ResponseCode.OK);
   }
 
   @Test

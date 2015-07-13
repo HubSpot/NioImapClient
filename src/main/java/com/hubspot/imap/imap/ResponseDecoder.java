@@ -1,20 +1,29 @@
 package com.hubspot.imap.imap;
 
 import com.hubspot.imap.imap.ResponseDecoder.State;
-import com.hubspot.imap.imap.response.Response;
-import com.hubspot.imap.imap.response.Response.ResponseType;
+import com.hubspot.imap.imap.folder.FolderAttribute;
+import com.hubspot.imap.imap.folder.FolderMetadata;
+import com.hubspot.imap.imap.response.TaggedResponse;
+import com.hubspot.imap.imap.response.TaggedResponse.ResponseType;
 import com.hubspot.imap.imap.response.ResponseCode;
+import com.hubspot.imap.imap.response.untagged.UntaggedResponseLine;
+import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
 import com.hubspot.imap.utils.parsers.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.WordParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
+import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.internal.AppendableCharSequence;
+import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ResponseDecoder.class);
@@ -26,16 +35,21 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
-  private boolean expectsTag;
+  private final ArrayParser arrayParser;
+  private boolean expectsTag = false;
 
-  private Response.Builder responseBuilder;
+  private List<Object> untaggedResponses;
+  private TaggedResponse.Builder responseBuilder;
 
   public ResponseDecoder() {
     super(State.SKIP_CONTROL_CHARS);
-    this.charSeq = new AppendableCharSequence(8093);
-    this.lineParser = new LineParser(charSeq, 8093);
-    this.wordParser = new WordParser(charSeq, 8093);
-    this.responseBuilder = new Response.Builder();
+    this.charSeq = new AppendableCharSequence(8192);
+    this.lineParser = new LineParser(charSeq, 8192);
+    this.wordParser = new WordParser(charSeq, 8192);
+    this.arrayParser = new ArrayParser(charSeq);
+
+    this.untaggedResponses = new ArrayList<>();
+    this.responseBuilder = new TaggedResponse.Builder();
   }
 
   enum State {
@@ -48,6 +62,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+    dumpLine(in);
     switch (state()) {
       case SKIP_CONTROL_CHARS:
         try {
@@ -70,51 +85,108 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case UNTAGGED:
         skipControlCharacters(in);
         String word = wordParser.parse(in).toString();
-        UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
-        String line = lineParser.parse(in).toString();
-        handleUntagged(line, out);
+        if (NumberUtils.isDigits(word)) {
+          UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in).toString());
+          handleUntaggedValue(type, word, in);
+        } else {
+          UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
+          handleUntagged(type, in, out);
+        }
         break;
       case TAGGED:
         String tag = wordParser.parse(in).toString();
         skipControlCharacters(in);
-        ResponseCode code = ResponseCode.valueOf(wordParser.parse(in).toString());
-        String message = lineParser.parse(in).toString();
-        handleTagged(tag, code, message, out);
+        handleTagged(tag, in, out);
         break;
     }
   }
 
-  private void handleTagged(String tag, ResponseCode code, String message, List<Object> out) {
+  private void handleTagged(String tag, ByteBuf in, List<Object> out) {
+    String codeString = wordParser.parse(in).toString();
+    ResponseCode code = ResponseCode.valueOf(codeString);
+    String message = lineParser.parse(in).toString();
+
     responseBuilder.setType(ResponseType.TAGGED);
     responseBuilder.setTag(tag);
     responseBuilder.setCode(code);
     responseBuilder.setMessage(message);
+    responseBuilder.setUntagged(untaggedResponses);
 
-    write(out);
+    write(in, out);
   }
 
-  private void handleUntagged(String untagged, List<Object> out) {
-    LOGGER.info("Got untagged response: {}", untagged);
-    checkpoint(State.SKIP_CONTROL_CHARS);
-  }
+  private void handleUntaggedValue(UntaggedResponseType type, String value, ByteBuf in) {
+    switch (type) {
+      case EXISTS:
+        untaggedResponses.add(
+            new UntaggedResponseLine.Builder()
+                .setResponseType(type)
+                .setValue(value)
+                .build()
+        );
 
-  private void write(List<Object> out) {
-    out.add(responseBuilder.build());
-    checkpoint(State.SKIP_CONTROL_CHARS);
-  }
-
-  private String getWord(ByteBuf buffer) {
-    charSeq.reset();
-    for (;;) {
-      char c = (char) buffer.readUnsignedByte();
-      if (Character.isWhitespace(c)) {
         break;
-      }
-
-      charSeq.append(c);
+      default:
+        lineParser.parse(in);
+        untaggedResponses.add(value);
     }
 
-    return charSeq.toString();
+    reset(in);
+  }
+
+  private void handleUntagged(UntaggedResponseType type, ByteBuf in, List<Object> out) {
+    switch (type) {
+      case LIST:
+        untaggedResponses.add(parseFolderMetadata(in));
+        break;
+      default:
+        untaggedResponses.add(lineParser.parse(in).toString());
+    }
+
+    reset(in);
+  }
+
+  private FolderMetadata parseFolderMetadata(ByteBuf in) {
+    List<FolderAttribute> attributes = arrayParser.parse(in).stream()
+        .map(FolderAttribute::getAttribute)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toList());
+
+    String context = wordParser.parse(in).toString();
+    String name = wordParser.parse(in).toString();
+
+    // Make sure we parse to the end of the line
+    lineParser.parse(in);
+
+    return new FolderMetadata.Builder()
+        .addAllAttributes(attributes)
+        .setContext(context)
+        .setName(name)
+        .build();
+  }
+
+  private void write(ByteBuf in, List<Object> out) {
+    out.add(responseBuilder.build());
+
+    reset(in);
+  }
+
+  private void reset(ByteBuf in) {
+    char next = in.readChar();
+    if (!(next == HttpConstants.CR || next == HttpConstants.LF)) {
+      lineParser.parse(in);
+    }
+
+    checkpoint(State.SKIP_CONTROL_CHARS);
+  }
+
+  private void dumpLine(ByteBuf in) {
+    int index = in.readerIndex();
+    String line = lineParser.parse(in).toString();
+    LOGGER.info("RCV LINE: {}", line);
+
+    in.readerIndex(index);
   }
 
   private static void skipControlCharacters(ByteBuf buffer) {

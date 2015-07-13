@@ -1,7 +1,7 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
-import com.hubspot.imap.imap.response.ListResponse;
+import com.hubspot.imap.imap.response.untagged.ListResponse;
 import com.hubspot.imap.utils.GmailUtils;
 import io.netty.util.concurrent.Future;
 

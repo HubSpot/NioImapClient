@@ -152,6 +152,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private FolderMetadata parseFolderMetadata(ByteBuf in) {
+    skipControlCharacters(in);
     List<FolderAttribute> attributes = arrayParser.parse(in).stream()
         .map(FolderAttribute::getAttribute)
         .filter(Optional::isPresent)
@@ -185,7 +186,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       lineParser.parse(in);
     }
 
-    checkpoint(State.SKIP_CONTROL_CHARS);
+    checkpoint(State.START_RESPONSE);
   }
 
   private void dumpLine(String prefix, ByteBuf in) {

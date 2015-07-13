@@ -2,17 +2,18 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
-import com.hubspot.imap.imap.response.untagged.ListResponse;
-import com.hubspot.imap.imap.response.TaggedResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
+import com.hubspot.imap.imap.response.TaggedResponse;
+import com.hubspot.imap.imap.response.untagged.ListResponse;
 import com.hubspot.imap.utils.GmailUtils;
+import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ImapClientTest {
 
@@ -50,6 +51,7 @@ public class ImapClientTest {
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getFolders().size()).isGreaterThan(0);
+    assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
   }
 
   @Test

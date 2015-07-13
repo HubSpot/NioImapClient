@@ -27,7 +27,7 @@ public class WordParser implements ByteBufProcessor {
   public boolean process(byte value) throws Exception {
     char nextByte = (char) value;
     if (Character.isWhitespace(nextByte)) {
-      return false;
+      return size == 0;
     } else {
       if (size >= maxWordLength) {
         throw new TooLongFrameException(

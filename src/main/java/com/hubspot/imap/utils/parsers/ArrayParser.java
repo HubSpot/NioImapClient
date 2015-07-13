@@ -1,6 +1,5 @@
 package com.hubspot.imap.utils.parsers;
 
-import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufProcessor;
 import io.netty.util.internal.AppendableCharSequence;
@@ -12,20 +11,19 @@ public class ArrayParser implements ByteBufProcessor {
   private static final char LPAREN = '(';
   private static final char RPAREN = ')';
 
-  private final List<String> values;
+  private List<String> values;
   private final AppendableCharSequence seq;
 
   public ArrayParser(AppendableCharSequence seq) {
-    this.values = new ArrayList<>();
     this.seq = seq;
   }
 
   public List<String> parse(ByteBuf buffer) {
-    values.clear();
+    values = new ArrayList<>();
     seq.reset();
     int i = buffer.forEachByte(this);
     buffer.readerIndex(i + 1);
-    return Lists.newArrayList(values);
+    return values;
   }
 
   @Override
@@ -38,6 +36,7 @@ public class ArrayParser implements ByteBufProcessor {
     } else if (nextByte == LPAREN) {
       return true;
     } else if (nextByte == RPAREN) {
+      values.add(seq.toString());
       return false;
     } else {
       seq.append(nextByte);

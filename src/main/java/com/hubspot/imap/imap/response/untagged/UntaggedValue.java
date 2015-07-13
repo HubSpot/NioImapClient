@@ -1,7 +1,5 @@
 package com.hubspot.imap.imap.response.untagged;
 
-import com.hubspot.imap.utils.parsers.UntaggedResponseType;
-
 public interface UntaggedValue {
   UntaggedResponseType getType();
   String getValue();

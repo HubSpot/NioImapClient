@@ -1,4 +1,4 @@
-package com.hubspot.imap.utils.parsers;
+package com.hubspot.imap.imap.response.untagged;
 
 import com.googlecode.concurrenttrees.common.KeyValuePair;
 import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;

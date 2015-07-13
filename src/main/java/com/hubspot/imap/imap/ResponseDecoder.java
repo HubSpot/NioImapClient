@@ -9,7 +9,7 @@ import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedValue;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
-import com.hubspot.imap.utils.parsers.UntaggedResponseType;
+import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.WordParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

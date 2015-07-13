@@ -1,28 +1,16 @@
 package com.hubspot.imap.utils.parsers;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufProcessor;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.internal.AppendableCharSequence;
 
 // TODO: Stolen from SMTPProxy, move somewhere common
-public class LineParser implements ByteBufProcessor {
-  private final AppendableCharSequence seq;
+public class LineParser extends BaseStringParser {
   private final int maxLineLength;
-  private int size;
 
   public LineParser(AppendableCharSequence seq, int maxLineLength) {
-    this.seq = seq;
+    super(seq);
     this.maxLineLength = maxLineLength;
-  }
-
-  public AppendableCharSequence parse(ByteBuf buffer) {
-    seq.reset();
-    size = 0;
-    int i = buffer.forEachByte(this);
-    buffer.readerIndex(i + 1);
-    return seq;
   }
 
   @Override

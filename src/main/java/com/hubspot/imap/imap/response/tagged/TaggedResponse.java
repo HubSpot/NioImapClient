@@ -1,6 +1,7 @@
-package com.hubspot.imap.imap.response;
+package com.hubspot.imap.imap.response.tagged;
 
 import com.google.common.base.Objects;
+import com.hubspot.imap.imap.response.ResponseCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,19 +11,11 @@ public interface TaggedResponse {
   String getMessage();
   List<Object> getUntagged();
   ResponseCode getCode();
-  ResponseType getType();
-
-  enum ResponseType {
-    TAGGED,
-    UNTAGGED,
-    CONTINUATION;
-  }
 
   class Builder implements TaggedResponse {
     private String tag;
     private String message;
     private List<Object> untagged = new ArrayList<>();
-    private ResponseType type;
     private ResponseCode code;
 
     public TaggedResponse build() {
@@ -61,15 +54,6 @@ public interface TaggedResponse {
       return this;
     }
 
-    public ResponseType getType() {
-      return this.type;
-    }
-
-    public Builder setType(ResponseType type) {
-      this.type = type;
-      return this;
-    }
-
     public ResponseCode getCode() {
       return this.code;
     }
@@ -85,7 +69,6 @@ public interface TaggedResponse {
           .add("tag", tag)
           .add("message", message)
           .add("untagged", untagged)
-          .add("type", type)
           .add("code", code)
           .toString();
     }

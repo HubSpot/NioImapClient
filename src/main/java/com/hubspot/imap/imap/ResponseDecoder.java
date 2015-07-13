@@ -5,9 +5,8 @@ import com.hubspot.imap.imap.ResponseDecoder.State;
 import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ResponseCode;
-import com.hubspot.imap.imap.response.TaggedResponse;
-import com.hubspot.imap.imap.response.TaggedResponse.ResponseType;
-import com.hubspot.imap.imap.response.untagged.UntaggedResponseLine;
+import com.hubspot.imap.imap.response.tagged.TaggedResponse;
+import com.hubspot.imap.imap.response.untagged.UntaggedValue;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
 import com.hubspot.imap.utils.parsers.UntaggedResponseType;
@@ -112,7 +111,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     ResponseCode code = ResponseCode.valueOf(codeString);
     String message = lineParser.parse(in).toString();
 
-    responseBuilder.setType(ResponseType.TAGGED);
     responseBuilder.setTag(tag);
     responseBuilder.setCode(code);
     responseBuilder.setMessage(message);
@@ -125,8 +123,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     switch (type) {
       case EXISTS:
         untaggedResponses.add(
-            new UntaggedResponseLine.Builder()
-                .setResponseType(type)
+            new UntaggedValue.Builder()
+                .setType(type)
                 .setValue(value)
                 .build()
         );

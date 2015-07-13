@@ -8,9 +8,8 @@ import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.imap.imap.command.ListCommand;
 import com.hubspot.imap.imap.command.XOAuth2Command;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
-import com.hubspot.imap.imap.response.untagged.ContinuationResponse;
-import com.hubspot.imap.imap.response.untagged.ListResponse;
-import com.hubspot.imap.imap.response.TaggedResponse;
+import com.hubspot.imap.imap.response.tagged.ListResponse;
+import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -77,9 +76,7 @@ public class ImapClient extends ChannelDuplexHandler {
 
     loginFuture.addListener(future -> {
       TaggedResponse taggedResponse = ((TaggedResponse) future.get());
-      if (taggedResponse instanceof ContinuationResponse) {
-        loginPromise.setFailure(AuthenticationFailedException.fromContinuation(taggedResponse.getMessage()));
-      } else if (taggedResponse.getCode() == ResponseCode.BAD) {
+      if (taggedResponse.getCode() == ResponseCode.BAD) {
         loginPromise.setFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
       } else {
         loginPromise.setSuccess(null);

@@ -2,19 +2,19 @@ package com.hubspot.imap.imap.response.untagged;
 
 import com.hubspot.imap.utils.parsers.UntaggedResponseType;
 
-public interface UntaggedResponseLine {
-  UntaggedResponseType getResponseType();
+public interface UntaggedValue {
+  UntaggedResponseType getType();
   String getValue();
 
-  class Builder implements UntaggedResponseLine {
+  class Builder implements UntaggedValue {
     private UntaggedResponseType type;
     private String value;
 
-    public UntaggedResponseType getResponseType() {
+    public UntaggedResponseType getType() {
       return this.type;
     }
 
-    public Builder setResponseType(UntaggedResponseType type) {
+    public Builder setType(UntaggedResponseType type) {
       this.type = type;
       return this;
     }
@@ -28,8 +28,9 @@ public interface UntaggedResponseLine {
       return this;
     }
 
-    public UntaggedResponseLine build() {
+    public UntaggedValue build() {
       return this;
     }
+
   }
 }

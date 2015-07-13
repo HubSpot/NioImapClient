@@ -1,10 +1,8 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.imap.command.BaseCommand;
-import com.hubspot.imap.imap.response.untagged.ContinuationResponse;
-import com.hubspot.imap.imap.response.untagged.ListResponse.Builder;
-import com.hubspot.imap.imap.response.TaggedResponse;
-import com.hubspot.imap.imap.response.TaggedResponse.ResponseType;
+import com.hubspot.imap.imap.response.tagged.TaggedResponse;
+import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.slf4j.Logger;
@@ -30,17 +28,13 @@ public class ImapCodec extends MessageToMessageCodec<TaggedResponse, BaseCommand
 
   @Override
   protected void decode(ChannelHandlerContext ctx, TaggedResponse msg, List<Object> out) throws Exception {
-    if (msg.getType() == ResponseType.TAGGED) {
-      TaggedResponse taggedResponse = msg;
-      switch (client.getCurrentCommand().getCommandType()) {
-        case LIST:
-          taggedResponse = new Builder().fromResponse(msg, client);
-          break;
-      }
-
-      out.add(taggedResponse);
-    } else if (msg.getType() == ResponseType.CONTINUATION) {
-      out.add(new ContinuationResponse.Builder().fromResponse(msg));
+    TaggedResponse taggedResponse = msg;
+    switch (client.getCurrentCommand().getCommandType()) {
+      case LIST:
+        taggedResponse = new Builder().fromResponse(msg, client);
+        break;
     }
+
+    out.add(taggedResponse);
   }
 }

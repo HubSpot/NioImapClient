@@ -1,9 +1,8 @@
-package com.hubspot.imap.imap.response.untagged;
+package com.hubspot.imap.imap.response.tagged;
 
 import com.hubspot.imap.ImapClient;
 import com.hubspot.imap.imap.exceptions.ResponseParseException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
-import com.hubspot.imap.imap.response.TaggedResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;

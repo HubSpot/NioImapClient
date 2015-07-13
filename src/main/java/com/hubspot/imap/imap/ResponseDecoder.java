@@ -4,6 +4,7 @@ import com.hubspot.imap.ImapClient;
 import com.hubspot.imap.imap.ResponseDecoder.State;
 import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderMetadata;
+import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedValue;
@@ -98,6 +99,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
           handleUntagged(type, in, out);
         }
         break;
+      case CONTINUATION:
+        handleContinuation(in, out);
+        break;
       case TAGGED:
         String tag = wordParser.parse(in).toString();
         skipControlCharacters(in);
@@ -136,6 +140,15 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       default:
         untaggedResponses.add(value);
     }
+
+    checkpoint(State.RESET);
+  }
+
+  private void handleContinuation(ByteBuf in, List<Object> out) {
+    String message = lineParser.parse(in).toString();
+
+    ContinuationResponse response = new ContinuationResponse.Builder().setMessage(message).build();
+    out.add(response);
 
     checkpoint(State.RESET);
   }

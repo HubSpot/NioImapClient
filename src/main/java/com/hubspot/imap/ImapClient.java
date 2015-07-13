@@ -8,9 +8,10 @@ import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.imap.imap.command.ListCommand;
 import com.hubspot.imap.imap.command.XOAuth2Command;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
+import com.hubspot.imap.imap.response.ContinuationResponse;
+import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
-import com.hubspot.imap.imap.response.ResponseCode;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -75,11 +76,16 @@ public class ImapClient extends ChannelDuplexHandler {
     }
 
     loginFuture.addListener(future -> {
-      TaggedResponse taggedResponse = ((TaggedResponse) future.get());
-      if (taggedResponse.getCode() == ResponseCode.BAD) {
-        loginPromise.setFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
+      Object response = future.get();
+      if (response instanceof ContinuationResponse) {
+        loginPromise.setFailure(AuthenticationFailedException.fromContinuation(((ContinuationResponse) response).getMessage()));
       } else {
-        loginPromise.setSuccess(null);
+        TaggedResponse taggedResponse = ((TaggedResponse) response);
+        if (taggedResponse.getCode() == ResponseCode.BAD) {
+          loginPromise.setFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
+        } else {
+          loginPromise.setSuccess(null);
+        }
       }
     });
 
@@ -138,8 +144,12 @@ public class ImapClient extends ChannelDuplexHandler {
   @Override
   @SuppressWarnings("unchecked")
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    TaggedResponse taggedResponse = ((TaggedResponse) msg);
-    lastCommandPromise.setSuccess(taggedResponse);
+    if (msg instanceof ContinuationResponse) {
+      lastCommandPromise.setSuccess(msg);
+    } else if (msg instanceof TaggedResponse) {
+      TaggedResponse taggedResponse = ((TaggedResponse) msg);
+      lastCommandPromise.setSuccess(taggedResponse);
+    }
   }
 
   @Override

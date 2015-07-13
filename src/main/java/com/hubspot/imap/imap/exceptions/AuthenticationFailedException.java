@@ -12,6 +12,6 @@ public class AuthenticationFailedException extends Exception {
   }
 
   public static AuthenticationFailedException fromContinuation(String message) {
-    return new AuthenticationFailedException(new String(B64.decode(message), StandardCharsets.UTF_8));
+    return new AuthenticationFailedException(new String(B64.decode(message.trim()), StandardCharsets.UTF_8));
   }
 }

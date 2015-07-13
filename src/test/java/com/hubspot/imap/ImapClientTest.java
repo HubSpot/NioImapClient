@@ -2,17 +2,19 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
-import com.hubspot.imap.imap.response.ListResponse;
-import com.hubspot.imap.imap.response.Response;
+import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ResponseCode;
+import com.hubspot.imap.imap.response.tagged.TaggedResponse;
+import com.hubspot.imap.imap.response.tagged.ListResponse;
 import com.hubspot.imap.utils.GmailUtils;
+import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ImapClientTest {
 
@@ -34,10 +36,10 @@ public class ImapClientTest {
   public void testLogin_doesAuthenticateConnection() throws Exception {
     ImapClient client = getLoggedInClient();
 
-    Future<Response> noopResponseFuture = client.noop();
-    Response response = noopResponseFuture.get();
+    Future<TaggedResponse> noopResponseFuture = client.noop();
+    TaggedResponse taggedResponse = noopResponseFuture.get();
 
-    assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
+    assertThat(taggedResponse.getCode()).isEqualTo(ResponseCode.OK);
   }
 
   @Test
@@ -50,6 +52,8 @@ public class ImapClientTest {
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getFolders().size()).isGreaterThan(0);
+    assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
+    assertThat(response.getFolders()).extracting(FolderMetadata::getName).contains("[Gmail]/All Mail");
   }
 
   @Test

@@ -1,5 +1,6 @@
 package com.hubspot.imap;
 
+import com.hubspot.imap.imap.ResponseDecoder;
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.BlankCommand;
 import com.hubspot.imap.imap.command.Command;
@@ -7,9 +8,8 @@ import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.imap.imap.command.ListCommand;
 import com.hubspot.imap.imap.command.XOAuth2Command;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
-import com.hubspot.imap.imap.response.ContinuationResponse;
-import com.hubspot.imap.imap.response.ListResponse;
-import com.hubspot.imap.imap.response.Response;
+import com.hubspot.imap.imap.response.tagged.ListResponse;
+import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ImapClient extends ChannelDuplexHandler {
+  private static final String RESPONSE_DECODER = "response decoder";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
   private final ImapConfiguration configuration;
@@ -52,6 +54,7 @@ public class ImapClient extends ChannelDuplexHandler {
     commandCount = new AtomicInteger(0);
     loginPromise = executorGroup.next().newPromise();
 
+    this.channel.pipeline().addAfter(ImapChannelInitializer.SSL_HANDLER, RESPONSE_DECODER, new ResponseDecoder(this));
     this.channel.pipeline().addLast(new ImapCodec(this));
     this.channel.pipeline().addLast(executorGroup, this);
   }
@@ -60,8 +63,8 @@ public class ImapClient extends ChannelDuplexHandler {
     return currentCommand.get();
   }
 
-  public Future<Response> login() {
-    Future<Response> loginFuture;
+  public Future<TaggedResponse> login() {
+    Future<TaggedResponse> loginFuture;
     switch (configuration.getAuthType()) {
       case XOAUTH2:
         loginFuture = oauthLogin();
@@ -72,11 +75,9 @@ public class ImapClient extends ChannelDuplexHandler {
     }
 
     loginFuture.addListener(future -> {
-      Response response = ((Response) future.get());
-      if (response instanceof ContinuationResponse) {
-        loginPromise.setFailure(AuthenticationFailedException.fromContinuation(response.getMessage()));
-      } else if (response.getCode() == ResponseCode.BAD) {
-        loginPromise.setFailure(new AuthenticationFailedException(response.getMessage()));
+      TaggedResponse taggedResponse = ((TaggedResponse) future.get());
+      if (taggedResponse.getCode() == ResponseCode.BAD) {
+        loginPromise.setFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
       } else {
         loginPromise.setSuccess(null);
       }
@@ -91,11 +92,11 @@ public class ImapClient extends ChannelDuplexHandler {
     return loginFuture;
   }
 
-  private Future<Response> passwordLogin() {
+  private Future<TaggedResponse> passwordLogin() {
     return send(new BaseCommand(CommandType.LOGIN, commandCount.getAndIncrement(), userName, authToken));
   }
 
-  private Future<Response> oauthLogin() {
+  private Future<TaggedResponse> oauthLogin() {
     return send(new XOAuth2Command(userName, authToken, commandCount.getAndIncrement()));
   }
 
@@ -103,7 +104,7 @@ public class ImapClient extends ChannelDuplexHandler {
     return send(new ListCommand(commandCount.getAndIncrement(), context, query));
   }
 
-  public <T extends Response> Future<T> noop() {
+  public <T extends TaggedResponse> Future<T> noop() {
     return send(CommandType.NOOP);
   }
 
@@ -115,12 +116,12 @@ public class ImapClient extends ChannelDuplexHandler {
     loginPromise.get();
   }
 
-  public <T extends Response> Future<T> send(CommandType commandType, String... args) {
+  public <T extends TaggedResponse> Future<T> send(CommandType commandType, String... args) {
     BaseCommand baseCommand = new BaseCommand(commandType, commandCount.getAndIncrement(), args);
     return send(baseCommand);
   }
 
-  public synchronized <T extends Response> Future<T> send(Command command) {
+  public synchronized <T extends TaggedResponse> Future<T> send(Command command) {
     final Promise<T> newPromise = executorGroup.next().newPromise();
     if (lastCommandPromise != null) {
       lastCommandPromise.awaitUninterruptibly();
@@ -137,8 +138,8 @@ public class ImapClient extends ChannelDuplexHandler {
   @Override
   @SuppressWarnings("unchecked")
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    Response response = ((Response) msg);
-    lastCommandPromise.setSuccess(response);
+    TaggedResponse taggedResponse = ((TaggedResponse) msg);
+    lastCommandPromise.setSuccess(taggedResponse);
   }
 
   @Override

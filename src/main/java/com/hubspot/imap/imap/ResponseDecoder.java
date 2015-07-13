@@ -57,12 +57,13 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     START_RESPONSE,
     UNTAGGED,
     CONTINUATION,
-    TAGGED;
+    TAGGED,
+    RESET;
   }
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-    dumpLine(in);
+    dumpLine("RCV", in);
     switch (state()) {
       case SKIP_CONTROL_CHARS:
         try {
@@ -98,6 +99,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         skipControlCharacters(in);
         handleTagged(tag, in, out);
         break;
+      case RESET:
+        reset(in);
+        break;
     }
   }
 
@@ -127,11 +131,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
         break;
       default:
-        lineParser.parse(in);
         untaggedResponses.add(value);
     }
 
-    reset(in);
+    checkpoint(State.RESET);
   }
 
   private void handleUntagged(UntaggedResponseType type, ByteBuf in, List<Object> out) {
@@ -143,7 +146,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         untaggedResponses.add(lineParser.parse(in).toString());
     }
 
-    reset(in);
+    checkpoint(State.RESET);
   }
 
   private FolderMetadata parseFolderMetadata(ByteBuf in) {
@@ -169,22 +172,24 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void write(ByteBuf in, List<Object> out) {
     out.add(responseBuilder.build());
 
-    reset(in);
+    checkpoint(State.RESET);
   }
 
   private void reset(ByteBuf in) {
-    char next = in.readChar();
-    if (!(next == HttpConstants.CR || next == HttpConstants.LF)) {
+    char c = (char) in.readUnsignedByte();
+    if (c == UNTAGGED_PREFIX || c == CONTINUATION_PREFIX || c == TAGGED_PREFIX) {
+      in.readerIndex(in.readerIndex() - 1);
+    } else if (!(c == HttpConstants.CR || c == HttpConstants.LF)) {
       lineParser.parse(in);
     }
 
     checkpoint(State.SKIP_CONTROL_CHARS);
   }
 
-  private void dumpLine(ByteBuf in) {
+  private void dumpLine(String prefix, ByteBuf in) {
     int index = in.readerIndex();
     String line = lineParser.parse(in).toString();
-    LOGGER.info("RCV LINE: {}", line);
+    LOGGER.info("{}: {}", prefix, line);
 
     in.readerIndex(index);
   }

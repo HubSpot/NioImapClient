@@ -1,11 +1,12 @@
 package com.hubspot.imap.imap;
 
+import com.hubspot.imap.ImapClient;
 import com.hubspot.imap.imap.ResponseDecoder.State;
 import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderMetadata;
+import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.TaggedResponse;
 import com.hubspot.imap.imap.response.TaggedResponse.ResponseType;
-import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.untagged.UntaggedResponseLine;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
@@ -36,18 +37,19 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final LineParser lineParser;
   private final WordParser wordParser;
   private final ArrayParser arrayParser;
-  private boolean expectsTag = false;
 
+  private ImapClient client;
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
 
-  public ResponseDecoder() {
+  public ResponseDecoder(ImapClient client) {
     super(State.SKIP_CONTROL_CHARS);
     this.charSeq = new AppendableCharSequence(8192);
     this.lineParser = new LineParser(charSeq, 8192);
     this.wordParser = new WordParser(charSeq, 8192);
     this.arrayParser = new ArrayParser(charSeq);
 
+    this.client = client;
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
   }

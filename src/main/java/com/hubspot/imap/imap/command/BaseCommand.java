@@ -12,7 +12,7 @@ public class BaseCommand implements Command {
   protected final String tag;
   protected final List<String> args;
 
-  public BaseCommand(CommandType type, int tag, String... args) {
+  public BaseCommand(CommandType type, long tag, String... args) {
     this.type = type;
     this.tag = "A" + String.valueOf(tag);
     this.args = Lists.newArrayList(args);

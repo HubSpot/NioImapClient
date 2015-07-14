@@ -14,7 +14,7 @@ public class XOAuth2Command extends BaseCommand {
   private final String userName;
   private final String accessToken;
 
-  public XOAuth2Command(String userName, String accessToken, int tag) {
+  public XOAuth2Command(String userName, String accessToken, long tag) {
     super(CommandType.AUTHENTICATE, tag);
 
     this.userName = userName;

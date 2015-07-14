@@ -1,6 +1,5 @@
 package com.hubspot.imap.imap.response.tagged;
 
-import com.hubspot.imap.ImapClient;
 import com.hubspot.imap.imap.folder.FolderFlags;
 import com.hubspot.imap.imap.folder.FolderFlags.Flag;
 import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse;
@@ -25,7 +24,7 @@ public interface OpenResponse extends TaggedResponse {
     Set<Flag> flags;
     Set<Flag> permanentFlags;
 
-    public OpenResponse fromResponse(TaggedResponse response, ImapClient client) {
+    public OpenResponse fromResponse(TaggedResponse response) {
       for (Object o : response.getUntagged()) {
         if (o instanceof UntaggedIntResponse) {
           UntaggedIntResponse intResponse = ((UntaggedIntResponse) o);

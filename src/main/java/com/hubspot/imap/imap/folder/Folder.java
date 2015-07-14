@@ -1,6 +1,6 @@
 package com.hubspot.imap.imap.folder;
 
-import com.hubspot.imap.ImapClient;
+import com.hubspot.imap.client.ImapClient;
 
 public class Folder {
   private final FolderMetadata metadata;

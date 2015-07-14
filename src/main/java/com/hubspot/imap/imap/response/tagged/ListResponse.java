@@ -1,6 +1,5 @@
 package com.hubspot.imap.imap.response.tagged;
 
-import com.hubspot.imap.ImapClient;
 import com.hubspot.imap.imap.exceptions.ResponseParseException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 
@@ -13,7 +12,7 @@ public interface ListResponse extends TaggedResponse {
   class Builder extends TaggedResponse.Builder implements ListResponse {
     private List<FolderMetadata> folders;
 
-    public ListResponse fromResponse(TaggedResponse input, ImapClient client) throws ResponseParseException {
+    public ListResponse fromResponse(TaggedResponse input) throws ResponseParseException {
       folders = input.getUntagged().stream()
           .filter(o -> o instanceof FolderMetadata)
           .map(o -> ((FolderMetadata) o))

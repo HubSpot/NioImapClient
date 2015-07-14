@@ -7,6 +7,8 @@ import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.events.ByeEvent;
+import com.hubspot.imap.imap.response.events.ExistsEvent;
+import com.hubspot.imap.imap.response.events.ExpungeEvent;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse.Builder;
@@ -112,7 +114,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         String word = wordParser.parse(in).toString();
         if (NumberUtils.isDigits(word)) {
           UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in).toString());
-          handleUntaggedValue(type, word);
+          handleUntaggedValue(type, word, ctx);
         } else {
           if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
             checkpoint(State.UNTAGGED_OK);
@@ -151,10 +153,14 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     write(out);
   }
 
-  private void handleUntaggedValue(UntaggedResponseType type, String value) {
+  private void handleUntaggedValue(UntaggedResponseType type, String value, ChannelHandlerContext ctx) {
     switch (type) {
       case RECENT:
+        untaggedResponses.add(handleIntResponse(type, value));
+        break;
+      case EXPUNGE:
       case EXISTS:
+        handleMessageCountResponse(type, value, ctx);
         untaggedResponses.add(handleIntResponse(type, value));
         break;
       default:
@@ -204,6 +210,17 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
 
     checkpoint(State.RESET);
+  }
+
+  private void handleMessageCountResponse(UntaggedResponseType type, String value, ChannelHandlerContext ctx) {
+    UntaggedIntResponse intResponse = handleIntResponse(type, value);
+    untaggedResponses.add(intResponse);
+
+    if (type == UntaggedResponseType.EXPUNGE) {
+      ctx.fireUserEventTriggered(new ExpungeEvent(intResponse.getValue()));
+    } else {
+      ctx.fireUserEventTriggered(new ExistsEvent(intResponse.getValue()));
+    }
   }
 
   private void handleBye(ByteBuf in, ChannelHandlerContext handlerContext) {

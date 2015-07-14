@@ -11,6 +11,7 @@ import com.hubspot.imap.imap.command.XOAuth2Command;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
+import com.hubspot.imap.imap.response.events.ByeEvent;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
@@ -25,10 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ImapClient extends ChannelDuplexHandler {
+public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private static final String RESPONSE_DECODER = "response decoder";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
@@ -108,6 +110,10 @@ public class ImapClient extends ChannelDuplexHandler {
     return send(new XOAuth2Command(userName, authToken, commandCount.getAndIncrement()));
   }
 
+  public Future<TaggedResponse> logout() {
+    return send(new BaseCommand(CommandType.LOGOUT, commandCount.getAndIncrement()));
+  }
+
   public Future<ListResponse> list(String context, String query) {
     return send(new ListCommand(commandCount.getAndIncrement(), context, query));
   }
@@ -162,6 +168,10 @@ public class ImapClient extends ChannelDuplexHandler {
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
       noop();
+    } else if (evt instanceof ByeEvent) {
+      if (channel.isOpen() && currentCommand.get().getCommandType() != CommandType.LOGOUT) {
+        channel.close();
+      }
     }
 
     super.userEventTriggered(ctx, evt);
@@ -173,4 +183,15 @@ public class ImapClient extends ChannelDuplexHandler {
     super.exceptionCaught(ctx, cause);
   }
 
+  @Override
+  public void close() throws Exception {
+    if (isLoggedIn()) {
+      Future<TaggedResponse> logoutFuture = logout();
+      try {
+        logoutFuture.get(10, TimeUnit.SECONDS);
+      } finally {
+        channel.close();
+      }
+    }
+  }
 }

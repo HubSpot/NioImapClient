@@ -1,9 +1,8 @@
 package com.hubspot.imap.imap;
 
-import com.hubspot.imap.ImapClient;
 import com.hubspot.imap.imap.ResponseDecoder.State;
-import com.hubspot.imap.imap.folder.FolderFlags;
 import com.hubspot.imap.imap.folder.FolderAttribute;
+import com.hubspot.imap.imap.folder.FolderFlags;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
@@ -61,11 +60,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final OptionallyQuotedStringParser quotedStringParser;
   private final ArrayParser arrayParser;
 
-  private ImapClient client;
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
 
-  public ResponseDecoder(ImapClient client) {
+  public ResponseDecoder() {
     super(State.SKIP_CONTROL_CHARS);
     this.charSeq = new AppendableCharSequence(8192);
     this.lineParser = new LineParser(charSeq, 8192);
@@ -73,7 +71,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 8192);
     this.arrayParser = new ArrayParser(charSeq);
 
-    this.client = client;
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
   }
@@ -151,7 +148,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     responseBuilder.setMessage(message);
     responseBuilder.setUntagged(untaggedResponses);
 
-    write(in, out);
+    write(out);
   }
 
   private void handleUntaggedValue(UntaggedResponseType type, String value) {
@@ -275,7 +272,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .build();
   }
 
-  private void write(ByteBuf in, List<Object> out) {
+  private void write(List<Object> out) {
     out.add(responseBuilder.build());
 
     checkpoint(State.RESET);

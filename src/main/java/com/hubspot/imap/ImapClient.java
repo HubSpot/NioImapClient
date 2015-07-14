@@ -1,6 +1,5 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.imap.ResponseDecoder;
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.BlankCommand;
 import com.hubspot.imap.imap.command.Command;
@@ -31,8 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
-  private static final String RESPONSE_DECODER = "response decoder";
-
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
   private final ImapConfiguration configuration;
@@ -59,7 +56,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     commandCount = new AtomicInteger(0);
     loginPromise = executorGroup.next().newPromise();
 
-    this.channel.pipeline().addAfter(ImapChannelInitializer.SSL_HANDLER, RESPONSE_DECODER, new ResponseDecoder(this));
     this.channel.pipeline().addLast(new ImapCodec(this));
     this.channel.pipeline().addLast(executorGroup, this);
   }

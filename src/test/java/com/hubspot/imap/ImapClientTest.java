@@ -1,18 +1,16 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
-import com.hubspot.imap.utils.GmailUtils;
 import io.netty.util.concurrent.Future;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -20,25 +18,11 @@ import java.util.concurrent.ExecutionException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ImapClientTest {
-
-  private static String USER_NAME = "hsimaptest1@gmail.com";
-  private static String PASSWORD = "***REMOVED***";
-
-  private static ImapClientFactory clientFactory;
   private ImapClient client;
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-    clientFactory = new ImapClientFactory(
-        new ImapConfiguration.Builder()
-            .setAuthType(AuthType.PASSWORD)
-            .setHostAndPort(GmailUtils.GMAIL_HOST_PORT)
-    );
-  }
 
   @Before
   public void getClient() throws Exception {
-    client = getLoggedInClient();
+    client = TestUtils.getLoggedInClient();
   }
 
   @After
@@ -85,7 +69,7 @@ public class ImapClientTest {
 
   @Test
   public void testGivenInvalidCredentials_doesThrowAuthenticationException() throws Exception {
-    ImapClient client = clientFactory.connect(USER_NAME, "");
+    ImapClient client = TestUtils.CLIENT_FACTORY.connect(TestUtils.USER_NAME, "");
     try {
       client.login();
       client.awaitLogin();
@@ -96,13 +80,5 @@ public class ImapClientTest {
     }
   }
 
-  private ImapClient getLoggedInClient() throws ExecutionException, InterruptedException {
-    ImapClient client = clientFactory.connect(USER_NAME, PASSWORD);
-
-    client.login();
-    client.awaitLogin();
-
-    return client;
-  }
 
 }

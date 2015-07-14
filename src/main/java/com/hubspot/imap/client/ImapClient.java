@@ -1,5 +1,7 @@
-package com.hubspot.imap;
+package com.hubspot.imap.client;
 
+import com.hubspot.imap.ImapCodec;
+import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.BlankCommand;
 import com.hubspot.imap.imap.command.Command;
@@ -26,8 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
@@ -37,11 +37,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private final EventExecutorGroup executorGroup;
   private final String userName;
   private final String authToken;
+  private final ImapClientState clientState;
 
-  private final AtomicInteger commandCount;
   private final Promise<Void> loginPromise;
 
-  private final AtomicReference<Command> currentCommand;
   private Promise lastCommandPromise;
 
   public ImapClient(ImapConfiguration configuration, Channel channel, EventExecutorGroup executorGroup, String userName, String authToken) {
@@ -51,17 +50,17 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     this.executorGroup = executorGroup;
     this.userName = userName;
     this.authToken = authToken;
+    this.clientState = new ImapClientState(executorGroup);
 
-    currentCommand = new AtomicReference<>();
-    commandCount = new AtomicInteger(0);
     loginPromise = executorGroup.next().newPromise();
 
-    this.channel.pipeline().addLast(new ImapCodec(this));
+    this.channel.pipeline().addLast(new ImapCodec(clientState));
     this.channel.pipeline().addLast(executorGroup, this);
+    this.channel.pipeline().addLast(executorGroup, this.clientState);
   }
 
-  public Command getCurrentCommand() {
-    return currentCommand.get();
+  public ImapClientState getState() {
+    return clientState;
   }
 
   public Future<TaggedResponse> login() {
@@ -99,23 +98,23 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   private Future<TaggedResponse> passwordLogin() {
-    return send(new BaseCommand(CommandType.LOGIN, commandCount.getAndIncrement(), userName, authToken));
+    return send(new BaseCommand(CommandType.LOGIN, clientState.getNextCommandId(), userName, authToken));
   }
 
   private Future<TaggedResponse> oauthLogin() {
-    return send(new XOAuth2Command(userName, authToken, commandCount.getAndIncrement()));
+    return send(new XOAuth2Command(userName, authToken, clientState.getNextCommandId()));
   }
 
   public Future<TaggedResponse> logout() {
-    return send(new BaseCommand(CommandType.LOGOUT, commandCount.getAndIncrement()));
+    return send(new BaseCommand(CommandType.LOGOUT, clientState.getNextCommandId()));
   }
 
   public Future<ListResponse> list(String context, String query) {
-    return send(new ListCommand(commandCount.getAndIncrement(), context, query));
+    return send(new ListCommand(clientState.getNextCommandId(), context, query));
   }
 
   public Future<OpenResponse> open(String folderName, boolean readOnly) {
-    return send(new OpenCommand(commandCount.getAndIncrement(), folderName, readOnly));
+    return send(new OpenCommand(clientState.getNextCommandId(), folderName, readOnly));
   }
 
   public <T extends TaggedResponse> Future<T> noop() {
@@ -131,7 +130,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   public <T extends TaggedResponse> Future<T> send(CommandType commandType, String... args) {
-    BaseCommand baseCommand = new BaseCommand(commandType, commandCount.getAndIncrement(), args);
+    BaseCommand baseCommand = new BaseCommand(commandType, clientState.getNextCommandId(), args);
     return send(baseCommand);
   }
 
@@ -141,7 +140,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
       lastCommandPromise.awaitUninterruptibly();
     }
     executorGroup.submit(() -> {
-      currentCommand.set(command);
+      clientState.setCurrentCommand(command);
       lastCommandPromise = newPromise;
       channel.writeAndFlush(command);
     });
@@ -165,7 +164,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     if (evt instanceof IdleStateEvent) {
       noop();
     } else if (evt instanceof ByeEvent) {
-      if (channel.isOpen() && currentCommand.get().getCommandType() != CommandType.LOGOUT) {
+      if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != CommandType.LOGOUT) {
         channel.close();
       }
     }

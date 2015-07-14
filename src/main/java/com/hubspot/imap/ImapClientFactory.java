@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
+import com.hubspot.imap.client.ImapClient;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;

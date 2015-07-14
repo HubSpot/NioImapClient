@@ -1,6 +1,7 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
@@ -39,12 +40,13 @@ public class NioImapClient {
           OpenResponse openResponse = openFuture.get();
           LOGGER.info("Folder opened: {}", openResponse);
 
-          Thread.sleep(1000);
+          while (Thread.currentThread().isAlive()) {
+            Future<NoopResponse> noopFuture = client.noop();
+            NoopResponse noopResponse = noopFuture.get();
 
-          Future<NoopResponse> noopFuture = client.noop();
-          NoopResponse noopResponse = noopFuture.get();
-
-          LOGGER.info("IDLE got exists: {}", noopResponse.getExists());
+            LOGGER.info("IDLE got exists: {}", noopResponse.getExists());
+            Thread.sleep(30000);
+          }
         }
       }
 

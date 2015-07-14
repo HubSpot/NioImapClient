@@ -1,6 +1,7 @@
 package com.hubspot.imap.imap.folder;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public interface FolderMetadata {
@@ -27,7 +28,7 @@ public interface FolderMetadata {
       return this;
     }
 
-    public Builder addAllAttributes(List<FolderAttribute> attributes) {
+    public Builder addAllAttributes(Collection<FolderAttribute> attributes) {
       this.attributes.addAll(attributes);
       return this;
     }

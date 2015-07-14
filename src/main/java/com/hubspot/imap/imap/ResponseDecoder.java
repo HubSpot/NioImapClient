@@ -2,15 +2,17 @@ package com.hubspot.imap.imap;
 
 import com.hubspot.imap.ImapClient;
 import com.hubspot.imap.imap.ResponseDecoder.State;
+import com.hubspot.imap.imap.folder.FolderFlags;
 import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
-import com.hubspot.imap.imap.response.untagged.UntaggedValue;
+import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse;
+import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse.Builder;
+import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
-import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;
 import com.hubspot.imap.utils.parsers.WordParser;
 import io.netty.buffer.ByteBuf;
@@ -25,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ResponseDecoder extends ReplayingDecoder<State> {
@@ -61,6 +64,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     SKIP_CONTROL_CHARS,
     START_RESPONSE,
     UNTAGGED,
+    UNTAGGED_OK,
     CONTINUATION,
     TAGGED,
     RESET;
@@ -93,11 +97,18 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         String word = wordParser.parse(in).toString();
         if (NumberUtils.isDigits(word)) {
           UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in).toString());
-          handleUntaggedValue(type, word, in);
+          handleUntaggedValue(type, word);
         } else {
-          UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
-          handleUntagged(type, in, out);
+          if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
+            checkpoint(State.UNTAGGED_OK);
+          } else {
+            UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
+            handleUntagged(type, in, out);
+          }
         }
+        break;
+      case UNTAGGED_OK:
+        handleUntagged(in, out);
         break;
       case CONTINUATION:
         handleContinuation(in, out);
@@ -126,16 +137,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     write(in, out);
   }
 
-  private void handleUntaggedValue(UntaggedResponseType type, String value, ByteBuf in) {
+  private void handleUntaggedValue(UntaggedResponseType type, String value) {
     switch (type) {
+      case RECENT:
       case EXISTS:
-        untaggedResponses.add(
-            new UntaggedValue.Builder()
-                .setType(type)
-                .setValue(value)
-                .build()
-        );
-
+        untaggedResponses.add(handleIntResponse(type, value));
         break;
       default:
         untaggedResponses.add(value);
@@ -153,10 +159,27 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     checkpoint(State.RESET);
   }
 
+  private void handleUntagged(ByteBuf in, List<Object> out) {
+    String responseTypeString = wordParser.parse(in).toString();
+    UntaggedResponseType type = UntaggedResponseType.getResponseType(responseTypeString);
+    handleUntagged(type, in, out);
+  }
+
   private void handleUntagged(UntaggedResponseType type, ByteBuf in, List<Object> out) {
     switch (type) {
       case LIST:
         untaggedResponses.add(parseFolderMetadata(in));
+        break;
+      case PERMANENTFLAGS:
+        untaggedResponses.add(parseFlags(in, true));
+        break;
+      case FLAGS:
+        untaggedResponses.add(parseFlags(in, false));
+        break;
+      case HIGHESTMODSEQ:
+      case UIDNEXT:
+      case UIDVALIDITY:
+        untaggedResponses.add(parseBracketedResponse(type, in));
         break;
       default:
         untaggedResponses.add(lineParser.parse(in).toString());
@@ -165,13 +188,25 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     checkpoint(State.RESET);
   }
 
+  private UntaggedIntResponse handleIntResponse(UntaggedResponseType type, String value) {
+    return new UntaggedIntResponse.Builder()
+        .setType(type)
+        .setValue(Long.parseLong(value))
+        .build();
+  }
+
+  private FolderFlags parseFlags(ByteBuf in, boolean permanent) {
+    skipControlCharacters(in);
+    List<String> flags = arrayParser.parse(in);
+
+    lineParser.parse(in);
+
+    return FolderFlags.fromStrings(flags, permanent);
+  }
+
   private FolderMetadata parseFolderMetadata(ByteBuf in) {
     skipControlCharacters(in);
-    List<FolderAttribute> attributes = arrayParser.parse(in).stream()
-        .map(FolderAttribute::getAttribute)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .collect(Collectors.toList());
+    Set<FolderAttribute> attributes = parseFolderAttributes(in);
 
     String context = quotedStringParser.parse(in).toString();
     String name = quotedStringParser.parse(in).toString();
@@ -183,6 +218,26 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .addAllAttributes(attributes)
         .setContext(context)
         .setName(name)
+        .build();
+  }
+
+  private Set<FolderAttribute> parseFolderAttributes(ByteBuf in) {
+    return arrayParser.parse(in).stream()
+        .map(FolderAttribute::getAttribute)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toSet());
+  }
+
+  private UntaggedIntResponse parseBracketedResponse(UntaggedResponseType type, ByteBuf in) {
+    String value = wordParser.parse(in).toString();
+    if (value.endsWith("]")) {
+      value = value.substring(0, value.length() - 1);
+    }
+
+    return new Builder()
+        .setType(type)
+        .setValue(Long.parseLong(value))
         .build();
   }
 

@@ -30,6 +30,21 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * This class handles decoding of IMAP responses. It handles 3 main types of responses
+ *
+ *  - Tagged - Final command repsonse. Prefixed with a command tag (e.x. A01)
+ *  - Continuation - For when the server needs more info from the client. Prefixed with a '+'
+ *  - Untagged  - Intermediate response, provides extra data for tagged response. Prefixed with a '*'. (Note: a server can send an anonymous tagged response at any time, even outside the context of a tagged command)
+ *
+ * Tagged and continuation responses are fairly straightforward. Untagged responses are broken down in to 3 sub types:
+ *
+ *   - Standard - Response type followed by response data
+ *   - OK - Starts with 'OK' followed by bracketed response data
+ *   - Value - Starts with an int value, followed by response type
+ *
+ * Unless the current command specifically requests notification of untagged responses (i.e. IDLE), untagged responses are collected and added to the body of the tagged response once the tag is received.
+ */
 public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ResponseDecoder.class);
 
@@ -37,6 +52,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final char CONTINUATION_PREFIX = '+';
   private static final char TAGGED_PREFIX = 'A'; // This isn't necessarily true from the IMAP spec, but this client always prefixes tags with 'A'
 
+  // This AppendableCharSequence is shared by all of the parsers for memory efficiency.
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
@@ -175,6 +191,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case FLAGS:
         untaggedResponses.add(parseFlags(in, false));
         break;
+      // Bracketed responses. Fallthrough here is intentional.
       case HIGHESTMODSEQ:
       case UIDNEXT:
       case UIDVALIDITY:
@@ -246,9 +263,13 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     checkpoint(State.RESET);
   }
 
+  /**
+   * Reset checks to see if we are at the end of this response line. If not it fast forwards the buffer to the end of this line to prepare for the next response.
+   * @param in
+   */
   private void reset(ByteBuf in) {
     char c = (char) in.readUnsignedByte();
-    if (c == UNTAGGED_PREFIX || c == CONTINUATION_PREFIX || c == TAGGED_PREFIX) {
+    if (c == UNTAGGED_PREFIX || c == CONTINUATION_PREFIX || c == TAGGED_PREFIX) { // We are already at the end of the line
       in.readerIndex(in.readerIndex() - 1);
     } else if (!(c == HttpConstants.CR || c == HttpConstants.LF)) {
       lineParser.parse(in);

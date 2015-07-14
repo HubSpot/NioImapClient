@@ -7,9 +7,11 @@ import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
+import com.hubspot.imap.imap.response.events.ByeEvent;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse.Builder;
+import com.hubspot.imap.imap.response.untagged.UntaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
@@ -119,12 +121,12 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
             checkpoint(State.UNTAGGED_OK);
           } else {
             UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
-            handleUntagged(type, in, out);
+            handleUntagged(type, in, ctx);
           }
         }
         break;
       case UNTAGGED_OK:
-        handleUntagged(in, out);
+        handleUntagged(in, ctx);
         break;
       case CONTINUATION:
         handleContinuation(in, out);
@@ -174,14 +176,17 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     checkpoint(State.RESET);
   }
 
-  private void handleUntagged(ByteBuf in, List<Object> out) {
+  private void handleUntagged(ByteBuf in, ChannelHandlerContext ctx) {
     String responseTypeString = wordParser.parse(in).toString();
     UntaggedResponseType type = UntaggedResponseType.getResponseType(responseTypeString);
-    handleUntagged(type, in, out);
+    handleUntagged(type, in, ctx);
   }
 
-  private void handleUntagged(UntaggedResponseType type, ByteBuf in, List<Object> out) {
+  private void handleUntagged(UntaggedResponseType type, ByteBuf in, ChannelHandlerContext ctx) {
     switch (type) {
+      case BYE:
+        handleBye(in, ctx);
+        break;
       case LIST:
         untaggedResponses.add(parseFolderMetadata(in));
         break;
@@ -202,6 +207,19 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
 
     checkpoint(State.RESET);
+  }
+
+  private void handleBye(ByteBuf in, ChannelHandlerContext handlerContext) {
+    String message = lineParser.parse(in).toString();
+
+    UntaggedResponse response = new UntaggedResponse.Builder()
+        .setType(UntaggedResponseType.BYE)
+        .setMessage(message)
+        .build();
+
+    untaggedResponses.add(response);
+
+    handlerContext.fireUserEventTriggered(new ByeEvent(response));
   }
 
   private UntaggedIntResponse handleIntResponse(UntaggedResponseType type, String value) {

@@ -10,7 +10,9 @@ import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.utils.GmailUtils;
 import io.netty.util.concurrent.Future;
 import org.assertj.core.api.Condition;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -22,10 +24,11 @@ public class ImapClientTest {
   private static String USER_NAME = "hsimaptest1@gmail.com";
   private static String PASSWORD = "***REMOVED***";
 
-  private ImapClientFactory clientFactory;
+  private static ImapClientFactory clientFactory;
+  private ImapClient client;
 
-  @Before
-  public void setUp() throws Exception {
+  @BeforeClass
+  public static void setUp() throws Exception {
     clientFactory = new ImapClientFactory(
         new ImapConfiguration.Builder()
             .setAuthType(AuthType.PASSWORD)
@@ -33,10 +36,20 @@ public class ImapClientTest {
     );
   }
 
+  @Before
+  public void getClient() throws Exception {
+    client = getLoggedInClient();
+  }
+
+  @After
+  public void closeClient() throws Exception {
+    if (client != null && client.isLoggedIn()) {
+      client.close();
+    }
+  }
+
   @Test
   public void testLogin_doesAuthenticateConnection() throws Exception {
-    ImapClient client = getLoggedInClient();
-
     Future<TaggedResponse> noopResponseFuture = client.noop();
     TaggedResponse taggedResponse = noopResponseFuture.get();
 
@@ -45,8 +58,6 @@ public class ImapClientTest {
 
   @Test
   public void testList_doesReturnFolders() throws Exception {
-    ImapClient client = getLoggedInClient();
-
     Future<ListResponse> listResponseFuture = client.list("", "[Gmail]/%");
 
     ListResponse response = listResponseFuture.get();
@@ -59,8 +70,6 @@ public class ImapClientTest {
 
   @Test
   public void testGivenFolderName_canOpenFolder() throws Exception {
-    ImapClient client = getLoggedInClient();
-
     Future<OpenResponse> responseFuture = client.open("[Gmail]/All Mail", false);
     OpenResponse response = responseFuture.get();
 
@@ -82,6 +91,8 @@ public class ImapClientTest {
       client.awaitLogin();
     } catch (ExecutionException e) {
       assertThat(e).hasCauseInstanceOf(AuthenticationFailedException.class);
+    } finally {
+      client.close();
     }
   }
 

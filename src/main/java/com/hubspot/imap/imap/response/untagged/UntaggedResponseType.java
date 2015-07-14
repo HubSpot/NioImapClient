@@ -9,6 +9,7 @@ import java.util.Iterator;
 
 public enum UntaggedResponseType {
   OK("OK"),
+  BYE("BYE"),
   CAPABILITY("CAPABILITY"),
   LIST("LIST"),
   EXISTS("EXISTS"),

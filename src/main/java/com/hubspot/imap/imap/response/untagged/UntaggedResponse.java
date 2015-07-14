@@ -1,12 +1,12 @@
 package com.hubspot.imap.imap.response.untagged;
 
-public interface UntaggedValue {
+public interface UntaggedResponse {
   UntaggedResponseType getType();
-  String getValue();
+  String getMessage();
 
-  class Builder implements UntaggedValue {
+  class Builder implements UntaggedResponse {
     private UntaggedResponseType type;
-    private String value;
+    private String message;
 
     public UntaggedResponseType getType() {
       return this.type;
@@ -17,16 +17,16 @@ public interface UntaggedValue {
       return this;
     }
 
-    public String getValue() {
-      return this.value;
+    public String getMessage() {
+      return this.message;
     }
 
-    public Builder setValue(String value) {
-      this.value = value;
+    public Builder setMessage(String message) {
+      this.message = message;
       return this;
     }
 
-    public UntaggedValue build() {
+    public UntaggedResponse build() {
       return this;
     }
 

@@ -22,6 +22,12 @@ public interface TaggedResponse {
       return this;
     }
 
+    protected void copy(TaggedResponse response) {
+      setCode(response.getCode());
+      setMessage(response.getMessage());
+      setTag(response.getTag());
+    }
+
     public String getTag() {
       return this.tag;
     }

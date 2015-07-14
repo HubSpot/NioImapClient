@@ -114,9 +114,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         handleContinuation(in, out);
         break;
       case TAGGED:
-        String tag = wordParser.parse(in).toString();
-        skipControlCharacters(in);
-        handleTagged(tag, in, out);
+        handleTagged(in, out);
         break;
       case RESET:
         reset(in);
@@ -124,7 +122,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
   }
 
-  private void handleTagged(String tag, ByteBuf in, List<Object> out) {
+  private void handleTagged(ByteBuf in, List<Object> out) {
+    String tag = wordParser.parse(in).toString();
     String codeString = wordParser.parse(in).toString();
     ResponseCode code = ResponseCode.valueOf(codeString);
     String message = lineParser.parse(in).toString();

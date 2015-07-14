@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.response.ContinuationResponse;
+import com.hubspot.imap.imap.response.tagged.NoopResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
@@ -41,6 +42,9 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
         case SELECT:
         case EXAMINE:
           taggedResponse = new OpenResponse.Builder().fromResponse(taggedResponse, client);
+          break;
+        case NOOP:
+          taggedResponse = new NoopResponse.Builder().fromResponse(taggedResponse);
           break;
       }
 

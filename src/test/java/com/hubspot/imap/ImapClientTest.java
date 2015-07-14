@@ -4,15 +4,16 @@ import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ResponseCode;
-import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
+import com.hubspot.imap.imap.response.tagged.OpenResponse;
+import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.utils.GmailUtils;
+import io.netty.util.concurrent.Future;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,6 +55,23 @@ public class ImapClientTest {
     assertThat(response.getFolders().size()).isGreaterThan(0);
     assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
     assertThat(response.getFolders()).extracting(FolderMetadata::getName).contains("[Gmail]/All Mail");
+  }
+
+  @Test
+  public void testGivenFolderName_canOpenFolder() throws Exception {
+    ImapClient client = getLoggedInClient();
+
+    Future<OpenResponse> responseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse response = responseFuture.get();
+
+    assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
+    assertThat(response.getExists()).isGreaterThan(0);
+    assertThat(response.getFlags().size()).isGreaterThan(0);
+    assertThat(response.getPermanentFlags().size()).isGreaterThan(0);
+    assertThat(response.getUidValidity()).isGreaterThan(0);
+    assertThat(response.getRecent()).isEqualTo(0);
+    assertThat(response.getUidNext()).isGreaterThan(0);
+    assertThat(response.getHighestModSeq()).isGreaterThan(0);
   }
 
   @Test

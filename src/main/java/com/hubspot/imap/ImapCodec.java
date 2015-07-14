@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.response.ContinuationResponse;
+import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,6 +37,10 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
       switch (client.getCurrentCommand().getCommandType()) {
         case LIST:
           taggedResponse = new Builder().fromResponse(taggedResponse, client);
+          break;
+        case SELECT:
+        case EXAMINE:
+          taggedResponse = new OpenResponse.Builder().fromResponse(taggedResponse, client);
           break;
       }
 

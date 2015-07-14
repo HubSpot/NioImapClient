@@ -6,11 +6,13 @@ import com.hubspot.imap.imap.command.BlankCommand;
 import com.hubspot.imap.imap.command.Command;
 import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.imap.imap.command.ListCommand;
+import com.hubspot.imap.imap.command.OpenCommand;
 import com.hubspot.imap.imap.command.XOAuth2Command;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
+import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -108,6 +110,10 @@ public class ImapClient extends ChannelDuplexHandler {
 
   public Future<ListResponse> list(String context, String query) {
     return send(new ListCommand(commandCount.getAndIncrement(), context, query));
+  }
+
+  public Future<OpenResponse> open(String folderName, boolean readOnly) {
+    return send(new OpenCommand(commandCount.getAndIncrement(), folderName, readOnly));
   }
 
   public <T extends TaggedResponse> Future<T> noop() {

@@ -90,52 +90,55 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
     dumpLine("RCV", in);
-    switch (state()) {
-      case SKIP_CONTROL_CHARS:
-        try {
-          skipControlCharacters(in);
-          checkpoint(State.START_RESPONSE);
-        } finally {
-          checkpoint();
-        }
-      case START_RESPONSE:
-        char c = ((char) in.readUnsignedByte());
-        if (c == UNTAGGED_PREFIX) {
-          checkpoint(State.UNTAGGED);
-        } else if (c == CONTINUATION_PREFIX) {
-          checkpoint(State.CONTINUATION);
-        } else {
-          in.readerIndex(in.readerIndex() - 1); // We want the whole tag (A1) not just the int
-          checkpoint(State.TAGGED);
-        }
-        break;
-      case UNTAGGED:
-        skipControlCharacters(in);
-        String word = wordParser.parse(in).toString();
-        if (NumberUtils.isDigits(word)) {
-          UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in).toString());
-          handleUntaggedValue(type, word, ctx);
-        } else {
-          if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
-            checkpoint(State.UNTAGGED_OK);
-          } else {
-            UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
-            handleUntagged(type, in, ctx);
+
+    for (;;) {
+      switch (state()) {
+        case SKIP_CONTROL_CHARS:
+          try {
+            skipControlCharacters(in);
+            checkpoint(State.START_RESPONSE);
+          } finally {
+            checkpoint();
           }
-        }
-        break;
-      case UNTAGGED_OK:
-        handleUntagged(in, ctx);
-        break;
-      case CONTINUATION:
-        handleContinuation(in, out);
-        break;
-      case TAGGED:
-        handleTagged(in, out);
-        break;
-      case RESET:
-        reset(in);
-        break;
+        case START_RESPONSE:
+          char c = ((char) in.readUnsignedByte());
+          if (c == UNTAGGED_PREFIX) {
+            checkpoint(State.UNTAGGED);
+          } else if (c == CONTINUATION_PREFIX) {
+            checkpoint(State.CONTINUATION);
+          } else {
+            in.readerIndex(in.readerIndex() - 1); // We want the whole tag (A1) not just the int
+            checkpoint(State.TAGGED);
+          }
+          break;
+        case UNTAGGED:
+          skipControlCharacters(in);
+          String word = wordParser.parse(in).toString();
+          if (NumberUtils.isDigits(word)) {
+            UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in).toString());
+            handleUntaggedValue(type, word, ctx);
+          } else {
+            if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
+              checkpoint(State.UNTAGGED_OK);
+            } else {
+              UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
+              handleUntagged(type, in, ctx);
+            }
+          }
+          break;
+        case UNTAGGED_OK:
+          handleUntagged(in, ctx);
+          break;
+        case CONTINUATION:
+          handleContinuation(in, out);
+          break;
+        case TAGGED:
+          handleTagged(in, out);
+          break;
+        case RESET:
+          reset(in);
+          break;
+      }
     }
   }
 

@@ -1,9 +1,12 @@
 package com.hubspot.imap.imap;
 
 import com.hubspot.imap.imap.ResponseDecoder.State;
+import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
+import com.hubspot.imap.imap.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderFlags;
 import com.hubspot.imap.imap.folder.FolderMetadata;
+import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.events.ByeEvent;
@@ -23,6 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.internal.AppendableCharSequence;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +59,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final char CONTINUATION_PREFIX = '+';
   private static final char TAGGED_PREFIX = 'A'; // This isn't necessarily true from the IMAP spec, but this client always prefixes tags with 'A'
 
+  private static final char LPAREN = '(';
+  private static final char RPAREN = ')';
+
   // This AppendableCharSequence is shared by all of the parsers for memory efficiency.
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
@@ -64,6 +71,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
+
+  private List<ImapMessage> fetchedMessages;
+  private ImapMessage.Builder currentMessage;
 
   public ResponseDecoder() {
     super(State.SKIP_CONTROL_CHARS);
@@ -84,59 +94,130 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     UNTAGGED_OK,
     CONTINUATION,
     TAGGED,
+    FETCH,
     RESET;
   }
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
     dumpLine("RCV", in);
-    switch (state()) {
-      case SKIP_CONTROL_CHARS:
-        try {
-          skipControlCharacters(in);
-          checkpoint(State.START_RESPONSE);
-        } finally {
-          checkpoint();
-        }
-      case START_RESPONSE:
-        char c = ((char) in.readUnsignedByte());
-        if (c == UNTAGGED_PREFIX) {
-          checkpoint(State.UNTAGGED);
-        } else if (c == CONTINUATION_PREFIX) {
-          checkpoint(State.CONTINUATION);
-        } else {
-          in.readerIndex(in.readerIndex() - 1); // We want the whole tag (A1) not just the int
-          checkpoint(State.TAGGED);
-        }
-        break;
-      case UNTAGGED:
-        skipControlCharacters(in);
-        String word = wordParser.parse(in).toString();
-        if (NumberUtils.isDigits(word)) {
-          UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in).toString());
-          handleUntaggedValue(type, word, ctx);
-        } else {
-          if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
-            checkpoint(State.UNTAGGED_OK);
+
+    for (;;) {
+      switch (state()) {
+        case SKIP_CONTROL_CHARS:
+          try {
+            skipControlCharacters(in);
+            checkpoint(State.START_RESPONSE);
+          } finally {
+            checkpoint();
+          }
+        case START_RESPONSE:
+          char c = ((char) in.readUnsignedByte());
+          if (c == UNTAGGED_PREFIX) {
+            checkpoint(State.UNTAGGED);
+          } else if (c == CONTINUATION_PREFIX) {
+            checkpoint(State.CONTINUATION);
           } else {
-            UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
-            handleUntagged(type, in, ctx);
+            in.readerIndex(in.readerIndex() - 1); // We want the whole tag (A1) not just the int
+            checkpoint(State.TAGGED);
+          }
+          break;
+        case UNTAGGED:
+          skipControlCharacters(in);
+          String word = wordParser.parse(in).toString();
+          if (NumberUtils.isDigits(word)) {
+            UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in).toString());
+            handleUntaggedValue(type, word, ctx);
+          } else {
+            if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
+              checkpoint(State.UNTAGGED_OK);
+            } else {
+              UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
+              handleUntagged(type, in, ctx);
+            }
+          }
+          break;
+        case UNTAGGED_OK:
+          handleUntagged(in, ctx);
+          break;
+        case CONTINUATION:
+          handleContinuation(in, out);
+          break;
+        case TAGGED:
+          handleTagged(in, out);
+          break;
+        case FETCH:
+          parseFetch(in, out);
+          break;
+        case RESET:
+          reset(in);
+          break;
+      }
+    }
+  }
+
+  private void parseFetch(ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException {
+    dumpLine("fetch", in);
+    skipControlCharacters(in);
+
+    char next = ((char) in.readUnsignedByte());
+    if (next != LPAREN && next != RPAREN) {
+      dumpLine("fetch after lparen", in);
+      in.readerIndex(in.readerIndex() - 1);
+    } else if (next == RPAREN) { // Check to see if this is the end of this fetch response
+      char second = ((char) in.readUnsignedByte());
+      if (second == HttpConstants.CR || second == HttpConstants.LF) {
+        // At the end of the fetch, add the current message to the untagged responses and reset
+        untaggedResponses.add(currentMessage.build());
+        currentMessage = null;
+        checkpoint(State.RESET);
+        return;
+      } else {
+        in.readerIndex(in.readerIndex() - 2);
+      }
+
+      dumpLine("fetch after rparen", in);
+    }
+
+    dumpLine("fetch after end check", in);
+
+    String fetchItemString = wordParser.parse(in).toString();
+    if (StringUtils.isBlank(fetchItemString)) {
+      checkpoint(State.FETCH);
+      return;
+    }
+
+    FetchDataItemType fetchType = FetchDataItemType.getFetchType(fetchItemString);
+    switch (fetchType) {
+      case FLAGS:
+        List<String> flags = arrayParser.parse(in);
+        currentMessage.setFlagStrings(flags);
+        break;
+      case INTERNALDATE:
+        String internalDate = quotedStringParser.parse(in).toString();
+        break;
+      case RFC822_SIZE:
+        charSeq.reset();
+        for (;;) {
+          char c = ((char) in.readUnsignedByte());
+          if (Character.isDigit(c)) {
+            charSeq.append(c);
+          } else {
+            in.readerIndex(in.readerIndex() - 1);
+            break;
           }
         }
+
+        long size = Long.parseLong(charSeq.toString());
         break;
-      case UNTAGGED_OK:
-        handleUntagged(in, ctx);
-        break;
-      case CONTINUATION:
-        handleContinuation(in, out);
-        break;
-      case TAGGED:
-        handleTagged(in, out);
-        break;
-      case RESET:
-        reset(in);
-        break;
+      case INVALID:
+      default:
+        // This is really bad because we need to know what type of response to parse for each tag.
+        // Given an unknown fetch type, we can't find the next fetch type tag, so we just have to stop.
+        throw new UnknownFetchItemTypeException(fetchItemString);
     }
+
+    checkpoint(State.FETCH);
   }
 
   private void handleTagged(ByteBuf in, List<Object> out) {
@@ -155,6 +236,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private void handleUntaggedValue(UntaggedResponseType type, String value, ChannelHandlerContext ctx) {
     switch (type) {
+      case FETCH:
+        currentMessage = new ImapMessage.Builder()
+            .setMessageNumber(Long.parseLong(value));
+        checkpoint(State.FETCH);
+        return;
       case RECENT:
         untaggedResponses.add(handleIntResponse(type, value));
         break;

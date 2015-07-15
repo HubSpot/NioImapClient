@@ -1,6 +1,5 @@
 package com.hubspot.imap.client;
 
-import com.hubspot.imap.ImapCodec;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.BlankCommand;
@@ -98,23 +97,23 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   private Future<TaggedResponse> passwordLogin() {
-    return send(new BaseCommand(CommandType.LOGIN, clientState.getNextCommandId(), userName, authToken));
+    return send(new BaseCommand(CommandType.LOGIN, userName, authToken));
   }
 
   private Future<TaggedResponse> oauthLogin() {
-    return send(new XOAuth2Command(userName, authToken, clientState.getNextCommandId()));
+    return send(new XOAuth2Command(userName, authToken));
   }
 
   public Future<TaggedResponse> logout() {
-    return send(new BaseCommand(CommandType.LOGOUT, clientState.getNextCommandId()));
+    return send(new BaseCommand(CommandType.LOGOUT));
   }
 
   public Future<ListResponse> list(String context, String query) {
-    return send(new ListCommand(clientState.getNextCommandId(), context, query));
+    return send(new ListCommand(context, query));
   }
 
   public Future<OpenResponse> open(String folderName, boolean readOnly) {
-    return send(new OpenCommand(clientState.getNextCommandId(), folderName, readOnly));
+    return send(new OpenCommand(folderName, readOnly));
   }
 
   public <T extends TaggedResponse> Future<T> noop() {
@@ -130,7 +129,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   public <T extends TaggedResponse> Future<T> send(CommandType commandType, String... args) {
-    BaseCommand baseCommand = new BaseCommand(commandType, clientState.getNextCommandId(), args);
+    BaseCommand baseCommand = new BaseCommand(commandType, args);
     return send(baseCommand);
   }
 

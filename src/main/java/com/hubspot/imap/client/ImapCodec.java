@@ -1,6 +1,5 @@
-package com.hubspot.imap;
+package com.hubspot.imap.client;
 
-import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
@@ -27,7 +26,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
   protected void encode(ChannelHandlerContext ctx, BaseCommand msg, List<Object> out) throws Exception {
     String data = msg.commandString();
     LOGGER.debug("IMAP SEND: {}", data);
-    out.add(data + "\r\n");
+    out.add(clientState.getNextTag() + data + "\r\n");
   }
 
   @Override

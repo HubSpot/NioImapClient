@@ -1,6 +1,8 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.imap.command.fetch.FetchCommand;
+import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.response.ResponseCode;
@@ -13,6 +15,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,6 +68,18 @@ public class ImapClientTest {
     assertThat(response.getRecent()).isEqualTo(0);
     assertThat(response.getUidNext()).isGreaterThan(0);
     assertThat(response.getHighestModSeq()).isGreaterThan(0);
+  }
+
+  @Test
+  public void testFetch_doesReturnMessages() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<TaggedResponse> responseFuture = client.send(new FetchCommand(1, Optional.of(5L), FetchDataItemType.FAST));
+    TaggedResponse response = responseFuture.get();
+
+    assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
   }
 
   @Test

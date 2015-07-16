@@ -18,11 +18,11 @@ public interface ImapMessage {
   class Builder implements ImapMessage {
     private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
 
-    private Optional<Set<MessageFlag>> flags;
-    private Optional<Long> messageNumber;
-    private Optional<Long> uid;
-    private Optional<ZonedDateTime> internalDate;
-    private Optional<Integer> size;
+    private Optional<Set<MessageFlag>> flags = Optional.empty();
+    private Optional<Long> messageNumber = Optional.empty();
+    private Optional<Long> uid = Optional.empty();
+    private Optional<ZonedDateTime> internalDate = Optional.empty();
+    private Optional<Integer> size = Optional.empty();
 
     public ImapMessage build() {
       return this;

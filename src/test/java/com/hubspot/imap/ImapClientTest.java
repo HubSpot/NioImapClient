@@ -91,6 +91,8 @@ public class ImapClientTest {
         .filter(u -> u instanceof ImapMessage).map(u -> ((ImapMessage) u))
         .collect(Collectors.toList());
 
+    assertThat(messages.size()).isGreaterThan(0);
+
     assertThat(messages).have(new Condition<>(m -> {
       try {
         return m.getSize() > 0;
@@ -106,6 +108,25 @@ public class ImapClientTest {
         return false;
       }
     }, "internaldate"));
+  }
+
+  @Test(expected = UnfetchedFieldException.class)
+  public void testAccessingUnfetchedField_doesThrowException() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<TaggedResponse> responseFuture = client.send(new FetchCommand(1, Optional.of(5L), FetchDataItemType.FLAGS));
+    TaggedResponse response = responseFuture.get();
+
+    assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
+
+    List<ImapMessage> messages = response.getUntagged().stream()
+        .filter(u -> u instanceof ImapMessage).map(u -> ((ImapMessage) u))
+        .collect(Collectors.toList());
+
+    assertThat(messages.size()).isGreaterThan(0);
+    messages.get(0).getInternalDate();
   }
 
   @Test

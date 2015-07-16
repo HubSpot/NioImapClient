@@ -3,6 +3,7 @@ package com.hubspot.imap;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
+import com.hubspot.imap.imap.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.message.UnfetchedFieldException;
 import com.hubspot.imap.imap.response.ResponseCode;
@@ -129,6 +130,27 @@ public class ImapClientTest {
 
     assertThat(response.getMessages().size()).isGreaterThan(0);
     assertThat(response.getMessages().iterator().next().getUid()).isGreaterThan(0);
+  }
+
+  @Test
+  public void testFetchBody_doesThrowUnknownFetchItemException() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.BODY);
+
+    try {
+      responseFuture.get();
+    } catch (ExecutionException e) {
+      assertThat(e.getCause()).hasCauseInstanceOf(UnknownFetchItemTypeException.class);
+    } finally {
+      try {
+        client.close();
+      } catch (Exception e) {
+        // This may also throw depending on the order in which things are parsed.
+      }
+    }
   }
 
   @Test

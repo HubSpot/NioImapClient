@@ -74,7 +74,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
 
-  private List<ImapMessage> fetchedMessages;
   private ImapMessage.Builder currentMessage;
 
   public ResponseDecoder() {

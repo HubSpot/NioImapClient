@@ -20,7 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConcurrentConnectionTest {
-  private static final int NUM_CONNS = 20;
+  private static final int NUM_CONNS = 5;
 
   @Test
   public void testGivenMultipleConnections_canSendConcurrentNoop() throws Exception {

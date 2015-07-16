@@ -1,19 +1,28 @@
 package com.hubspot.imap.imap.message;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface ImapMessage {
+
   Set<MessageFlag> getFlags() throws UnfetchedFieldException;
   long getMessageNumber() throws UnfetchedFieldException;
   long getUid() throws UnfetchedFieldException;
+  ZonedDateTime getInternalDate() throws UnfetchedFieldException;
+  int getSize() throws UnfetchedFieldException;
 
   class Builder implements ImapMessage {
+    private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
+
     private Optional<Set<MessageFlag>> flags;
     private Optional<Long> messageNumber;
     private Optional<Long> uid;
+    private Optional<ZonedDateTime> internalDate;
+    private Optional<Integer> size;
 
     public ImapMessage build() {
       return this;
@@ -52,6 +61,24 @@ public interface ImapMessage {
 
     public Builder setUid(long uid) {
       this.uid = Optional.of(uid);
+      return this;
+    }
+
+    public ZonedDateTime getInternalDate() throws UnfetchedFieldException {
+      return this.internalDate.orElseThrow(() -> new UnfetchedFieldException("internaldate"));
+    }
+
+    public Builder setInternalDate(String internalDate) {
+      this.internalDate = Optional.of(ZonedDateTime.parse(internalDate, INTERNALDATE_FORMATTER));
+      return this;
+    }
+
+    public int getSize() throws UnfetchedFieldException {
+      return size.orElseThrow(() -> new UnfetchedFieldException("size"));
+    }
+
+    public Builder setSize(int size) {
+      this.size = Optional.of(size);
       return this;
     }
   }

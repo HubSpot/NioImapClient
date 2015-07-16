@@ -5,6 +5,8 @@ import com.hubspot.imap.imap.command.fetch.FetchCommand;
 import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
+import com.hubspot.imap.imap.message.ImapMessage;
+import com.hubspot.imap.imap.message.UnfetchedFieldException;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
@@ -15,8 +17,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,6 +86,26 @@ public class ImapClientTest {
     TaggedResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
+
+    List<ImapMessage> messages = response.getUntagged().stream()
+        .filter(u -> u instanceof ImapMessage).map(u -> ((ImapMessage) u))
+        .collect(Collectors.toList());
+
+    assertThat(messages).have(new Condition<>(m -> {
+      try {
+        return m.getSize() > 0;
+      } catch (UnfetchedFieldException e) {
+        return false;
+      }
+    }, "size"));
+
+    assertThat(messages).have(new Condition<>(m -> {
+      try {
+        return m.getInternalDate().isAfter(ZonedDateTime.of(0, 1, 1, 1, 1, 1, 1, ZoneId.of("UTC")));
+      } catch (UnfetchedFieldException e) {
+        return false;
+      }
+    }, "internaldate"));
   }
 
   @Test

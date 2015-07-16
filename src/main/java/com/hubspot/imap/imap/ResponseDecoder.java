@@ -19,6 +19,7 @@ import com.hubspot.imap.imap.response.untagged.UntaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
+import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;
 import com.hubspot.imap.utils.parsers.WordParser;
 import io.netty.buffer.ByteBuf;
@@ -68,6 +69,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final WordParser wordParser;
   private final OptionallyQuotedStringParser quotedStringParser;
   private final ArrayParser arrayParser;
+  private final NumberParser numberParser;
 
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
@@ -82,6 +84,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.wordParser = new WordParser(charSeq, 8192);
     this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 8192);
     this.arrayParser = new ArrayParser(charSeq);
+    this.numberParser = new NumberParser(8);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
@@ -195,20 +198,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         break;
       case INTERNALDATE:
         String internalDate = quotedStringParser.parse(in).toString();
+        currentMessage.setInternalDate(internalDate);
         break;
       case RFC822_SIZE:
-        charSeq.reset();
-        for (;;) {
-          char c = ((char) in.readUnsignedByte());
-          if (Character.isDigit(c)) {
-            charSeq.append(c);
-          } else {
-            in.readerIndex(in.readerIndex() - 1);
-            break;
-          }
-        }
-
-        long size = Long.parseLong(charSeq.toString());
+        currentMessage.setSize(((int) numberParser.parse(in)));
         break;
       case INVALID:
       default:

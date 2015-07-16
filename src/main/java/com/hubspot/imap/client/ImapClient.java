@@ -8,10 +8,13 @@ import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.imap.imap.command.ListCommand;
 import com.hubspot.imap.imap.command.OpenCommand;
 import com.hubspot.imap.imap.command.XOAuth2Command;
+import com.hubspot.imap.imap.command.fetch.FetchCommand;
+import com.hubspot.imap.imap.command.fetch.items.FetchDataItem;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.events.ByeEvent;
+import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
@@ -25,6 +28,7 @@ import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -114,6 +118,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
 
   public Future<OpenResponse> open(String folderName, boolean readOnly) {
     return send(new OpenCommand(folderName, readOnly));
+  }
+
+  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) {
+    return send(new FetchCommand(startId, stopId, fetchDataItems));
   }
 
   public <T extends TaggedResponse> Future<T> noop() {

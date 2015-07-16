@@ -1,13 +1,12 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.imap.command.fetch.FetchCommand;
 import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
-import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.message.UnfetchedFieldException;
 import com.hubspot.imap.imap.response.ResponseCode;
+import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
@@ -19,10 +18,8 @@ import org.junit.Test;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,18 +79,13 @@ public class ImapClientTest {
     OpenResponse or = openResponseFuture.get();
     assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
-    Future<TaggedResponse> responseFuture = client.send(new FetchCommand(1, Optional.of(5L), FetchDataItemType.FAST));
-    TaggedResponse response = responseFuture.get();
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.FAST);
+    FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
+    assertThat(response.getMessages().size()).isGreaterThan(0);
 
-    List<ImapMessage> messages = response.getUntagged().stream()
-        .filter(u -> u instanceof ImapMessage).map(u -> ((ImapMessage) u))
-        .collect(Collectors.toList());
-
-    assertThat(messages.size()).isGreaterThan(0);
-
-    assertThat(messages).have(new Condition<>(m -> {
+    assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {
         return m.getSize() > 0;
       } catch (UnfetchedFieldException e) {
@@ -101,7 +93,7 @@ public class ImapClientTest {
       }
     }, "size"));
 
-    assertThat(messages).have(new Condition<>(m -> {
+    assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {
         return m.getInternalDate().isAfter(ZonedDateTime.of(0, 1, 1, 1, 1, 1, 1, ZoneId.of("UTC")));
       } catch (UnfetchedFieldException e) {
@@ -116,17 +108,27 @@ public class ImapClientTest {
     OpenResponse or = openResponseFuture.get();
     assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
-    Future<TaggedResponse> responseFuture = client.send(new FetchCommand(1, Optional.of(5L), FetchDataItemType.FLAGS));
-    TaggedResponse response = responseFuture.get();
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.FLAGS);
+    FetchResponse response = responseFuture.get();
+
+    assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
+    assertThat(response.getMessages().size()).isGreaterThan(0);
+    response.getMessages().iterator().next().getInternalDate();
+  }
+
+  @Test
+  public void testFetchUid_doesGetUid() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.UID);
+    FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
 
-    List<ImapMessage> messages = response.getUntagged().stream()
-        .filter(u -> u instanceof ImapMessage).map(u -> ((ImapMessage) u))
-        .collect(Collectors.toList());
-
-    assertThat(messages.size()).isGreaterThan(0);
-    messages.get(0).getInternalDate();
+    assertThat(response.getMessages().size()).isGreaterThan(0);
+    assertThat(response.getMessages().iterator().next().getUid()).isGreaterThan(0);
   }
 
   @Test

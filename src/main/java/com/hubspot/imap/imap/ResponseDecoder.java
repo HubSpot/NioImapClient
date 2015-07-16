@@ -203,6 +203,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case RFC822_SIZE:
         currentMessage.setSize(((int) numberParser.parse(in)));
         break;
+      case UID:
+        currentMessage.setUid(numberParser.parse(in));
+        break;
       case INVALID:
       default:
         // This is really bad because we need to know what type of response to parse for each tag.

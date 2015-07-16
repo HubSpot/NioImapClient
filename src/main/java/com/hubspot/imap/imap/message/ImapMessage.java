@@ -1,5 +1,7 @@
 package com.hubspot.imap.imap.message;
 
+import com.google.common.base.Objects;
+
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
@@ -80,6 +82,23 @@ public interface ImapMessage {
     public Builder setSize(int size) {
       this.size = Optional.of(size);
       return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Builder builder = (Builder) o;
+      return Objects.equal(flags, builder.flags) &&
+          Objects.equal(messageNumber, builder.messageNumber) &&
+          Objects.equal(uid, builder.uid) &&
+          Objects.equal(internalDate, builder.internalDate) &&
+          Objects.equal(size, builder.size);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(flags, messageNumber, uid, internalDate, size);
     }
   }
 }

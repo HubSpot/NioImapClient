@@ -35,7 +35,7 @@ public class ImapClientFactory implements AutoCloseable {
     this.hostAndPort = configuration.getHostAndPort();
     this.bootstrap = new Bootstrap();
     this.eventLoopGroup = new NioEventLoopGroup();
-    this.eventExecutor = new DefaultEventExecutorGroup(5);
+    this.eventExecutor = new DefaultEventExecutorGroup(16);
 
     try {
       TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -52,7 +52,7 @@ public class ImapClientFactory implements AutoCloseable {
         .channel(NioSocketChannel.class)
         .option(ChannelOption.SO_KEEPALIVE, true)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-        .handler(new ImapChannelInitializer(context, hostAndPort, 10));
+        .handler(new ImapChannelInitializer(context, hostAndPort));
   }
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {

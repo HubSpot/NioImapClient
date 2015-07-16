@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
@@ -94,10 +95,19 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     loginPromise.addListener(future -> {
       if (!future.isSuccess()) {
         send(BlankCommand.INSTANCE);
+      } else {
+        startKeepAlive();
       }
     });
 
     return loginFuture;
+  }
+
+  private void startKeepAlive() {
+    int keepAliveInterval = configuration.getNoopKeepAliveIntervalSec();
+    if (keepAliveInterval > 0) {
+      this.channel.pipeline().addFirst(new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
+    }
   }
 
   private Future<TaggedResponse> passwordLogin() {
@@ -132,6 +142,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     return loginPromise.isSuccess() && channel.isOpen();
   }
 
+  public boolean isOpen() {
+    return channel.isOpen();
+  }
+
   public void awaitLogin() throws InterruptedException, ExecutionException {
     loginPromise.get();
   }
@@ -162,14 +176,19 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
       lastCommandPromise.setSuccess(msg);
     } else if (msg instanceof TaggedResponse) {
       TaggedResponse taggedResponse = ((TaggedResponse) msg);
-      lastCommandPromise.setSuccess(taggedResponse);
+
+      try {
+        lastCommandPromise.setSuccess(taggedResponse);
+      } catch (IllegalStateException e) {
+        LOGGER.debug("Could not complete current command", e);
+      }
     }
   }
 
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
-      noop();
+      executorGroup.submit(() -> this.noop());
     } else if (evt instanceof ByeEvent) {
       if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != CommandType.LOGOUT) {
         channel.close();
@@ -182,12 +201,22 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     LOGGER.error("Error in handler", cause);
-    super.exceptionCaught(ctx, cause);
+    if (lastCommandPromise != null) {
+      lastCommandPromise.setFailure(cause);
+    } else {
+      ctx.fireExceptionCaught(cause);
+    }
   }
 
   @Override
   public void close() throws Exception {
     if (isLoggedIn()) {
+      if (!lastCommandPromise.isDone()) {
+        if (!lastCommandPromise.await(10, TimeUnit.SECONDS)) {
+          lastCommandPromise.cancel(true);
+        }
+      }
+
       Future<TaggedResponse> logoutFuture = logout();
       try {
         logoutFuture.get(10, TimeUnit.SECONDS);

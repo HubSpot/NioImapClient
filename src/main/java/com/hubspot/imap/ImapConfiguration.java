@@ -8,6 +8,8 @@ public interface ImapConfiguration {
   HostAndPort getHostAndPort();
   AuthType getAuthType();
 
+  int getNoopKeepAliveIntervalSec();
+
   enum AuthType {
     PASSWORD,
     XOAUTH2;
@@ -16,6 +18,8 @@ public interface ImapConfiguration {
   class Builder implements ImapConfiguration {
     public HostAndPort hostAndPort;
     public AuthType authType;
+
+    public int noopKeepAliveIntervalSec;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -35,6 +39,15 @@ public interface ImapConfiguration {
       return this;
     }
 
+    public int getNoopKeepAliveIntervalSec() {
+      return this.noopKeepAliveIntervalSec;
+    }
+
+    public Builder setNoopKeepAliveIntervalSec(int noopKeepAliveIntervalSec) {
+      this.noopKeepAliveIntervalSec = noopKeepAliveIntervalSec;
+      return this;
+    }
+
     public ImapConfiguration build() {
       return this;
     }
@@ -44,6 +57,7 @@ public interface ImapConfiguration {
       return Objects.toStringHelper(this)
           .add("hostAndPort", hostAndPort)
           .add("authType", authType)
+          .add("noopKeepAliveIntervalSec", noopKeepAliveIntervalSec)
           .toString();
     }
 
@@ -52,13 +66,14 @@ public interface ImapConfiguration {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       Builder builder = (Builder) o;
-      return Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
+      return Objects.equal(getNoopKeepAliveIntervalSec(), builder.getNoopKeepAliveIntervalSec()) &&
+          Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
           Objects.equal(getAuthType(), builder.getAuthType());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getNoopKeepAliveIntervalSec());
     }
   }
 }

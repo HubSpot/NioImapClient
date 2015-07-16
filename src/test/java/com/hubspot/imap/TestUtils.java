@@ -17,6 +17,8 @@ public class TestUtils {
       new ImapConfiguration.Builder()
           .setAuthType(AuthType.PASSWORD)
           .setHostAndPort(GmailUtils.GMAIL_HOST_PORT)
+          .setNoopKeepAliveIntervalSec(10)
+          .build()
   );
 
 

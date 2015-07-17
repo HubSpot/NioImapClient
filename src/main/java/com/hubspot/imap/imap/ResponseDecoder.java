@@ -112,7 +112,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
     for (;;) {
       dumpLine("RCV", in);
-
       switch (state()) {
         case SKIP_CONTROL_CHARS:
           try {

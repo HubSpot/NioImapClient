@@ -65,6 +65,8 @@ public class EnvelopeParser {
         .setTo(to)
         .setCc(cc)
         .setBcc(bcc)
+        .setInReplyTo(inReplyTo)
+        .setMessageId(messageId)
         .build();
 
     return envelope;

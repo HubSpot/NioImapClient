@@ -152,6 +152,7 @@ public class ImapClientTest {
     assertThat(envelope.getSender().size()).isEqualTo(1);
     assertThat(envelope.getTo().size()).isGreaterThanOrEqualTo(1);
     assertThat(envelope.getSubject()).isNotEmpty();
+    assertThat(envelope.getMessageId()).isNotEmpty();
   }
 
   @Test

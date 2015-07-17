@@ -14,6 +14,9 @@ public interface Envelope {
   List<EmailAddress> getCc();
   List<EmailAddress> getBcc();
 
+  String getInReplyTo();
+  String getMessageId();
+
   class Builder implements Envelope {
     private static final DateTimeFormatter RFC822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]dd MMM yyyy HH:mm:ss Z[ (zzz)]");
 
@@ -25,6 +28,8 @@ public interface Envelope {
     private List<EmailAddress> to;
     private List<EmailAddress> cc;
     private List<EmailAddress> bcc;
+    private String inReplyTo;
+    private String messageId;
 
     public Envelope build() {
       return this;
@@ -107,6 +112,24 @@ public interface Envelope {
 
     public Builder setBcc(List<EmailAddress> bcc) {
       this.bcc = bcc;
+      return this;
+    }
+
+    public String getInReplyTo() {
+      return this.inReplyTo;
+    }
+
+    public Builder setInReplyTo(String inReplyTo) {
+      this.inReplyTo = inReplyTo;
+      return this;
+    }
+
+    public String getMessageId() {
+      return this.messageId;
+    }
+
+    public Builder setMessageId(String messageId) {
+      this.messageId = messageId;
       return this;
     }
   }

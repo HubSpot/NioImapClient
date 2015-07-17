@@ -1,5 +1,6 @@
 package com.hubspot.imap.utils.parsers.fetch;
 
+import com.hubspot.imap.imap.message.EmailAddress;
 import com.hubspot.imap.imap.message.Envelope;
 import com.hubspot.imap.utils.parsers.MatchingParenthesesParser;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
@@ -9,7 +10,9 @@ import io.netty.util.internal.AppendableCharSequence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class EnvelopeParser {
   private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
@@ -40,18 +43,42 @@ public class EnvelopeParser {
    * @return Parsed Envelope object.
    */
   public Envelope parse(ByteBuf in) {
-    Envelope.Builder builder = new Envelope.Builder();
-
     String dateString = quotedStringParser.parse(in);
-    builder.setDateFromString(dateString);
-
     String subject = quotedStringParser.parse(in);
-    builder.setSubject(subject);
 
-    List<Object> from = nestedArrayParser.parse(in);
+    List<EmailAddress> from = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<EmailAddress> sender = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<EmailAddress> replyTo = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<EmailAddress> to = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<EmailAddress> cc = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<EmailAddress> bcc = emailAddressesFromNestedList(nestedArrayParser.parse(in));
 
-    List<Object> sender = nestedArrayParser.parse(in);
+    String inReplyTo = quotedStringParser.parse(in);
+    String messageId = quotedStringParser.parse(in);
 
-    return builder.build();
+    Envelope envelope = new Envelope.Builder()
+        .setDateFromString(dateString)
+        .setSubject(subject)
+        .setFrom(from)
+        .setSender(sender)
+        .setReplyTo(replyTo)
+        .setTo(to)
+        .setCc(cc)
+        .setBcc(bcc)
+        .build();
+
+    return envelope;
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<EmailAddress> emailAddressesFromNestedList(List<Object> in) {
+    if (in.size() == 0) {
+      return new ArrayList<>();
+    }
+
+    return in.stream()
+        .map(o -> ((List<String>) o))
+        .map(o -> new EmailAddress.Builder().parseFrom(o).build())
+        .collect(Collectors.toList());
   }
 }

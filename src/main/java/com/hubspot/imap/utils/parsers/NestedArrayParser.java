@@ -39,6 +39,10 @@ public class NestedArrayParser<T> {
       } else if (nextByte == RPAREN) {
         break;
       } else if (Character.isWhitespace(nextByte) && !foundLeftParen) {
+      } else if (nextByte == 'N' && !foundLeftParen) {
+        // NIL, read the remaining 2 bytes and return an empty list;
+        buffer.readBytes(2);
+        return values;
       } else {
         buffer.readerIndex(buffer.readerIndex() - 1);
         values.add(itemParser.parse(buffer));

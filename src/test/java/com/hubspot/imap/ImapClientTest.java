@@ -148,7 +148,10 @@ public class ImapClientTest {
 
     Envelope envelope = response.getMessages().iterator().next().getEnvelope();
     assertThat(envelope.getDate()).isNotNull();
-    //assertThat(response.getMessages().iterator().next().getUid()).isGreaterThan(0);
+    assertThat(envelope.getFrom().size()).isEqualTo(1);
+    assertThat(envelope.getSender().size()).isEqualTo(1);
+    assertThat(envelope.getTo().size()).isGreaterThanOrEqualTo(1);
+    assertThat(envelope.getSubject()).isNotEmpty();
   }
 
   @Test

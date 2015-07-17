@@ -9,11 +9,6 @@ public class BlankCommand implements Command {
   }
 
   @Override
-  public String getTag() {
-    return "";
-  }
-
-  @Override
   public CommandType getCommandType() {
     return null;
   }

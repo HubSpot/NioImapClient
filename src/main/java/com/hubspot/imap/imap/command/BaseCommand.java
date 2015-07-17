@@ -9,12 +9,10 @@ public class BaseCommand implements Command {
   private static final Joiner JOINER = Joiner.on(" ").skipNulls();
 
   protected final CommandType type;
-  protected final String tag;
   protected final List<String> args;
 
-  public BaseCommand(CommandType type, long tag, String... args) {
+  public BaseCommand(CommandType type, String... args) {
     this.type = type;
-    this.tag = "A" + String.valueOf(tag);
     this.args = Lists.newArrayList(args);
   }
 
@@ -27,18 +25,9 @@ public class BaseCommand implements Command {
   }
 
   public String getCommandPrefix() {
-    return String.format("%s %s", tag, type.name());
+    return type.name();
   }
 
-  public CommandType getType() {
-    return type;
-  }
-
-  public String getTag() {
-    return tag;
-  }
-
-  @Override
   public CommandType getCommandType() {
     return type;
   }

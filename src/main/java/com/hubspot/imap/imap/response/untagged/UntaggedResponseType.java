@@ -20,6 +20,7 @@ public enum UntaggedResponseType {
   PERMANENTFLAGS("[PERMANENTFLAGS"),
   HIGHESTMODSEQ("[HIGHESTMODSEQ"),
   FLAGS("FLAGS"),
+  FETCH("FETCH"),
   INVALID("-----");
 
   private final String prefix;

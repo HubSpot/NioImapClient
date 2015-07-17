@@ -1,8 +1,8 @@
-package com.hubspot.imap;
+package com.hubspot.imap.client;
 
-import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.response.ContinuationResponse;
+import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
 import com.hubspot.imap.imap.response.tagged.NoopResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
@@ -27,7 +27,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
   protected void encode(ChannelHandlerContext ctx, BaseCommand msg, List<Object> out) throws Exception {
     String data = msg.commandString();
     LOGGER.debug("IMAP SEND: {}", data);
-    out.add(data + "\r\n");
+    out.add(clientState.getNextTag() + data + "\r\n");
   }
 
   @Override
@@ -43,6 +43,9 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
         case SELECT:
         case EXAMINE:
           taggedResponse = new OpenResponse.Builder().fromResponse(taggedResponse);
+          break;
+        case FETCH:
+          taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse);
           break;
         case NOOP:
           taggedResponse = new NoopResponse.Builder().fromResponse(taggedResponse);

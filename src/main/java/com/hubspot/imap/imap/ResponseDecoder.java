@@ -1,9 +1,13 @@
 package com.hubspot.imap.imap;
 
 import com.hubspot.imap.imap.ResponseDecoder.State;
+import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
+import com.hubspot.imap.imap.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderFlags;
 import com.hubspot.imap.imap.folder.FolderMetadata;
+import com.hubspot.imap.imap.message.Envelope;
+import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.events.ByeEvent;
@@ -16,13 +20,18 @@ import com.hubspot.imap.imap.response.untagged.UntaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
+import com.hubspot.imap.utils.parsers.MatchingParenthesesParser;
+import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;
 import com.hubspot.imap.utils.parsers.WordParser;
+import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.internal.AppendableCharSequence;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,23 +64,34 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final char CONTINUATION_PREFIX = '+';
   private static final char TAGGED_PREFIX = 'A'; // This isn't necessarily true from the IMAP spec, but this client always prefixes tags with 'A'
 
+  private static final char LPAREN = '(';
+  private static final char RPAREN = ')';
+
   // This AppendableCharSequence is shared by all of the parsers for memory efficiency.
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
   private final OptionallyQuotedStringParser quotedStringParser;
   private final ArrayParser arrayParser;
+  private final NumberParser numberParser;
+  private final MatchingParenthesesParser matchingParenthesesParser;
+  private final EnvelopeParser envelopeParser;
 
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
 
-  public ResponseDecoder() {
+  private ImapMessage.Builder currentMessage;
+
+  public ResponseDecoder(ByteBufAllocator allocator) {
     super(State.SKIP_CONTROL_CHARS);
     this.charSeq = new AppendableCharSequence(8192);
     this.lineParser = new LineParser(charSeq, 8192);
     this.wordParser = new WordParser(charSeq, 8192);
     this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 8192);
+    this.numberParser = new NumberParser(8);
+    this.matchingParenthesesParser = new MatchingParenthesesParser();
     this.arrayParser = new ArrayParser(charSeq);
+    this.envelopeParser = new EnvelopeParser(charSeq, quotedStringParser, matchingParenthesesParser);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
@@ -84,14 +104,14 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     UNTAGGED_OK,
     CONTINUATION,
     TAGGED,
+    FETCH,
     RESET;
   }
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-    dumpLine("RCV", in);
-
     for (;;) {
+      dumpLine("RCV", in);
       switch (state()) {
         case SKIP_CONTROL_CHARS:
           try {
@@ -135,11 +155,68 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         case TAGGED:
           handleTagged(in, out);
           break;
+        case FETCH:
+          parseFetch(ctx, in, out);
+          break;
         case RESET:
           reset(in);
           break;
       }
     }
+  }
+
+  private void parseFetch(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException {
+    skipControlCharacters(in);
+
+    char next = ((char) in.readUnsignedByte());
+    if (next != LPAREN && next != RPAREN) {
+      in.readerIndex(in.readerIndex() - 1);
+    } else if (next == RPAREN) { // Check to see if this is the end of this fetch response
+      char second = ((char) in.readUnsignedByte());
+      if (second == HttpConstants.CR || second == HttpConstants.LF) {
+        // At the end of the fetch, add the current message to the untagged responses and reset
+        untaggedResponses.add(currentMessage.build());
+        currentMessage = null;
+        checkpoint(State.RESET);
+        return;
+      } else {
+        in.readerIndex(in.readerIndex() - 2);
+      }
+    }
+
+    String fetchItemString = wordParser.parse(in).toString();
+    if (StringUtils.isBlank(fetchItemString)) {
+      checkpoint(State.FETCH);
+      return;
+    }
+
+    FetchDataItemType fetchType = FetchDataItemType.getFetchType(fetchItemString);
+    switch (fetchType) {
+      case FLAGS:
+        List<String> flags = arrayParser.parse(in);
+        currentMessage.setFlagStrings(flags);
+        break;
+      case INTERNALDATE:
+        String internalDate = quotedStringParser.parse(in);
+        currentMessage.setInternalDate(internalDate);
+        break;
+      case RFC822_SIZE:
+        currentMessage.setSize(((int) numberParser.parse(in)));
+        break;
+      case UID:
+        currentMessage.setUid(numberParser.parse(in));
+        break;
+      case ENVELOPE:
+        currentMessage.setEnvelope(parseEnvelope(ctx, in));
+        break;
+      case INVALID:
+      default:
+        // This is really bad because we need to know what type of response to parse for each tag.
+        // Given an unknown fetch type, we can't find the next fetch type tag, so we just have to stop.
+        throw new UnknownFetchItemTypeException(fetchItemString);
+    }
+
+    checkpoint(State.FETCH);
   }
 
   private void handleTagged(ByteBuf in, List<Object> out) {
@@ -158,6 +235,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private void handleUntaggedValue(UntaggedResponseType type, String value, ChannelHandlerContext ctx) {
     switch (type) {
+      case FETCH:
+        currentMessage = new ImapMessage.Builder()
+            .setMessageNumber(Long.parseLong(value));
+        checkpoint(State.FETCH);
+        return;
       case RECENT:
         untaggedResponses.add(handleIntResponse(type, value));
         break;
@@ -246,6 +328,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .build();
   }
 
+  private Envelope parseEnvelope(ChannelHandlerContext ctx, ByteBuf in) {
+    ByteBuf envelopeBytes = matchingParenthesesParser.parse(in, ctx.alloc());
+    return envelopeParser.parse(envelopeBytes);
+  }
+
   private FolderFlags parseFlags(ByteBuf in, boolean permanent) {
     skipControlCharacters(in);
     List<String> flags = arrayParser.parse(in);
@@ -259,8 +346,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     skipControlCharacters(in);
     Set<FolderAttribute> attributes = parseFolderAttributes(in);
 
-    String context = quotedStringParser.parse(in).toString();
-    String name = quotedStringParser.parse(in).toString();
+    String context = quotedStringParser.parse(in);
+    String name = quotedStringParser.parse(in);
 
     // Make sure we parse to the end of the line
     lineParser.parse(in);

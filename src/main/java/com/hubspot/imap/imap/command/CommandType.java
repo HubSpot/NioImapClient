@@ -8,5 +8,6 @@ public enum CommandType {
   AUTHENTICATE,
   LIST,
   EXAMINE,
-  SELECT;
+  SELECT,
+  FETCH;
 }

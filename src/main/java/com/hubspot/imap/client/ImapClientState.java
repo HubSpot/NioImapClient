@@ -58,8 +58,8 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     return messageNumber.get();
   }
 
-  public long getNextCommandId() {
-    return commandCount.getAndIncrement();
+  public String getNextTag() {
+    return String.format("A%03d ", commandCount.getAndIncrement());
   }
 
   public Command getCurrentCommand() {

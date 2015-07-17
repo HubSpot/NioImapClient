@@ -4,46 +4,43 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.internal.AppendableCharSequence;
 
-public class OptionallyQuotedStringParser extends BaseStringParser {
+public class OptionallyQuotedStringParser implements ByteBufParser<String> {
   private static final char QUOTE = '"';
 
-
+  protected final AppendableCharSequence seq;
   private final int maxStringLength;
 
-  private boolean isQuoted = false;
+  private int size;
 
   public OptionallyQuotedStringParser(AppendableCharSequence seq, int maxStringLength) {
-    super(seq);
+    this.seq = seq;
     this.maxStringLength = maxStringLength;
   }
 
-  @Override
-  public AppendableCharSequence parse(ByteBuf buffer) {
-    isQuoted = false;
-    return super.parse(buffer);
-  }
-
-  @Override
-  public boolean process(byte value) throws Exception {
-    char c = ((char) value);
-    if (Character.isWhitespace(c)) {
-      if (isQuoted) {
+  public String parse(ByteBuf buffer) {
+    seq.reset();
+    size = 0;
+    boolean isQuoted = false;
+    for (;;) {
+      char c = ((char) buffer.readUnsignedByte());
+      if (Character.isWhitespace(c)) {
+        if (isQuoted) {
+          append(c);
+        } else if (size > 0) {
+          break;
+        }
+      } else if (c == QUOTE) {
+        if (size == 0) {    // Start Quote
+          isQuoted = true;
+        } else {            // End Quote
+          break;
+        }
+      } else {
         append(c);
-        return true;
       }
-
-      return size == 0;
-    } else if (c ==  QUOTE) {
-      if (size == 0) {    // Start Quote
-        isQuoted = true;
-        return true;
-      } else {            // End Quote
-        return false;
-      }
-    } else {
-      append(c);
-      return true;
     }
+
+    return seq.toString();
   }
 
   private void append(char c) {

@@ -5,6 +5,7 @@ import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType
 import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
+import com.hubspot.imap.imap.message.Envelope;
 import com.hubspot.imap.imap.message.UnfetchedFieldException;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.FetchResponse;
@@ -130,6 +131,24 @@ public class ImapClientTest {
 
     assertThat(response.getMessages().size()).isGreaterThan(0);
     assertThat(response.getMessages().iterator().next().getUid()).isGreaterThan(0);
+  }
+
+  @Test
+  public void testFetchEnvelope_doesFetchEnvelope() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.ENVELOPE);
+    FetchResponse response = responseFuture.get();
+
+    assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
+
+    assertThat(response.getMessages().size()).isGreaterThan(0);
+
+    Envelope envelope = response.getMessages().iterator().next().getEnvelope();
+    assertThat(envelope.getDate()).isNotNull();
+    //assertThat(response.getMessages().iterator().next().getUid()).isGreaterThan(0);
   }
 
   @Test

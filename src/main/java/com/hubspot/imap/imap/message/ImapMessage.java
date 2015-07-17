@@ -16,6 +16,7 @@ public interface ImapMessage {
   long getUid() throws UnfetchedFieldException;
   ZonedDateTime getInternalDate() throws UnfetchedFieldException;
   int getSize() throws UnfetchedFieldException;
+  Envelope getEnvelope() throws UnfetchedFieldException;
 
   class Builder implements ImapMessage {
     private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
@@ -25,6 +26,7 @@ public interface ImapMessage {
     private Optional<Long> uid = Optional.empty();
     private Optional<ZonedDateTime> internalDate = Optional.empty();
     private Optional<Integer> size = Optional.empty();
+    private Optional<Envelope> envelope = Optional.empty();
 
     public ImapMessage build() {
       return this;
@@ -81,6 +83,15 @@ public interface ImapMessage {
 
     public Builder setSize(int size) {
       this.size = Optional.of(size);
+      return this;
+    }
+
+    public Envelope getEnvelope() throws UnfetchedFieldException {
+      return envelope.orElseThrow(() -> new UnfetchedFieldException("envelope"));
+    }
+
+    public Builder setEnvelope(Envelope envelope) {
+      this.envelope = Optional.of(envelope);
       return this;
     }
 

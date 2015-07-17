@@ -28,7 +28,7 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
     ChannelPipeline channelPipeline = socketChannel.pipeline();
 
     channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(), hostAndPort.getHostText(), hostAndPort.getPortOrDefault(993)));
-    channelPipeline.addLast(new ResponseDecoder());
+    channelPipeline.addLast(new ResponseDecoder(socketChannel.alloc()));
     channelPipeline.addLast(STRING_ENCODER);
   }
 }

@@ -6,6 +6,7 @@ import com.hubspot.imap.imap.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.imap.folder.FolderAttribute;
 import com.hubspot.imap.imap.folder.FolderFlags;
 import com.hubspot.imap.imap.folder.FolderMetadata;
+import com.hubspot.imap.imap.message.Envelope;
 import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
@@ -19,10 +20,13 @@ import com.hubspot.imap.imap.response.untagged.UntaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
+import com.hubspot.imap.utils.parsers.MatchingParenthesesParser;
 import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;
 import com.hubspot.imap.utils.parsers.WordParser;
+import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.handler.codec.http.HttpConstants;
@@ -70,20 +74,24 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final OptionallyQuotedStringParser quotedStringParser;
   private final ArrayParser arrayParser;
   private final NumberParser numberParser;
+  private final MatchingParenthesesParser matchingParenthesesParser;
+  private final EnvelopeParser envelopeParser;
 
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
 
   private ImapMessage.Builder currentMessage;
 
-  public ResponseDecoder() {
+  public ResponseDecoder(ByteBufAllocator allocator) {
     super(State.SKIP_CONTROL_CHARS);
     this.charSeq = new AppendableCharSequence(8192);
     this.lineParser = new LineParser(charSeq, 8192);
     this.wordParser = new WordParser(charSeq, 8192);
     this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 8192);
-    this.arrayParser = new ArrayParser(charSeq);
     this.numberParser = new NumberParser(8);
+    this.matchingParenthesesParser = new MatchingParenthesesParser();
+    this.arrayParser = new ArrayParser(charSeq);
+    this.envelopeParser = new EnvelopeParser(charSeq, quotedStringParser, matchingParenthesesParser);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
@@ -149,7 +157,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
           handleTagged(in, out);
           break;
         case FETCH:
-          parseFetch(in, out);
+          parseFetch(ctx, in, out);
           break;
         case RESET:
           reset(in);
@@ -158,13 +166,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
   }
 
-  private void parseFetch(ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException {
-    dumpLine("fetch", in);
+  private void parseFetch(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException {
     skipControlCharacters(in);
 
     char next = ((char) in.readUnsignedByte());
     if (next != LPAREN && next != RPAREN) {
-      dumpLine("fetch after lparen", in);
       in.readerIndex(in.readerIndex() - 1);
     } else if (next == RPAREN) { // Check to see if this is the end of this fetch response
       char second = ((char) in.readUnsignedByte());
@@ -177,11 +183,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       } else {
         in.readerIndex(in.readerIndex() - 2);
       }
-
-      dumpLine("fetch after rparen", in);
     }
-
-    dumpLine("fetch after end check", in);
 
     String fetchItemString = wordParser.parse(in).toString();
     if (StringUtils.isBlank(fetchItemString)) {
@@ -196,7 +198,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setFlagStrings(flags);
         break;
       case INTERNALDATE:
-        String internalDate = quotedStringParser.parse(in).toString();
+        String internalDate = quotedStringParser.parse(in);
         currentMessage.setInternalDate(internalDate);
         break;
       case RFC822_SIZE:
@@ -205,11 +207,13 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case UID:
         currentMessage.setUid(numberParser.parse(in));
         break;
+      case ENVELOPE:
+        currentMessage.setEnvelope(parseEnvelope(ctx, in));
+        break;
       case INVALID:
       default:
         // This is really bad because we need to know what type of response to parse for each tag.
         // Given an unknown fetch type, we can't find the next fetch type tag, so we just have to stop.
-        checkpoint(State.RESET);
         throw new UnknownFetchItemTypeException(fetchItemString);
     }
 
@@ -325,6 +329,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .build();
   }
 
+  private Envelope parseEnvelope(ChannelHandlerContext ctx, ByteBuf in) {
+    ByteBuf envelopeBytes = matchingParenthesesParser.parse(in, ctx.alloc());
+    return envelopeParser.parse(envelopeBytes);
+  }
+
   private FolderFlags parseFlags(ByteBuf in, boolean permanent) {
     skipControlCharacters(in);
     List<String> flags = arrayParser.parse(in);
@@ -338,8 +347,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     skipControlCharacters(in);
     Set<FolderAttribute> attributes = parseFolderAttributes(in);
 
-    String context = quotedStringParser.parse(in).toString();
-    String name = quotedStringParser.parse(in).toString();
+    String context = quotedStringParser.parse(in);
+    String name = quotedStringParser.parse(in);
 
     // Make sure we parse to the end of the line
     lineParser.parse(in);

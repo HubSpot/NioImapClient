@@ -44,6 +44,8 @@ public interface OpenResponse extends TaggedResponse {
             case HIGHESTMODSEQ:
               setHighestModSeq(intResponse.getValue());
               break;
+            default:
+              break;
           }
         } else if (o instanceof FolderFlags) {
           FolderFlags flags = ((FolderFlags) o);

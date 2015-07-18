@@ -50,6 +50,8 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
         case NOOP:
           taggedResponse = new NoopResponse.Builder().fromResponse(taggedResponse);
           break;
+        default:
+          break;
       }
 
       out.add(taggedResponse);

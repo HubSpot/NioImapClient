@@ -27,7 +27,7 @@ public interface FetchDataItem {
     UID,
     INVALID;
 
-    public String string;
+    private String string;
 
     FetchDataItemType() {
       string = name().replace("_", ".");

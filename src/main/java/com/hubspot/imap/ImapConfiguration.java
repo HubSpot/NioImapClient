@@ -63,8 +63,12 @@ public interface ImapConfiguration {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       Builder builder = (Builder) o;
       return Objects.equal(getNoopKeepAliveIntervalSec(), builder.getNoopKeepAliveIntervalSec()) &&
           Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&

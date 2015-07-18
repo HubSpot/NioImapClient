@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FolderFlags {
-
   public enum Flag {
     ANSWERED,
     FLAGGED,
@@ -65,8 +64,12 @@ public class FolderFlags {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     FolderFlags that = (FolderFlags) o;
     return Objects.equal(isPermanent(), that.isPermanent()) &&
         Objects.equal(getFlags(), that.getFlags());

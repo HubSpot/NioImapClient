@@ -7,9 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class XOAuth2Command extends BaseCommand {
-  private final static BaseEncoding B64 = BaseEncoding.base64();
-  private final static String SASL_FORMAT = "user=%s\001auth=Bearer %s\001\001";
-  private final static String MECHANISM = "XOAUTH2";
+  private static final BaseEncoding B64 = BaseEncoding.base64();
+  private static final String SASL_FORMAT = "user=%s\001auth=Bearer %s\001\001";
+  private static final String MECHANISM = "XOAUTH2";
 
   private final String userName;
   private final String accessToken;

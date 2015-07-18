@@ -96,20 +96,37 @@ public interface ImapMessage {
     }
 
     @Override
+    public String toString() {
+      return Objects.toStringHelper(this)
+          .add("flags", flags)
+          .add("messageNumber", messageNumber)
+          .add("uid", uid)
+          .add("internalDate", internalDate)
+          .add("size", size)
+          .add("envelope", envelope)
+          .toString();
+    }
+
+    @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       Builder builder = (Builder) o;
       return Objects.equal(flags, builder.flags) &&
           Objects.equal(messageNumber, builder.messageNumber) &&
           Objects.equal(uid, builder.uid) &&
           Objects.equal(internalDate, builder.internalDate) &&
-          Objects.equal(size, builder.size);
+          Objects.equal(size, builder.size) &&
+          Objects.equal(envelope, builder.envelope);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(flags, messageNumber, uid, internalDate, size);
+      return Objects.hashCode(flags, messageNumber, uid, internalDate, size, envelope);
     }
   }
 }

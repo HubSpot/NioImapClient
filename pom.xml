@@ -11,6 +11,32 @@
   <artifactId>NioImapClient</artifactId>
   <version>1.0-SNAPSHOT</version>
 
+  <properties>
+    <hubspot.nexus.serverId>hubspot-development</hubspot.nexus.serverId>
+    <hubspot.nexus.hostname>http://maven.hubteam.com</hubspot.nexus.hostname>
+  </properties>
+
+  <repositories>
+    <repository>
+      <snapshots>
+        <updatePolicy>always</updatePolicy>
+      </snapshots>
+      <id>${hubspot.nexus.serverId}</id>
+      <url>${hubspot.nexus.hostname}/nexus/content/repositories/development</url>
+    </repository>
+  </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>${hubspot.nexus.serverId}</id>
+      <url>${hubspot.nexus.hostname}/nexus/content/repositories/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>${hubspot.nexus.serverId}</id>
+      <url>${hubspot.nexus.hostname}/nexus/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <dependencies>
     <dependency>
       <groupId>io.netty</groupId>

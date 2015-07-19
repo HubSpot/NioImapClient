@@ -1,5 +1,6 @@
 package com.hubspot.imap.imap;
 
+import com.google.seventeen.common.primitives.Ints;
 import com.hubspot.imap.imap.ResponseDecoder.State;
 import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.imap.exceptions.UnknownFetchItemTypeException;
@@ -88,7 +89,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.lineParser = new LineParser(charSeq, 8192);
     this.wordParser = new WordParser(charSeq, 8192);
     this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 8192);
-    this.numberParser = new NumberParser(8);
+    this.numberParser = new NumberParser(charSeq, 8);
     this.matchingParenthesesParser = new MatchingParenthesesParser();
     this.arrayParser = new ArrayParser(charSeq);
     this.envelopeParser = new EnvelopeParser(charSeq, quotedStringParser, matchingParenthesesParser);
@@ -201,7 +202,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setInternalDate(internalDate);
         break;
       case RFC822_SIZE:
-        currentMessage.setSize(((int) numberParser.parse(in)));
+        currentMessage.setSize(Ints.checkedCast(numberParser.parse(in)));
         break;
       case UID:
         currentMessage.setUid(numberParser.parse(in));

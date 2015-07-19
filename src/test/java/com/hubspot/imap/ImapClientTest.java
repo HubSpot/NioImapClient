@@ -10,8 +10,8 @@ import com.hubspot.imap.imap.message.UnfetchedFieldException;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
+import com.hubspot.imap.imap.response.tagged.NoopResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
-import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import io.netty.util.concurrent.Future;
 import org.assertj.core.api.Condition;
 import org.junit.After;
@@ -42,8 +42,8 @@ public class ImapClientTest {
 
   @Test
   public void testLogin_doesAuthenticateConnection() throws Exception {
-    Future<TaggedResponse> noopResponseFuture = client.noop();
-    TaggedResponse taggedResponse = noopResponseFuture.get();
+    Future<NoopResponse> noopResponseFuture = client.noop();
+    NoopResponse taggedResponse = noopResponseFuture.get();
 
     assertThat(taggedResponse.getCode()).isEqualTo(ResponseCode.OK);
   }

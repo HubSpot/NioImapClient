@@ -1,5 +1,6 @@
 package com.hubspot.imap.client;
 
+import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.BlankCommand;
@@ -16,6 +17,7 @@ import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.events.ByeEvent;
 import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse;
+import com.hubspot.imap.imap.response.tagged.NoopResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import io.netty.channel.Channel;
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
@@ -134,7 +137,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     return send(new FetchCommand(startId, stopId, fetchDataItems));
   }
 
-  public <T extends TaggedResponse> Future<T> noop() {
+  public Future<NoopResponse> noop() {
     return send(CommandType.NOOP);
   }
 
@@ -209,17 +212,23 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (isLoggedIn()) {
       if (!lastCommandPromise.isDone()) {
-        if (!lastCommandPromise.await(10, TimeUnit.SECONDS)) {
-          lastCommandPromise.cancel(true);
+        try {
+          if (!lastCommandPromise.await(10, TimeUnit.SECONDS)) {
+            lastCommandPromise.cancel(true);
+          }
+        } catch (InterruptedException e) {
+          throw Throwables.propagate(e);
         }
       }
 
       Future<TaggedResponse> logoutFuture = logout();
       try {
         logoutFuture.get(10, TimeUnit.SECONDS);
+      } catch (InterruptedException|ExecutionException|TimeoutException e) {
+        LOGGER.error("Caught exception while closing client", e);
       } finally {
         channel.close();
       }

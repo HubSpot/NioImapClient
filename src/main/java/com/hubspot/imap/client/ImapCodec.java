@@ -1,7 +1,10 @@
 package com.hubspot.imap.client;
 
 import com.hubspot.imap.imap.command.BaseCommand;
+import com.hubspot.imap.imap.command.fetch.FetchCommand;
+import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.response.ContinuationResponse;
+import com.hubspot.imap.imap.response.events.FetchEvent;
 import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
 import com.hubspot.imap.imap.response.tagged.NoopResponse;
@@ -13,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
@@ -36,6 +41,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
       out.add(msg);
     } else if (msg instanceof TaggedResponse) {
       TaggedResponse taggedResponse = ((TaggedResponse) msg);
+      fireFetchEvents(ctx, taggedResponse);
       switch (clientState.getCurrentCommand().getCommandType()) {
         case LIST:
           taggedResponse = new Builder().fromResponse(taggedResponse);
@@ -45,7 +51,8 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
           taggedResponse = new OpenResponse.Builder().fromResponse(taggedResponse);
           break;
         case FETCH:
-          taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse);
+          FetchCommand fetchCommand = ((FetchCommand) clientState.getCurrentCommand());
+          taggedResponse = new FetchResponse.Builder().fromResponse(fetchCommand, taggedResponse);
           break;
         case NOOP:
           taggedResponse = new NoopResponse.Builder().fromResponse(taggedResponse);
@@ -57,4 +64,15 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
       out.add(taggedResponse);
     }
   }
+
+  private void fireFetchEvents(ChannelHandlerContext ctx, TaggedResponse response) {
+    Set<ImapMessage> messages = response.getUntagged().stream()
+        .filter(m -> m instanceof ImapMessage).map(m -> ((ImapMessage) m))
+        .collect(Collectors.toSet());
+
+    FetchEvent event = new FetchEvent(messages);
+    ctx.fireUserEventTriggered(event);
+  }
+
+
 }

@@ -49,4 +49,12 @@ public class FetchCommand extends BaseCommand {
     return String.format("(%s)",
         JOINER.join(fetchDataItems.stream().map(FetchDataItem::toString).collect(Collectors.toList())));
   }
+
+  public long getStartId() {
+    return startId;
+  }
+
+  public Optional<Long> getStopId() {
+    return stopId;
+  }
 }

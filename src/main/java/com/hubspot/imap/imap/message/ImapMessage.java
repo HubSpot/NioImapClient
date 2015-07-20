@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 public interface ImapMessage {
 
   Set<MessageFlag> getFlags() throws UnfetchedFieldException;
-  long getMessageNumber() throws UnfetchedFieldException;
+  long getMessageNumber();
   long getUid() throws UnfetchedFieldException;
   ZonedDateTime getInternalDate() throws UnfetchedFieldException;
   int getSize() throws UnfetchedFieldException;
@@ -22,7 +22,7 @@ public interface ImapMessage {
     private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
 
     private Optional<Set<MessageFlag>> flags = Optional.empty();
-    private Optional<Long> messageNumber = Optional.empty();
+    private long messageNumber;
     private Optional<Long> uid = Optional.empty();
     private Optional<ZonedDateTime> internalDate = Optional.empty();
     private Optional<Integer> size = Optional.empty();
@@ -50,12 +50,12 @@ public interface ImapMessage {
       return this;
     }
 
-    public long getMessageNumber() throws UnfetchedFieldException {
-      return this.messageNumber.orElseThrow(() -> new UnfetchedFieldException("message number"));
+    public long getMessageNumber() {
+      return this.messageNumber;
     }
 
     public Builder setMessageNumber(long messageNumber) {
-      this.messageNumber = Optional.of(messageNumber);
+      this.messageNumber = messageNumber;
       return this;
     }
 

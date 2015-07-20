@@ -3,7 +3,6 @@ package com.hubspot.imap.imap.response.tagged;
 import com.hubspot.imap.imap.message.ImapMessage;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public interface FetchResponse extends TaggedResponse {
   Set<ImapMessage> getMessages();
@@ -11,10 +10,8 @@ public interface FetchResponse extends TaggedResponse {
   class Builder extends TaggedResponse.Builder implements FetchResponse {
     private Set<ImapMessage> messages;
 
-    public FetchResponse fromResponse(TaggedResponse response) {
-      this.messages = response.getUntagged().stream()
-          .filter(u -> u instanceof ImapMessage).map(u -> ((ImapMessage) u))
-          .collect(Collectors.toSet());
+    public FetchResponse fromResponse(TaggedResponse response, Set<ImapMessage> messages) {
+      this.messages = messages;
 
       setCode(response.getCode());
       setMessage(response.getMessage());

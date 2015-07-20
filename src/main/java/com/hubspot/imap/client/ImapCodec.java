@@ -1,6 +1,8 @@
 package com.hubspot.imap.client;
 
 import com.hubspot.imap.imap.command.BaseCommand;
+import com.hubspot.imap.imap.command.fetch.FetchCommand;
+import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
@@ -13,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
@@ -45,7 +49,14 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
           taggedResponse = new OpenResponse.Builder().fromResponse(taggedResponse);
           break;
         case FETCH:
-          taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse);
+          FetchCommand fetchCommand = ((FetchCommand) clientState.getCurrentCommand());
+
+          Set<ImapMessage> allMessages = taggedResponse.getUntagged().stream()
+              .filter(u -> u instanceof ImapMessage).map(u -> ((ImapMessage) u))
+              .collect(Collectors.toSet());
+          Set<ImapMessage> messages = filterFetchedMessages(fetchCommand, allMessages);
+
+          taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse, messages);
           break;
         case NOOP:
           taggedResponse = new NoopResponse.Builder().fromResponse(taggedResponse);
@@ -56,5 +67,16 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
 
       out.add(taggedResponse);
     }
+  }
+
+  private Set<ImapMessage> filterFetchedMessages(FetchCommand fetchCommand, Set<ImapMessage> messages) {
+    return messages.stream().filter(m -> {
+      if (fetchCommand.getStopId().isPresent()) {
+        return m.getMessageNumber() >= fetchCommand.getStartId() &&
+            m.getMessageNumber() <= fetchCommand.getStopId().get();
+      } else {
+        return m.getMessageNumber() >= fetchCommand.getStartId();
+      }
+    }).collect(Collectors.toSet());
   }
 }

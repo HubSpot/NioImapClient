@@ -26,7 +26,7 @@ public class EnvelopeParser {
                         MatchingParenthesesParser matchingParenthesesParser) {
     this.quotedStringParser = quotedStringParser;
     this.matchingParenthesesParser = matchingParenthesesParser;
-    this.nestedArrayParser = new NestedArrayParser<>(seq, quotedStringParser);
+    this.nestedArrayParser = new NestedArrayParser<>(quotedStringParser);
   }
 
   /**

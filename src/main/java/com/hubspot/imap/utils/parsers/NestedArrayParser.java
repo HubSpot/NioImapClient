@@ -1,7 +1,6 @@
 package com.hubspot.imap.utils.parsers;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.AppendableCharSequence;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,17 +11,14 @@ public class NestedArrayParser<T> {
 
   private List<Object> values;
   private boolean foundLeftParen;
-  private final AppendableCharSequence seq;
   private final ByteBufParser<T> itemParser;
 
-  public NestedArrayParser(AppendableCharSequence seq, ByteBufParser<T> itemParser) {
-    this.seq = seq;
+  public NestedArrayParser(ByteBufParser<T> itemParser) {
     this.itemParser = itemParser;
   }
 
   public List<Object> parse(ByteBuf buffer) {
     values = new ArrayList<>();
-    seq.reset();
 
     foundLeftParen = false;
 
@@ -32,13 +28,13 @@ public class NestedArrayParser<T> {
       if (nextByte == LPAREN) {
         if (foundLeftParen) {
           buffer.readerIndex(buffer.readerIndex() - 1); // This is actually the start of the next array
-          values.add(new NestedArrayParser<>(seq, itemParser).parse(buffer));
+          values.add(new NestedArrayParser<>(itemParser).parse(buffer));
         } else {
           foundLeftParen = true;
         }
       } else if (nextByte == RPAREN) {
-        break;
-      } else if (Character.isWhitespace(nextByte) && !foundLeftParen) {
+        return values;
+      } else if (Character.isWhitespace(nextByte)) {
       } else if (nextByte == 'N' && !foundLeftParen) {
         // NIL, read the remaining 2 bytes and return an empty list;
         buffer.readBytes(2);

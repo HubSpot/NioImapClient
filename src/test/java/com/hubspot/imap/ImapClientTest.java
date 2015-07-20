@@ -139,7 +139,7 @@ public class ImapClientTest {
     OpenResponse or = openResponseFuture.get();
     assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.ENVELOPE);
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(10L), FetchDataItemType.ENVELOPE);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);

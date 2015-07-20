@@ -5,17 +5,17 @@ import com.google.seventeen.common.base.Joiner;
 
 import java.util.List;
 
-public interface EmailAddress {
+public interface ImapAddress {
   String getPersonal();
   String getAddress();
 
-  class Builder implements EmailAddress {
+  class Builder implements ImapAddress {
     private static final String NIL = "NIL";
     private static final Joiner AT_JOINER = Joiner.on("@").skipNulls();
     private String personal;
     private String address;
 
-    public EmailAddress build() {
+    public ImapAddress build() {
       return this;
     }
 

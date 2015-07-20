@@ -1,6 +1,6 @@
 package com.hubspot.imap.utils.parsers.fetch;
 
-import com.hubspot.imap.imap.message.EmailAddress;
+import com.hubspot.imap.imap.message.ImapAddress;
 import com.hubspot.imap.imap.message.Envelope;
 import com.hubspot.imap.utils.parsers.MatchingParenthesesParser;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
@@ -46,12 +46,12 @@ public class EnvelopeParser {
     String dateString = quotedStringParser.parse(in);
     String subject = quotedStringParser.parse(in);
 
-    List<EmailAddress> from = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<EmailAddress> sender = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<EmailAddress> replyTo = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<EmailAddress> to = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<EmailAddress> cc = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<EmailAddress> bcc = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<ImapAddress> from = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<ImapAddress> sender = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<ImapAddress> replyTo = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<ImapAddress> to = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<ImapAddress> cc = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<ImapAddress> bcc = emailAddressesFromNestedList(nestedArrayParser.parse(in));
 
     String inReplyTo = quotedStringParser.parse(in);
     String messageId = quotedStringParser.parse(in);
@@ -73,14 +73,14 @@ public class EnvelopeParser {
   }
 
   @SuppressWarnings("unchecked")
-  private List<EmailAddress> emailAddressesFromNestedList(List<Object> in) {
+  private List<ImapAddress> emailAddressesFromNestedList(List<Object> in) {
     if (in.size() == 0) {
       return new ArrayList<>();
     }
 
     return in.stream()
         .map(o -> ((List<String>) o))
-        .map(o -> new EmailAddress.Builder().parseFrom(o).build())
+        .map(o -> new ImapAddress.Builder().parseFrom(o).build())
         .collect(Collectors.toList());
   }
 }

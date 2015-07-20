@@ -215,8 +215,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
 
   @Override
   public void close() {
-    if (isLoggedIn()) {
-      if (!lastCommandPromise.isDone()) {
+    if (isOpen()) {
+      if (lastCommandPromise != null && !lastCommandPromise.isDone()) {
         try {
           if (!lastCommandPromise.await(10, TimeUnit.SECONDS)) {
             lastCommandPromise.cancel(true);

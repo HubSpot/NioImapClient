@@ -7,12 +7,12 @@ import java.util.List;
 public interface Envelope {
   ZonedDateTime getDate();
   String getSubject();
-  List<EmailAddress> getFrom();
-  List<EmailAddress> getSender();
-  List<EmailAddress> getReplyTo();
-  List<EmailAddress> getTo();
-  List<EmailAddress> getCc();
-  List<EmailAddress> getBcc();
+  List<ImapAddress> getFrom();
+  List<ImapAddress> getSender();
+  List<ImapAddress> getReplyTo();
+  List<ImapAddress> getTo();
+  List<ImapAddress> getCc();
+  List<ImapAddress> getBcc();
 
   String getInReplyTo();
   String getMessageId();
@@ -22,12 +22,12 @@ public interface Envelope {
 
     private ZonedDateTime date;
     private String subject;
-    private List<EmailAddress> from;
-    private List<EmailAddress> sender;
-    private List<EmailAddress> replyTo;
-    private List<EmailAddress> to;
-    private List<EmailAddress> cc;
-    private List<EmailAddress> bcc;
+    private List<ImapAddress> from;
+    private List<ImapAddress> sender;
+    private List<ImapAddress> replyTo;
+    private List<ImapAddress> to;
+    private List<ImapAddress> cc;
+    private List<ImapAddress> bcc;
     private String inReplyTo;
     private String messageId;
 
@@ -61,56 +61,56 @@ public interface Envelope {
       return this;
     }
 
-    public List<EmailAddress> getFrom() {
+    public List<ImapAddress> getFrom() {
       return this.from;
     }
 
-    public Builder setFrom(List<EmailAddress> from) {
+    public Builder setFrom(List<ImapAddress> from) {
       this.from = from;
       return this;
     }
 
-    public List<EmailAddress> getSender() {
+    public List<ImapAddress> getSender() {
       return this.sender;
     }
 
-    public Builder setSender(List<EmailAddress> sender) {
+    public Builder setSender(List<ImapAddress> sender) {
       this.sender = sender;
       return this;
     }
 
-    public List<EmailAddress> getReplyTo() {
+    public List<ImapAddress> getReplyTo() {
       return this.replyTo;
     }
 
-    public Builder setReplyTo(List<EmailAddress> replyTo) {
+    public Builder setReplyTo(List<ImapAddress> replyTo) {
       this.replyTo = replyTo;
       return this;
     }
 
-    public List<EmailAddress> getTo() {
+    public List<ImapAddress> getTo() {
       return this.to;
     }
 
-    public Builder setTo(List<EmailAddress> to) {
+    public Builder setTo(List<ImapAddress> to) {
       this.to = to;
       return this;
     }
 
-    public List<EmailAddress> getCc() {
+    public List<ImapAddress> getCc() {
       return this.cc;
     }
 
-    public Builder setCc(List<EmailAddress> cc) {
+    public Builder setCc(List<ImapAddress> cc) {
       this.cc = cc;
       return this;
     }
 
-    public List<EmailAddress> getBcc() {
+    public List<ImapAddress> getBcc() {
       return this.bcc;
     }
 
-    public Builder setBcc(List<EmailAddress> bcc) {
+    public Builder setBcc(List<ImapAddress> bcc) {
       this.bcc = bcc;
       return this;
     }

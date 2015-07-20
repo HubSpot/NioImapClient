@@ -4,6 +4,7 @@ import com.hubspot.imap.imap.command.BaseCommand;
 import com.hubspot.imap.imap.command.fetch.FetchCommand;
 import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.response.ContinuationResponse;
+import com.hubspot.imap.imap.response.events.FetchEvent;
 import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
 import com.hubspot.imap.imap.response.tagged.NoopResponse;
@@ -40,6 +41,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
       out.add(msg);
     } else if (msg instanceof TaggedResponse) {
       TaggedResponse taggedResponse = ((TaggedResponse) msg);
+      fireFetchEvents(ctx, taggedResponse);
       switch (clientState.getCurrentCommand().getCommandType()) {
         case LIST:
           taggedResponse = new Builder().fromResponse(taggedResponse);
@@ -50,13 +52,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
           break;
         case FETCH:
           FetchCommand fetchCommand = ((FetchCommand) clientState.getCurrentCommand());
-
-          Set<ImapMessage> allMessages = taggedResponse.getUntagged().stream()
-              .filter(u -> u instanceof ImapMessage).map(u -> ((ImapMessage) u))
-              .collect(Collectors.toSet());
-          Set<ImapMessage> messages = filterFetchedMessages(fetchCommand, allMessages);
-
-          taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse, messages);
+          taggedResponse = new FetchResponse.Builder().fromResponse(fetchCommand, taggedResponse);
           break;
         case NOOP:
           taggedResponse = new NoopResponse.Builder().fromResponse(taggedResponse);
@@ -69,14 +65,14 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
     }
   }
 
-  private Set<ImapMessage> filterFetchedMessages(FetchCommand fetchCommand, Set<ImapMessage> messages) {
-    return messages.stream().filter(m -> {
-      if (fetchCommand.getStopId().isPresent()) {
-        return m.getMessageNumber() >= fetchCommand.getStartId() &&
-            m.getMessageNumber() <= fetchCommand.getStopId().get();
-      } else {
-        return m.getMessageNumber() >= fetchCommand.getStartId();
-      }
-    }).collect(Collectors.toSet());
+  private void fireFetchEvents(ChannelHandlerContext ctx, TaggedResponse response) {
+    Set<ImapMessage> messages = response.getUntagged().stream()
+        .filter(m -> m instanceof ImapMessage).map(m -> ((ImapMessage) m))
+        .collect(Collectors.toSet());
+
+    FetchEvent event = new FetchEvent(messages);
+    ctx.fireUserEventTriggered(event);
   }
+
+
 }

@@ -28,8 +28,6 @@ public class MessageAddListenerTest {
 
   @Test
   public void testOnOpen_doesCallMessageCountListener() throws Exception {
-    ImapClient client = TestUtils.getLoggedInClient();
-
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
@@ -41,8 +39,6 @@ public class MessageAddListenerTest {
 
   @Test
   public void testOnOpen_doesUpdateMessageCount() throws Exception {
-    ImapClient client = TestUtils.getLoggedInClient();
-
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());

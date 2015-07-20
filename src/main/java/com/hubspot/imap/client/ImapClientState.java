@@ -1,9 +1,11 @@
 package com.hubspot.imap.client;
 
+import com.hubspot.imap.client.listener.FetchEventListener;
 import com.hubspot.imap.client.listener.MessageAddListener;
 import com.hubspot.imap.imap.command.Command;
 import com.hubspot.imap.imap.response.events.ExistsEvent;
 import com.hubspot.imap.imap.response.events.ExpungeEvent;
+import com.hubspot.imap.imap.response.events.FetchEvent;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -21,6 +23,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final AtomicLong messageNumber;
 
   private final List<MessageAddListener> messageAddListeners;
+  private final List<FetchEventListener> fetchEventListeners;
 
   public ImapClientState(EventExecutorGroup executorGroup) {
     this.executorGroup = executorGroup;
@@ -30,6 +33,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     this.messageNumber = new AtomicLong(0);
 
     this.messageAddListeners = new ArrayList<>();
+    this.fetchEventListeners = new ArrayList<>();
   }
 
   @Override
@@ -45,6 +49,11 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
           executorGroup.submit(() -> listener.messagesAdded(lastMessageCount, currentCount));
         }
       }
+    } else if (evt instanceof FetchEvent) {
+      FetchEvent fetchEvent = ((FetchEvent) evt);
+      for (FetchEventListener listener: fetchEventListeners) {
+        executorGroup.submit(() -> listener.handle(fetchEvent));
+      }
     }
 
     super.userEventTriggered(ctx, evt);
@@ -52,6 +61,10 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
   public void onMessageAdd(MessageAddListener listener) {
     this.messageAddListeners.add(listener);
+  }
+
+  public void addFetchEventListener(FetchEventListener listener) {
+    this.fetchEventListeners.add(listener);
   }
 
   public long getMessageNumber() {

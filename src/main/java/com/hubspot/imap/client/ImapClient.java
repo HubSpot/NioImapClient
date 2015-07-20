@@ -62,7 +62,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     loginPromise = executorGroup.next().newPromise();
 
     this.channel.pipeline().addLast(new ImapCodec(clientState));
-    this.channel.pipeline().addLast(executorGroup, this);
+    this.channel.pipeline().addLast(this);
     this.channel.pipeline().addLast(executorGroup, this.clientState);
   }
 
@@ -109,7 +109,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private void startKeepAlive() {
     int keepAliveInterval = configuration.getNoopKeepAliveIntervalSec();
     if (keepAliveInterval > 0) {
-      this.channel.pipeline().addFirst(new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
+      this.channel.pipeline().addFirst(executorGroup, new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
     }
   }
 
@@ -161,15 +161,17 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   public synchronized <T extends TaggedResponse> Future<T> send(Command command) {
     final Promise<T> newPromise = executorGroup.next().newPromise();
     if (lastCommandPromise != null) {
-      lastCommandPromise.awaitUninterruptibly();
+      try {
+        lastCommandPromise.await();
+      } catch (InterruptedException e) {
+        throw Throwables.propagate(e);
+      }
     }
 
     lastCommandPromise = newPromise;
 
-    executorGroup.submit(() -> {
-      clientState.setCurrentCommand(command);
-      channel.writeAndFlush(command);
-    });
+    clientState.setCurrentCommand(command);
+    channel.writeAndFlush(command);
 
     return newPromise;
   }
@@ -193,7 +195,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
-      executorGroup.submit(() -> this.noop());
+      noop();
     } else if (evt instanceof ByeEvent) {
       if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != CommandType.LOGOUT) {
         channel.close();

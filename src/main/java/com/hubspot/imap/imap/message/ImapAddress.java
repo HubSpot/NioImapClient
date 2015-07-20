@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface ImapAddress {
   String getPersonal();
+  boolean hasPersonal();
   String getAddress();
 
   class Builder implements ImapAddress {

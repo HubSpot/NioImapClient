@@ -163,9 +163,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     if (lastCommandPromise != null) {
       lastCommandPromise.awaitUninterruptibly();
     }
+
+    lastCommandPromise = newPromise;
+
     executorGroup.submit(() -> {
       clientState.setCurrentCommand(command);
-      lastCommandPromise = newPromise;
       channel.writeAndFlush(command);
     });
 

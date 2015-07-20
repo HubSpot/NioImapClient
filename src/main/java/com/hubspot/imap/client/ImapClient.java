@@ -41,7 +41,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
 
   private final ImapConfiguration configuration;
   private final Channel channel;
-  private final EventExecutorGroup executorGroup;
+  private final EventExecutorGroup promiseExecutor;
+  private final EventExecutorGroup idleExecutor;
   private final String userName;
   private final String authToken;
   private final ImapClientState clientState;
@@ -50,20 +51,21 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
 
   private Promise lastCommandPromise;
 
-  public ImapClient(ImapConfiguration configuration, Channel channel, EventExecutorGroup executorGroup, String userName, String authToken) {
+  public ImapClient(ImapConfiguration configuration, Channel channel, EventExecutorGroup promiseExecutor, EventExecutorGroup idleExecutor, String userName, String authToken) {
     this.configuration = configuration;
     this.channel = channel;
 
-    this.executorGroup = executorGroup;
+    this.promiseExecutor = promiseExecutor;
+    this.idleExecutor = idleExecutor;
     this.userName = userName;
     this.authToken = authToken;
-    this.clientState = new ImapClientState(executorGroup);
+    this.clientState = new ImapClientState(promiseExecutor);
 
-    loginPromise = executorGroup.next().newPromise();
+    loginPromise = promiseExecutor.next().newPromise();
 
     this.channel.pipeline().addLast(new ImapCodec(clientState));
     this.channel.pipeline().addLast(this);
-    this.channel.pipeline().addLast(executorGroup, this.clientState);
+    this.channel.pipeline().addLast(promiseExecutor, this.clientState);
   }
 
   public ImapClientState getState() {
@@ -164,12 +166,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
    * This method will wait for any currently running command to finish before executing, this is a blocking operation.
    *
    * NOTE: It is critical that this method never be called from the event loop. This should not be a problem for user level application, but internal operations like keep-alive must be very careful to use separate executors when calling this method.
+   *       The other important thing that one must pay attention too is that the threads used to execute this method not be from the same group as used to generate the promises, because the threads are given out at random and calling promise.await on the thread that is responsible for that promise will deadlock.
    * @param command Command to send
    * @param <T> Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
    */
   public synchronized <T extends TaggedResponse> Future<T> send(Command command) {
-    final Promise<T> newPromise = executorGroup.next().newPromise();
+    final Promise<T> newPromise = promiseExecutor.next().newPromise();
     if (lastCommandPromise != null) {
       try {
         lastCommandPromise.await();
@@ -205,7 +208,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
-      executorGroup.next().execute(() -> noop());
+      idleExecutor.next().execute(() -> noop());
     } else if (evt instanceof ByeEvent) {
       if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != CommandType.LOGOUT) {
         channel.close();

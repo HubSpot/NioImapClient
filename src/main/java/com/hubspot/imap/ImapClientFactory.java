@@ -27,7 +27,8 @@ public class ImapClientFactory implements AutoCloseable {
   private final HostAndPort hostAndPort;
   private final Bootstrap bootstrap;
   private final EventLoopGroup eventLoopGroup;
-  private final EventExecutorGroup eventExecutor;
+  private final EventExecutorGroup promiseExecutorGroup;
+  private final EventExecutorGroup idleExecutorGroup;
   private final SslContext context;
 
   public ImapClientFactory(ImapConfiguration configuration) {
@@ -35,7 +36,8 @@ public class ImapClientFactory implements AutoCloseable {
     this.hostAndPort = configuration.getHostAndPort();
     this.bootstrap = new Bootstrap();
     this.eventLoopGroup = new NioEventLoopGroup();
-    this.eventExecutor = new DefaultEventExecutorGroup(16);
+    this.promiseExecutorGroup = new DefaultEventExecutorGroup(16);
+    this.idleExecutorGroup = new DefaultEventExecutorGroup(4);
 
     try {
       TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -57,12 +59,13 @@ public class ImapClientFactory implements AutoCloseable {
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {
     Channel channel = bootstrap.connect(hostAndPort.getHostText(), hostAndPort.getPort()).sync().channel();
-    return new ImapClient(configuration, channel, eventExecutor, userName, oauthToken);
+    return new ImapClient(configuration, channel, promiseExecutorGroup, idleExecutorGroup, userName, oauthToken);
   }
 
   @Override
   public void close() {
-    eventExecutor.shutdownGracefully();
+    promiseExecutorGroup.shutdownGracefully();
+    idleExecutorGroup.shutdownGracefully();
     eventLoopGroup.shutdownGracefully();
   }
 }

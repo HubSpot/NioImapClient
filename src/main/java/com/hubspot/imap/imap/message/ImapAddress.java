@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import com.google.seventeen.common.base.Joiner;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ImapAddress {
   String getPersonal();
@@ -12,7 +13,7 @@ public interface ImapAddress {
   class Builder implements ImapAddress {
     private static final String NIL = "NIL";
     private static final Joiner AT_JOINER = Joiner.on("@").skipNulls();
-    private String personal;
+    private Optional<String> personal = Optional.empty();
     private String address;
 
     public ImapAddress build() {
@@ -45,11 +46,15 @@ public interface ImapAddress {
     }
 
     public String getPersonal() {
-      return this.personal;
+      return this.personal.orElse(null);
+    }
+
+    public boolean hasPersonal() {
+      return this.personal.isPresent();
     }
 
     public Builder setPersonal(String personal) {
-      this.personal = personal;
+      this.personal = Optional.of(personal);
       return this;
     }
 

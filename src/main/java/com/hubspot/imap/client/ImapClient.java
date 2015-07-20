@@ -109,7 +109,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private void startKeepAlive() {
     int keepAliveInterval = configuration.getNoopKeepAliveIntervalSec();
     if (keepAliveInterval > 0) {
-      this.channel.pipeline().addFirst(executorGroup, new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
+      this.channel.pipeline().addFirst(new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
     }
   }
 
@@ -158,6 +158,16 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     return send(baseCommand);
   }
 
+  /**
+   * Sends a command.
+   *
+   * This method will wait for any currently running command to finish before executing, this is a blocking operation.
+   *
+   * NOTE: It is critical that this method never be called from the event loop. This should not be a problem for user level application, but internal operations like keep-alive must be very careful to use separate executors when calling this method.
+   * @param command Command to send
+   * @param <T> Response type
+   * @return Response future. Will be completed when a tagged response is received for this command.
+   */
   public synchronized <T extends TaggedResponse> Future<T> send(Command command) {
     final Promise<T> newPromise = executorGroup.next().newPromise();
     if (lastCommandPromise != null) {
@@ -195,7 +205,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
-      noop();
+      executorGroup.next().execute(() -> noop());
     } else if (evt instanceof ByeEvent) {
       if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != CommandType.LOGOUT) {
         channel.close();

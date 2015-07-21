@@ -1,5 +1,6 @@
 package com.hubspot.imap.imap;
 
+import com.google.common.collect.Lists;
 import com.google.seventeen.common.primitives.Ints;
 import com.hubspot.imap.imap.ResponseDecoder.State;
 import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
@@ -83,10 +84,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   public ResponseDecoder(ByteBufAllocator allocator) {
     super(State.SKIP_CONTROL_CHARS);
-    this.charSeq = new AppendableCharSequence(8192);
-    this.lineParser = new LineParser(charSeq, 8192);
-    this.wordParser = new WordParser(charSeq, 8192);
-    this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 8192);
+    this.charSeq = new AppendableCharSequence(100000);
+    this.lineParser = new LineParser(charSeq, 100000);
+    this.wordParser = new WordParser(charSeq, 100000);
+    this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 100000);
     this.numberParser = new NumberParser(charSeq, 8);
     this.matchingParenthesesParser = new MatchingParenthesesParser();
     this.arrayParser = new ArrayParser(charSeq);
@@ -229,7 +230,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     responseBuilder.setTag(tag);
     responseBuilder.setCode(code);
     responseBuilder.setMessage(message);
-    responseBuilder.setUntagged(untaggedResponses);
+    responseBuilder.setUntagged(Lists.newArrayList(untaggedResponses));
+
+    untaggedResponses.clear();
 
     write(out);
   }

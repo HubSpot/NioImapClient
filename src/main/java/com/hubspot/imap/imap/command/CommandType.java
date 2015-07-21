@@ -9,5 +9,6 @@ public enum CommandType {
   LIST,
   EXAMINE,
   SELECT,
-  FETCH;
+  FETCH,
+  BLANK;
 }

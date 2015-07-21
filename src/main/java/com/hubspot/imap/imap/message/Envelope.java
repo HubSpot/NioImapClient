@@ -3,6 +3,7 @@ package com.hubspot.imap.imap.message;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 public interface Envelope {
   ZonedDateTime getDate();
@@ -18,7 +19,7 @@ public interface Envelope {
   String getMessageId();
 
   class Builder implements Envelope {
-    private static final DateTimeFormatter RFC822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]dd MMM yyyy HH:mm:ss Z[ (zzz)]");
+    private static final DateTimeFormatter RFC822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]dd MMM yyyy HH:mm:ss Z[ (zzz)]").withLocale(Locale.US);
 
     private ZonedDateTime date;
     private String subject;

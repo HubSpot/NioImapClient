@@ -6,6 +6,8 @@ import com.hubspot.imap.imap.command.Command;
 import com.hubspot.imap.imap.response.events.ExistsEvent;
 import com.hubspot.imap.imap.response.events.ExpungeEvent;
 import com.hubspot.imap.imap.response.events.FetchEvent;
+import com.hubspot.imap.imap.response.events.OpenEvent;
+import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -54,6 +56,9 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       for (FetchEventListener listener: fetchEventListeners) {
         executorGroup.submit(() -> listener.handle(fetchEvent));
       }
+    } else if (evt instanceof OpenEvent) {
+      OpenResponse response = ((OpenEvent) evt).getOpenResponse();
+      messageNumber.set(response.getExists());
     }
 
     super.userEventTriggered(ctx, evt);

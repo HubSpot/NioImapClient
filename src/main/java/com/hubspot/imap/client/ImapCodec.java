@@ -8,6 +8,7 @@ import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.events.ExistsEvent;
 import com.hubspot.imap.imap.response.events.ExpungeEvent;
 import com.hubspot.imap.imap.response.events.FetchEvent;
+import com.hubspot.imap.imap.response.events.OpenEvent;
 import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
 import com.hubspot.imap.imap.response.tagged.NoopResponse;
@@ -55,6 +56,8 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
         case SELECT:
         case EXAMINE:
           taggedResponse = new OpenResponse.Builder().fromResponse(taggedResponse);
+
+          ctx.fireUserEventTriggered(new OpenEvent(((OpenResponse) taggedResponse)));
           break;
         case FETCH:
           FetchCommand fetchCommand = ((FetchCommand) clientState.getCurrentCommand());

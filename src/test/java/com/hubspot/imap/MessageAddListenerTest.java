@@ -39,9 +39,13 @@ public class MessageAddListenerTest {
 
   @Test
   public void testOnOpen_doesUpdateMessageCount() throws Exception {
+    CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    client.getState().addOpenEventListener((e) -> countDownLatch.countDown());
     Future<OpenResponse> openResponseFuture = client.open(TestUtils.ALL_MAIL, true);
     openResponseFuture.sync();
 
+    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
     assertThat(client.getState().getMessageNumber()).isEqualTo(openResponseFuture.get().getExists());
   }
 }

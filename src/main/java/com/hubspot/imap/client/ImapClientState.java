@@ -2,6 +2,7 @@ package com.hubspot.imap.client;
 
 import com.hubspot.imap.client.listener.FetchEventListener;
 import com.hubspot.imap.client.listener.MessageAddListener;
+import com.hubspot.imap.client.listener.OpenEventListener;
 import com.hubspot.imap.imap.command.Command;
 import com.hubspot.imap.imap.response.events.ExistsEvent;
 import com.hubspot.imap.imap.response.events.ExpungeEvent;
@@ -26,6 +27,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
   private final List<MessageAddListener> messageAddListeners;
   private final List<FetchEventListener> fetchEventListeners;
+  private final List<OpenEventListener> openEventListeners;
 
   public ImapClientState(EventExecutorGroup executorGroup) {
     this.executorGroup = executorGroup;
@@ -36,6 +38,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
     this.messageAddListeners = new ArrayList<>();
     this.fetchEventListeners = new ArrayList<>();
+    this.openEventListeners = new ArrayList<>();
   }
 
   @Override
@@ -57,8 +60,13 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
         executorGroup.submit(() -> listener.handle(fetchEvent));
       }
     } else if (evt instanceof OpenEvent) {
-      OpenResponse response = ((OpenEvent) evt).getOpenResponse();
+      OpenEvent event = ((OpenEvent) evt);
+      OpenResponse response = event.getOpenResponse();
       messageNumber.set(response.getExists());
+
+      for (OpenEventListener listener: openEventListeners) {
+        executorGroup.submit(() -> listener.handle(event));
+      }
     }
 
     super.userEventTriggered(ctx, evt);
@@ -70,6 +78,10 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
   public void addFetchEventListener(FetchEventListener listener) {
     this.fetchEventListeners.add(listener);
+  }
+
+  public void addOpenEventListener(OpenEventListener listener) {
+    this.openEventListeners.add(listener);
   }
 
   public long getMessageNumber() {

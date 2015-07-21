@@ -12,8 +12,6 @@ import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.response.ContinuationResponse;
 import com.hubspot.imap.imap.response.ResponseCode;
 import com.hubspot.imap.imap.response.events.ByeEvent;
-import com.hubspot.imap.imap.response.events.ExistsEvent;
-import com.hubspot.imap.imap.response.events.ExpungeEvent;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse.Builder;
@@ -304,11 +302,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     UntaggedIntResponse intResponse = handleIntResponse(type, value);
     untaggedResponses.add(intResponse);
 
-    if (type == UntaggedResponseType.EXPUNGE) {
-      ctx.fireUserEventTriggered(new ExpungeEvent(intResponse.getValue()));
-    } else {
-      ctx.fireUserEventTriggered(new ExistsEvent(intResponse.getValue()));
-    }
   }
 
   private void handleBye(ByteBuf in, ChannelHandlerContext handlerContext) {

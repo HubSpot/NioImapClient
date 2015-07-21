@@ -1,15 +1,20 @@
 package com.hubspot.imap.client;
 
 import com.hubspot.imap.imap.command.BaseCommand;
+import com.hubspot.imap.imap.command.CommandType;
 import com.hubspot.imap.imap.command.fetch.FetchCommand;
 import com.hubspot.imap.imap.message.ImapMessage;
 import com.hubspot.imap.imap.response.ContinuationResponse;
+import com.hubspot.imap.imap.response.events.ExistsEvent;
+import com.hubspot.imap.imap.response.events.ExpungeEvent;
 import com.hubspot.imap.imap.response.events.FetchEvent;
 import com.hubspot.imap.imap.response.tagged.FetchResponse;
 import com.hubspot.imap.imap.response.tagged.ListResponse.Builder;
 import com.hubspot.imap.imap.response.tagged.NoopResponse;
 import com.hubspot.imap.imap.response.tagged.OpenResponse;
 import com.hubspot.imap.imap.response.tagged.TaggedResponse;
+import com.hubspot.imap.imap.response.untagged.UntaggedIntResponse;
+import com.hubspot.imap.imap.response.untagged.UntaggedResponseType;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.slf4j.Logger;
@@ -42,7 +47,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
       out.add(msg);
     } else if (msg instanceof TaggedResponse) {
       TaggedResponse taggedResponse = ((TaggedResponse) msg);
-      fireFetchEvents(ctx, taggedResponse);
+      fireEvents(ctx, taggedResponse);
       switch (clientState.getCurrentCommand().getCommandType()) {
         case LIST:
           taggedResponse = new Builder().fromResponse(taggedResponse);
@@ -63,6 +68,24 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
       }
 
       out.add(taggedResponse);
+    }
+  }
+
+  private void fireEvents(ChannelHandlerContext ctx, TaggedResponse response) {
+    fireFetchEvents(ctx, response);
+    fireMessageNumberEvents(ctx, response);
+  }
+
+  private void fireMessageNumberEvents(ChannelHandlerContext ctx, TaggedResponse response) {
+    CommandType commandType = clientState.getCurrentCommand().getCommandType();
+    if (commandType != CommandType.EXAMINE && commandType != CommandType.SELECT) { // Don't fire these events during folder open, they have different meaning here
+      response.getUntagged().stream().filter(r -> r instanceof UntaggedIntResponse).map(i -> ((UntaggedIntResponse) i)).forEach((i) -> {
+        if (i.getType() == UntaggedResponseType.EXPUNGE) {
+          ctx.fireUserEventTriggered(new ExpungeEvent(i.getValue()));
+        } else if (i.getType() == UntaggedResponseType.EXISTS) {
+          ctx.fireUserEventTriggered(new ExistsEvent(i.getValue()));
+        }
+      });
     }
   }
 

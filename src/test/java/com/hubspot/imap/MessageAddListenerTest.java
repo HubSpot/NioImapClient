@@ -27,26 +27,13 @@ public class MessageAddListenerTest {
   }
 
   @Test
-  public void testOnOpen_doesCallMessageCountListener() throws Exception {
+  public void testOnOpen_doesNotCallMessageCountListener() throws Exception {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
     Future<OpenResponse> openFuture = client.open(TestUtils.ALL_MAIL, true);
     openFuture.sync();
 
-    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
-  }
-
-  @Test
-  public void testOnOpen_doesUpdateMessageCount() throws Exception {
-    CountDownLatch countDownLatch = new CountDownLatch(1);
-
-    client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
-    Future<OpenResponse> openFuture = client.open(TestUtils.ALL_MAIL, true);
-    OpenResponse response = openFuture.get();
-
-    countDownLatch.await(1, TimeUnit.SECONDS);
-
-    assertThat(client.getState().getMessageNumber()).isEqualTo(response.getExists());
+    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
   }
 }

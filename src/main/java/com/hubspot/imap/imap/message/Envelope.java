@@ -1,5 +1,8 @@
 package com.hubspot.imap.imap.message;
 
+
+import com.google.seventeen.common.annotations.VisibleForTesting;
+
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -19,7 +22,8 @@ public interface Envelope {
   String getMessageId();
 
   class Builder implements Envelope {
-    private static final DateTimeFormatter RFC822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]dd MMM yyyy HH:mm:ss Z[ (zzz)]").withLocale(Locale.US);
+    @VisibleForTesting
+    static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]dd MMM yyyy HH:mm:ss[ zzz][ Z][ (zzz)]").withLocale(Locale.US);
 
     private ZonedDateTime date;
     private String subject;
@@ -50,7 +54,7 @@ public interface Envelope {
         return this;
       }
 
-      return setDate(ZonedDateTime.parse(date, RFC822_FORMATTER));
+      return setDate(ZonedDateTime.parse(date, RFC2822_FORMATTER));
     }
 
     public String getSubject() {

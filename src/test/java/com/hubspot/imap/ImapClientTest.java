@@ -2,7 +2,6 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.imap.command.fetch.items.FetchDataItem.FetchDataItemType;
-import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.imap.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.imap.folder.FolderMetadata;
 import com.hubspot.imap.imap.message.Envelope;
@@ -176,18 +175,6 @@ public class ImapClientTest {
     }
   }
 
-  @Test
-  public void testGivenInvalidCredentials_doesThrowAuthenticationException() throws Exception {
-    ImapClient client = TestUtils.CLIENT_FACTORY.connect(TestUtils.USER_NAME, "");
-    try {
-      client.login();
-      client.awaitLogin();
-    } catch (ExecutionException e) {
-      assertThat(e).hasCauseInstanceOf(AuthenticationFailedException.class);
-    } finally {
-      client.close();
-    }
-  }
 
 
 }

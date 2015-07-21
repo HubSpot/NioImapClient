@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.imap.exceptions.ConnectionClosedException;
 import com.hubspot.imap.utils.GmailUtils;
 
 import java.util.concurrent.ExecutionException;
@@ -22,7 +23,7 @@ public class TestUtils {
   );
 
 
-  public static ImapClient getLoggedInClient() throws ExecutionException, InterruptedException {
+  public static ImapClient getLoggedInClient() throws ExecutionException, InterruptedException, ConnectionClosedException {
     ImapClient client = CLIENT_FACTORY.connect(USER_NAME, PASSWORD);
 
     client.login();

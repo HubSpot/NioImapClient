@@ -10,6 +10,6 @@ public class BlankCommand implements Command {
 
   @Override
   public CommandType getCommandType() {
-    return null;
+    return CommandType.BLANK;
   }
 }

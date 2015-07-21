@@ -31,7 +31,8 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
   @Override
   protected void encode(ChannelHandlerContext ctx, BaseCommand msg, List<Object> out) throws Exception {
     String data = msg.commandString();
-    LOGGER.info("IMAP SEND: {}", data);
+    String tag = clientState.getNextTag();
+    LOGGER.info("IMAP SEND: {}{}", tag, data);
     out.add(clientState.getNextTag() + data + "\r\n");
   }
 
@@ -73,6 +74,4 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
     FetchEvent event = new FetchEvent(messages);
     ctx.fireUserEventTriggered(event);
   }
-
-
 }

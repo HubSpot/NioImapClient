@@ -29,7 +29,6 @@ public class ImapClientFactory implements AutoCloseable {
   private final EventLoopGroup eventLoopGroup;
   private final EventExecutorGroup promiseExecutorGroup;
   private final EventExecutorGroup idleExecutorGroup;
-  private final SslContext context;
 
   public ImapClientFactory(ImapConfiguration configuration) {
     this.configuration = configuration;
@@ -39,11 +38,12 @@ public class ImapClientFactory implements AutoCloseable {
     this.promiseExecutorGroup = new DefaultEventExecutorGroup(16);
     this.idleExecutorGroup = new DefaultEventExecutorGroup(4);
 
+    SslContext context;
     try {
       TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       trustManagerFactory.init(((KeyStore) null));
 
-      this.context = SslContextBuilder.forClient()
+      context = SslContextBuilder.forClient()
           .trustManager(trustManagerFactory)
           .build();
     } catch (NoSuchAlgorithmException |SSLException |KeyStoreException e) {

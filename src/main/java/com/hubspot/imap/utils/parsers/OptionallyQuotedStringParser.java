@@ -6,6 +6,7 @@ import io.netty.util.internal.AppendableCharSequence;
 
 public class OptionallyQuotedStringParser implements ByteBufParser<String> {
   private static final char QUOTE = '"';
+  private static final char BACKSLASH = '\\';
 
   protected final AppendableCharSequence seq;
   private final int maxStringLength;
@@ -20,16 +21,24 @@ public class OptionallyQuotedStringParser implements ByteBufParser<String> {
   public String parse(ByteBuf buffer) {
     seq.reset();
     size = 0;
+
     boolean isQuoted = false;
+    char previousChar = ' ';
     for (;;) {
-      char c = ((char) buffer.readUnsignedByte());
+      char c;
+      try {
+        c = ((char) buffer.readUnsignedByte());
+      } catch (IndexOutOfBoundsException e) {
+        return seq.toString();
+      }
+
       if (Character.isWhitespace(c)) {
         if (isQuoted) {
           append(c);
         } else if (size > 0) {
           break;
         }
-      } else if (c == QUOTE) {
+      } else if (c == QUOTE && previousChar != BACKSLASH) {
         if (size == 0) {    // Start Quote
           isQuoted = true;
         } else {            // End Quote
@@ -38,6 +47,8 @@ public class OptionallyQuotedStringParser implements ByteBufParser<String> {
       } else {
         append(c);
       }
+
+      previousChar = c;
     }
 
     return seq.toString();

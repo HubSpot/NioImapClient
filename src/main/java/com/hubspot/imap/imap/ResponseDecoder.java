@@ -214,6 +214,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       default:
         // This is really bad because we need to know what type of response to parse for each tag.
         // Given an unknown fetch type, we can't find the next fetch type tag, so we just have to stop.
+        lineParser.parse(in);
+        checkpoint(State.RESET);
         throw new UnknownFetchItemTypeException(fetchItemString);
     }
 

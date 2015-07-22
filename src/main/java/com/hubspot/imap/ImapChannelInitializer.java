@@ -1,7 +1,7 @@
 package com.hubspot.imap;
 
 import com.google.common.net.HostAndPort;
-import com.hubspot.imap.imap.ResponseDecoder;
+import com.hubspot.imap.protocol.ResponseDecoder;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;

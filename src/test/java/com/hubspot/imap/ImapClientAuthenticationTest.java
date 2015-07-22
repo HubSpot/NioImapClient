@@ -1,7 +1,7 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.imap.exceptions.AuthenticationFailedException;
+import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;

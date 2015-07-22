@@ -1,7 +1,7 @@
 package com.hubspot.imap.utils.parsers.fetch;
 
-import com.hubspot.imap.imap.message.ImapAddress;
-import com.hubspot.imap.imap.message.Envelope;
+import com.hubspot.imap.protocol.message.ImapAddress;
+import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.utils.parsers.MatchingParenthesesParser;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
 import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;

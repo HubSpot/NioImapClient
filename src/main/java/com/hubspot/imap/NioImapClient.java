@@ -2,11 +2,11 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.imap.folder.FolderAttribute;
-import com.hubspot.imap.imap.folder.FolderMetadata;
-import com.hubspot.imap.imap.response.tagged.ListResponse;
-import com.hubspot.imap.imap.response.tagged.NoopResponse;
-import com.hubspot.imap.imap.response.tagged.OpenResponse;
+import com.hubspot.imap.protocol.folder.FolderAttribute;
+import com.hubspot.imap.protocol.folder.FolderMetadata;
+import com.hubspot.imap.protocol.response.tagged.ListResponse;
+import com.hubspot.imap.protocol.response.tagged.NoopResponse;
+import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import com.hubspot.imap.utils.GmailUtils;
 import io.netty.util.concurrent.Future;
 import org.slf4j.Logger;

@@ -2,7 +2,7 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.imap.exceptions.ConnectionClosedException;
+import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import com.hubspot.imap.utils.GmailUtils;
 
 import java.util.concurrent.ExecutionException;

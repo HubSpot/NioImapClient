@@ -1,7 +1,7 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.imap.response.tagged.OpenResponse;
+import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import io.netty.util.concurrent.Future;
 import org.junit.After;
 import org.junit.Before;

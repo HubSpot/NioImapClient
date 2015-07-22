@@ -194,7 +194,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
       throw new ConnectionClosedException("Cannot write to closed connection.");
     }
 
-    if (pendingWriteQueue.peek() != null) {
+    if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
       PendingCommand pendingCommand = PendingCommand.newInstance(command, promise);
       pendingWriteQueue.add(pendingCommand);
     } else {

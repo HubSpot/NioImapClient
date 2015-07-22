@@ -85,6 +85,7 @@ public class ImapClientTest {
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getMessages().size()).isGreaterThan(0);
+    assertThat(response.getMessages().size()).isEqualTo(5);
 
     assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {

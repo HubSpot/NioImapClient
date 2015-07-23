@@ -44,13 +44,6 @@
       <version>4.0.29.Final</version>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport-native-epoll</artifactId>
-      <version>4.0.29.Final</version>
-      <classifier>${os.detected.classifier}</classifier>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>14.0.1</version>

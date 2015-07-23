@@ -97,6 +97,11 @@
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
+      <artifactId>netty-codec</artifactId>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
       <version>${netty.version}</version>
     </dependency>
@@ -155,6 +160,7 @@
         <configuration>
           <ignoredDependencies combine.children="append">
             <ignoredDependency>io.netty:netty-transport-native-epoll</ignoredDependency>
+            <ignoredDependency>io.netty:netty-codec-http</ignoredDependency>
           </ignoredDependencies>
         </configuration>
       </plugin>

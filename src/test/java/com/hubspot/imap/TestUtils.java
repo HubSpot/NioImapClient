@@ -19,6 +19,7 @@ public class TestUtils {
           .setAuthType(AuthType.PASSWORD)
           .setHostAndPort(GmailUtils.GMAIL_HOST_PORT)
           .setNoopKeepAliveIntervalSec(10)
+          .setUseEpoll(true)
           .build()
   );
 

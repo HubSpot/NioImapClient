@@ -8,6 +8,8 @@ public interface ImapConfiguration {
   HostAndPort getHostAndPort();
   AuthType getAuthType();
 
+  boolean getUseEpoll();
+
   int getNoopKeepAliveIntervalSec();
 
   enum AuthType {
@@ -16,10 +18,12 @@ public interface ImapConfiguration {
   }
 
   class Builder implements ImapConfiguration {
-    public HostAndPort hostAndPort;
-    public AuthType authType;
+    private HostAndPort hostAndPort;
+    private AuthType authType;
 
-    public int noopKeepAliveIntervalSec;
+    private boolean useEpoll;
+
+    private int noopKeepAliveIntervalSec;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -48,6 +52,15 @@ public interface ImapConfiguration {
       return this;
     }
 
+    public boolean getUseEpoll() {
+      return this.useEpoll;
+    }
+
+    public Builder setUseEpoll(boolean useEpoll) {
+      this.useEpoll = useEpoll;
+      return this;
+    }
+
     public ImapConfiguration build() {
       return this;
     }
@@ -57,6 +70,7 @@ public interface ImapConfiguration {
       return Objects.toStringHelper(this)
           .add("hostAndPort", hostAndPort)
           .add("authType", authType)
+          .add("useEpoll", useEpoll)
           .add("noopKeepAliveIntervalSec", noopKeepAliveIntervalSec)
           .toString();
     }
@@ -70,14 +84,15 @@ public interface ImapConfiguration {
         return false;
       }
       Builder builder = (Builder) o;
-      return Objects.equal(getNoopKeepAliveIntervalSec(), builder.getNoopKeepAliveIntervalSec()) &&
+      return Objects.equal(getUseEpoll(), builder.getUseEpoll()) &&
+          Objects.equal(getNoopKeepAliveIntervalSec(), builder.getNoopKeepAliveIntervalSec()) &&
           Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
           Objects.equal(getAuthType(), builder.getAuthType());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType(), getNoopKeepAliveIntervalSec());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec());
     }
   }
 }

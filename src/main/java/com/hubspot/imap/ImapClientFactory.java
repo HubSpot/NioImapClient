@@ -8,12 +8,14 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
+import org.apache.commons.lang.SystemUtils;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
@@ -34,7 +36,12 @@ public class ImapClientFactory implements AutoCloseable {
     this.configuration = configuration;
     this.hostAndPort = configuration.getHostAndPort();
     this.bootstrap = new Bootstrap();
-    this.eventLoopGroup = new NioEventLoopGroup();
+
+    if (configuration.getUseEpoll() && SystemUtils.IS_OS_LINUX) {
+      this.eventLoopGroup = new EpollEventLoopGroup();
+    } else {
+      this.eventLoopGroup = new NioEventLoopGroup();
+    }
     this.promiseExecutorGroup = new DefaultEventExecutorGroup(16);
     this.idleExecutorGroup = new DefaultEventExecutorGroup(4);
 

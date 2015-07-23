@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import com.google.common.base.Objects;
 import com.google.common.net.HostAndPort;
+import org.apache.commons.lang.SystemUtils;
 
 public interface ImapConfiguration {
 
@@ -53,7 +54,7 @@ public interface ImapConfiguration {
     }
 
     public boolean getUseEpoll() {
-      return this.useEpoll;
+      return this.useEpoll && SystemUtils.IS_OS_LINUX;
     }
 
     public Builder setUseEpoll(boolean useEpoll) {

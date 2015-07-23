@@ -9,13 +9,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
-import org.apache.commons.lang.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class ImapClientFactory implements AutoCloseable {
     this.hostAndPort = configuration.getHostAndPort();
     this.bootstrap = new Bootstrap();
 
-    if (configuration.getUseEpoll() && SystemUtils.IS_OS_LINUX) {
+    if (configuration.getUseEpoll()) {
       LOGGER.info("Using epoll eventloop");
       this.eventLoopGroup = new EpollEventLoopGroup();
     } else {
@@ -63,10 +63,15 @@ public class ImapClientFactory implements AutoCloseable {
     }
 
     bootstrap.group(eventLoopGroup)
-        .channel(NioSocketChannel.class)
         .option(ChannelOption.SO_KEEPALIVE, true)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .handler(new ImapChannelInitializer(context, hostAndPort));
+
+    if (configuration.getUseEpoll()) {
+      bootstrap.channel(EpollSocketChannel.class);
+    } else {
+      bootstrap.channel(NioSocketChannel.class);
+    }
   }
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {

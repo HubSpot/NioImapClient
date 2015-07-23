@@ -14,6 +14,7 @@
   <properties>
     <hubspot.nexus.serverId>hubspot-development</hubspot.nexus.serverId>
     <hubspot.nexus.hostname>http://maven.hubteam.com</hubspot.nexus.hostname>
+    <netty.version>4.0.29.Final</netty.version>
   </properties>
 
   <repositories>
@@ -55,20 +56,49 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>mac</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-transport-native-epoll</artifactId>
+          <version>4.0.29.Final</version>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
 
 
   <dependencies>
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
-      <version>4.0.29.Final</version>
-      <exclusions>
-        <exclusion>
-          <groupId>io.netty</groupId>
-          <artifactId>netty-transport-native-epoll</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>netty-common</artifactId>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport</artifactId>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-buffer</artifactId>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler</artifactId>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-http</artifactId>
+      <version>${netty.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

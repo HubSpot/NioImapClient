@@ -16,6 +16,8 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.apache.commons.lang.SystemUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
@@ -24,6 +26,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
 public class ImapClientFactory implements AutoCloseable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImapClientFactory.class);
 
   private final ImapConfiguration configuration;
   private final HostAndPort hostAndPort;
@@ -38,10 +41,12 @@ public class ImapClientFactory implements AutoCloseable {
     this.bootstrap = new Bootstrap();
 
     if (configuration.getUseEpoll() && SystemUtils.IS_OS_LINUX) {
+      LOGGER.info("Using epoll eventloop");
       this.eventLoopGroup = new EpollEventLoopGroup();
     } else {
       this.eventLoopGroup = new NioEventLoopGroup();
     }
+
     this.promiseExecutorGroup = new DefaultEventExecutorGroup(16);
     this.idleExecutorGroup = new DefaultEventExecutorGroup(4);
 

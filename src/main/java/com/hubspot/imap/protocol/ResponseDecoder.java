@@ -91,7 +91,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.numberParser = new NumberParser(charSeq, 8);
     this.matchingParenthesesParser = new MatchingParenthesesParser();
     this.arrayParser = new ArrayParser(charSeq);
-    this.envelopeParser = new EnvelopeParser(charSeq, quotedStringParser, matchingParenthesesParser);
+    this.envelopeParser = new EnvelopeParser(quotedStringParser);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();

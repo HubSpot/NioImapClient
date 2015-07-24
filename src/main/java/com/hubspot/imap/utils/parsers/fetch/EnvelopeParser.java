@@ -1,31 +1,21 @@
 package com.hubspot.imap.utils.parsers.fetch;
 
-import com.hubspot.imap.protocol.message.ImapAddress;
 import com.hubspot.imap.protocol.message.Envelope;
-import com.hubspot.imap.utils.parsers.MatchingParenthesesParser;
+import com.hubspot.imap.protocol.message.ImapAddress;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
 import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;
 import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.AppendableCharSequence;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class EnvelopeParser {
-  private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
-
   private final OptionallyQuotedStringParser quotedStringParser;
-  private final MatchingParenthesesParser matchingParenthesesParser;
   private final NestedArrayParser<String> nestedArrayParser;
 
-  public EnvelopeParser(AppendableCharSequence seq,
-                        OptionallyQuotedStringParser quotedStringParser,
-                        MatchingParenthesesParser matchingParenthesesParser) {
+  public EnvelopeParser(OptionallyQuotedStringParser quotedStringParser) {
     this.quotedStringParser = quotedStringParser;
-    this.matchingParenthesesParser = matchingParenthesesParser;
     this.nestedArrayParser = new NestedArrayParser<>(quotedStringParser);
   }
 

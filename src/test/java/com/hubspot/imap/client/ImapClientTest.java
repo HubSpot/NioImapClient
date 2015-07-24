@@ -1,5 +1,6 @@
 package com.hubspot.imap.client;
 
+import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.TestUtils;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
@@ -193,5 +194,31 @@ public class ImapClientTest {
 
     assertThat(uidresponse.getMessages().size()).isEqualTo(1);
     assertThat(uidresponse.getMessages().iterator().next().getUid()).isEqualTo(message.getUid());
+  }
+
+  @Test
+  public void testGmailFetchExtensions() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.X_GM_MSGID, FetchDataItemType.X_GM_THRID);
+    FetchResponse response = responseFuture.get();
+
+    assertThat(response.getMessages()).have(new Condition<>(m -> {
+      try {
+        return m.getGmailMessageId() > 0;
+      } catch (UnfetchedFieldException e) {
+        throw Throwables.propagate(e);
+      }
+    }, "gmail message id"));
+
+    assertThat(response.getMessages()).have(new Condition<>(m -> {
+      try {
+        return m.getGmailThreadId() > 0;
+      } catch (UnfetchedFieldException e) {
+        throw Throwables.propagate(e);
+      }
+    }, "gmail thread id"));
   }
 }

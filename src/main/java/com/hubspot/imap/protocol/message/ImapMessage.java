@@ -17,6 +17,8 @@ public interface ImapMessage {
   ZonedDateTime getInternalDate() throws UnfetchedFieldException;
   int getSize() throws UnfetchedFieldException;
   Envelope getEnvelope() throws UnfetchedFieldException;
+  long getGmailMessageId() throws UnfetchedFieldException;
+  long getGmailThreadId() throws UnfetchedFieldException;
 
   class Builder implements ImapMessage {
     private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
@@ -27,6 +29,8 @@ public interface ImapMessage {
     private Optional<ZonedDateTime> internalDate = Optional.empty();
     private Optional<Integer> size = Optional.empty();
     private Optional<Envelope> envelope = Optional.empty();
+    private Optional<Long> gmailMessageId = Optional.empty();
+    private Optional<Long> gmailThreadId = Optional.empty();
 
     public ImapMessage build() {
       return this;
@@ -95,6 +99,24 @@ public interface ImapMessage {
       return this;
     }
 
+    public long getGmailMessageId() throws UnfetchedFieldException {
+      return gmailMessageId.orElseThrow(() -> new UnfetchedFieldException("envelope"));
+    }
+
+    public Builder setGmailMessageId(long msgId) {
+      this.gmailMessageId = Optional.of(msgId);
+      return this;
+    }
+
+    public long getGmailThreadId() throws UnfetchedFieldException {
+      return gmailThreadId.orElseThrow(() -> new UnfetchedFieldException("envelope"));
+    }
+
+    public Builder setGmailThreadId(long msgId) {
+      this.gmailThreadId = Optional.of(msgId);
+      return this;
+    }
+
     @Override
     public String toString() {
       return Objects.toStringHelper(this)
@@ -104,6 +126,8 @@ public interface ImapMessage {
           .add("internalDate", internalDate)
           .add("size", size)
           .add("envelope", envelope)
+          .add("gmailMessageId", gmailMessageId)
+          .add("gmailThreadId", gmailThreadId)
           .toString();
     }
 
@@ -116,17 +140,19 @@ public interface ImapMessage {
         return false;
       }
       Builder builder = (Builder) o;
-      return Objects.equal(flags, builder.flags) &&
-          Objects.equal(messageNumber, builder.messageNumber) &&
+      return Objects.equal(messageNumber, builder.messageNumber) &&
+          Objects.equal(flags, builder.flags) &&
           Objects.equal(uid, builder.uid) &&
           Objects.equal(internalDate, builder.internalDate) &&
           Objects.equal(size, builder.size) &&
-          Objects.equal(envelope, builder.envelope);
+          Objects.equal(envelope, builder.envelope) &&
+          Objects.equal(gmailMessageId, builder.gmailMessageId) &&
+          Objects.equal(gmailThreadId, builder.gmailThreadId);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(flags, messageNumber, uid, internalDate, size, envelope);
+      return Objects.hashCode(flags, messageNumber, uid, internalDate, size, envelope, gmailMessageId, gmailThreadId);
     }
   }
 }

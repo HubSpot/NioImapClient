@@ -88,7 +88,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.lineParser = new LineParser(charSeq, 100000);
     this.wordParser = new WordParser(charSeq, 100000);
     this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 100000);
-    this.numberParser = new NumberParser(charSeq, 8);
+    this.numberParser = new NumberParser(charSeq, 19);
     this.matchingParenthesesParser = new MatchingParenthesesParser();
     this.arrayParser = new ArrayParser(charSeq);
     this.envelopeParser = new EnvelopeParser(quotedStringParser);
@@ -209,6 +209,12 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case ENVELOPE:
         currentMessage.setEnvelope(parseEnvelope(ctx, in));
         break;
+      case X_GM_MSGID:
+        currentMessage.setGmailMessageId(numberParser.parse(in));
+        break;
+      case X_GM_THRID:
+        currentMessage.setGmailThreadId(numberParser.parse(in));
+        break;
       case INVALID:
       default:
         // This is really bad because we need to know what type of response to parse for each tag.
@@ -292,7 +298,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case HIGHESTMODSEQ:
       case UIDNEXT:
       case UIDVALIDITY:
-        untaggedResponses.add(parseBracketedResponse(type, in));
+        untaggedResponses.add(parseIntResponse(type, in));
         break;
       default:
         untaggedResponses.add(lineParser.parse(in).toString());
@@ -366,15 +372,13 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .collect(Collectors.toSet());
   }
 
-  private UntaggedIntResponse parseBracketedResponse(UntaggedResponseType type, ByteBuf in) {
-    String value = wordParser.parse(in).toString();
-    if (value.endsWith("]")) {
-      value = value.substring(0, value.length() - 1);
-    }
+  private UntaggedIntResponse parseIntResponse(UntaggedResponseType type, ByteBuf in) {
+    long value = numberParser.parse(in);
+    wordParser.parse(in); // Clear any extra non-digit data
 
     return new Builder()
         .setType(type)
-        .setValue(Long.parseLong(value))
+        .setValue(value)
         .build();
   }
 

@@ -11,26 +11,28 @@ public interface FetchDataItem {
   String toString();
 
   enum FetchDataItemType implements FetchDataItem {
-    ALL,
-    FAST,
-    FULL,
-    FLAGS,
-    INTERNALDATE,
-    ENVELOPE,
-    BODY,
-    BODY_PEEK,
-    BODYSTRUCTURE,
-    RFC822,
-    RFC822_HEADER,
-    RFC822_SIZE,
-    RFC822_TEXT,
-    UID,
-    INVALID;
+    ALL("ALL"),
+    FAST("FAST"),
+    FULL("FULL"),
+    FLAGS("FLAGS"),
+    INTERNALDATE("INTERNALDATE"),
+    ENVELOPE("ENVELOPE"),
+    BODY("BODY"),
+    BODY_PEEK("BODY.PEEK"),
+    BODYSTRUCTURE("BODYSTRUCTURE"),
+    RFC822("RFC822"),
+    RFC822_HEADER("RFC822.HEADER"),
+    RFC822_SIZE("RFC822.SIZE"),
+    RFC822_TEXT("RFC822.TEXT"),
+    UID("UID"),
+    X_GM_MSGID("X-GM-MSGID"),
+    X_GM_THRID("X-GM-THRID"),
+    INVALID("----");
 
     private String string;
 
-    FetchDataItemType() {
-      string = name().replace("_", ".");
+    FetchDataItemType(String string) {
+      this.string = string;
     }
 
     public String toString() {

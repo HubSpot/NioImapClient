@@ -51,7 +51,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
     this.channel = ctx.channel();
 
-    connectionListeners.forEach(w -> channel.pipeline().addLast(w));
+    connectionListeners.forEach(w -> channel.pipeline().addLast(executorGroup, w));
     super.channelActive(ctx);
   }
 

@@ -84,16 +84,15 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     future.addListener(f -> {
       if (f.isSuccess()) {
         configureChannel(((ChannelFuture) f).channel());
+
+        if (pendingWriteQueue.peek() != null) {
+          idleExecutor.submit(() -> {
+            writeNext();
+            return null;
+          });
+        }
       }
     });
-
-    if (pendingWriteQueue.peek() != null) {
-      try {
-        writeNext();
-      } catch (ConnectionClosedException e) {
-        LOGGER.debug("Connection closed during reconnect, this shouldnt happen", e);
-      }
-    }
 
     return future;
   }

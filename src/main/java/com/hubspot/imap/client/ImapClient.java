@@ -77,7 +77,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     loginPromise = promiseExecutor.next().newPromise();
   }
 
-  public ChannelFuture connect() {
+  public synchronized ChannelFuture connect() {
     ChannelFuture future = bootstrap.connect(configuration.getHostAndPort().getHostText(),
         configuration.getHostAndPort().getPort());
 
@@ -251,7 +251,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception {
     if (configuration.getReconnectBackoffMs() >= 0 && !connectionClosed.get()) {
-      ctx.executor().schedule(() -> this.connect(), configuration.getReconnectBackoffMs(), TimeUnit.MILLISECONDS);
+      ctx.executor().schedule(() -> {
+        reconnect();
+        return null;
+      }, configuration.getReconnectBackoffMs(), TimeUnit.MILLISECONDS);
     }
     super.channelInactive(ctx);
   }
@@ -300,6 +303,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     } else {
       ctx.fireExceptionCaught(cause);
     }
+  }
+
+  private void reconnect() throws ConnectionClosedException {
+    pendingWriteQueue.clear();
+    login();
+    this.connect();
   }
 
   @Override

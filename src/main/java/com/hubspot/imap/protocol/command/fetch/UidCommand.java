@@ -1,6 +1,5 @@
 package com.hubspot.imap.protocol.command.fetch;
 
-import com.google.common.collect.Lists;
 import com.hubspot.imap.protocol.command.BaseCommand;
 import com.hubspot.imap.protocol.command.Command;
 import com.hubspot.imap.protocol.command.CommandType;
@@ -8,11 +7,16 @@ import com.hubspot.imap.protocol.command.CommandType;
 import java.util.List;
 
 public class UidCommand extends BaseCommand {
-  private final Command wrappedCommand;
+  private final BaseCommand wrappedCommand;
 
-  public UidCommand(CommandType type, Command wrappedCommand) {
+  public UidCommand(CommandType type, BaseCommand wrappedCommand) {
     super(type);
     this.wrappedCommand = wrappedCommand;
+  }
+
+  @Override
+  public String getCommandPrefix() {
+    return String.format("UID %s", wrappedCommand.getCommandPrefix());
   }
 
   @Override
@@ -22,10 +26,15 @@ public class UidCommand extends BaseCommand {
 
   @Override
   public List<String> getArgs() {
-    return Lists.newArrayList(getCommandString());
+    return wrappedCommand.getArgs();
   }
 
-  public String getCommandString() {
-    return String.format("UID %s", wrappedCommand.toString());
+  @Override
+  public boolean hasArgs() {
+    return wrappedCommand.hasArgs();
+  }
+
+  public Command getWrappedCommand() {
+    return wrappedCommand;
   }
 }

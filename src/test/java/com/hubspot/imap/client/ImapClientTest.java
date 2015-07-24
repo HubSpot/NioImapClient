@@ -1,10 +1,11 @@
-package com.hubspot.imap;
+package com.hubspot.imap.client;
 
-import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.TestUtils;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
+import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
@@ -176,6 +177,21 @@ public class ImapClientTest {
     }
   }
 
+  @Test
+  public void testUidFetch() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.UID, FetchDataItemType.ENVELOPE);
+    FetchResponse response = responseFuture.get();
 
+    ImapMessage message = response.getMessages().iterator().next();
+
+    Future<FetchResponse> uidfetchFuture = client.uidfetch(message.getUid(), Optional.of(message.getUid()), FetchDataItemType.UID, FetchDataItemType.ENVELOPE);
+    FetchResponse uidresponse = uidfetchFuture.get();
+
+    assertThat(uidresponse.getMessages().size()).isEqualTo(1);
+    assertThat(uidresponse.getMessages().iterator().next().getUid()).isEqualTo(message.getUid());
+  }
 }

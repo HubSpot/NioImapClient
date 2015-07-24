@@ -9,6 +9,7 @@ import com.hubspot.imap.protocol.command.ListCommand;
 import com.hubspot.imap.protocol.command.OpenCommand;
 import com.hubspot.imap.protocol.command.XOAuth2Command;
 import com.hubspot.imap.protocol.command.fetch.FetchCommand;
+import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
@@ -171,6 +172,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
 
   public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
     return send(new FetchCommand(startId, stopId, fetchDataItems));
+  }
+
+  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
+    return send(new UidCommand(CommandType.FETCH, new FetchCommand(startId, stopId, fetchDataItems)));
   }
 
   public Future<NoopResponse> noop() throws ConnectionClosedException {

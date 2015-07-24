@@ -50,7 +50,7 @@ public class ConcurrentConnectionTest {
     }
 
     Futures.allAsList(futures).get();
-    assertThat(clients).are(new Condition<>(ImapClient::isOpen, "open"));
+    assertThat(clients).are(new Condition<>(ImapClient::isConnected, "open"));
 
     for (ImapClient client : clients) {
       client.close();

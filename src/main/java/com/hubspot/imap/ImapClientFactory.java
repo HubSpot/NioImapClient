@@ -5,7 +5,6 @@ import com.google.common.net.HostAndPort;
 import com.hubspot.imap.client.ImapClient;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -77,8 +76,10 @@ public class ImapClientFactory implements AutoCloseable {
   }
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {
-    Channel channel = bootstrap.connect(hostAndPort.getHostText(), hostAndPort.getPort()).sync().channel();
-    return new ImapClient(configuration, channel, promiseExecutorGroup, idleExecutorGroup, userName, oauthToken);
+    ImapClient client = new ImapClient(configuration, bootstrap, promiseExecutorGroup, idleExecutorGroup, userName, oauthToken);
+    client.connect().sync();
+
+    return client;
   }
 
   @Override

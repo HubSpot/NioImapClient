@@ -87,6 +87,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
       }
     });
 
+    if (pendingWriteQueue.peek() != null) {
+      try {
+        writeNext();
+      } catch (ConnectionClosedException e) {
+        LOGGER.debug("Connection closed during reconnect, this shouldnt happen", e);
+      }
+    }
+
     return future;
   }
 
@@ -210,11 +218,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   public synchronized void send(Command command, Promise promise) throws ConnectionClosedException {
-    if (!isConnected()  || connectionClosed.get()) {
+    if (connectionClosed.get()) {
       throw new ConnectionClosedException("Cannot write to closed connection.");
     }
 
-    if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
+    if ((currentCommandPromise != null && !currentCommandPromise.isDone()) || !isConnected()) {
       PendingCommand pendingCommand = PendingCommand.newInstance(command, promise);
       pendingWriteQueue.add(pendingCommand);
     } else {

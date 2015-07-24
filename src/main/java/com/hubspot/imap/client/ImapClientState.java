@@ -1,5 +1,6 @@
 package com.hubspot.imap.client;
 
+import com.hubspot.imap.client.listener.ConnectionListener;
 import com.hubspot.imap.client.listener.FetchEventListener;
 import com.hubspot.imap.client.listener.MessageAddListener;
 import com.hubspot.imap.client.listener.OpenEventListener;
@@ -9,6 +10,7 @@ import com.hubspot.imap.protocol.response.events.ExpungeEvent;
 import com.hubspot.imap.protocol.response.events.FetchEvent;
 import com.hubspot.imap.protocol.response.events.OpenEvent;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -28,6 +30,9 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final List<MessageAddListener> messageAddListeners;
   private final List<FetchEventListener> fetchEventListeners;
   private final List<OpenEventListener> openEventListeners;
+  private final List<ConnectionListener> connectionListeners;
+
+  private Channel channel;
 
   public ImapClientState(EventExecutorGroup executorGroup) {
     this.executorGroup = executorGroup;
@@ -39,6 +44,15 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     this.messageAddListeners = new ArrayList<>();
     this.fetchEventListeners = new ArrayList<>();
     this.openEventListeners = new ArrayList<>();
+    this.connectionListeners = new ArrayList<>();
+  }
+
+  @Override
+  public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    this.channel = ctx.channel();
+
+    connectionListeners.forEach(w -> channel.pipeline().addLast(w));
+    super.channelActive(ctx);
   }
 
   @Override
@@ -82,6 +96,14 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
   public void addOpenEventListener(OpenEventListener listener) {
     this.openEventListeners.add(listener);
+  }
+
+  public void addConnectionListener(ConnectionListener listener) {
+    if (channel != null) {
+      channel.pipeline().addLast(listener);
+    }
+
+    connectionListeners.add(listener);
   }
 
   public long getMessageNumber() {

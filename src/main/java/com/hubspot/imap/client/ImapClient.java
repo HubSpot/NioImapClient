@@ -20,8 +20,10 @@ import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -44,35 +46,61 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
   private final ImapConfiguration configuration;
-  private final Channel channel;
+  private final Bootstrap bootstrap;
   private final EventExecutorGroup promiseExecutor;
   private final EventExecutorGroup idleExecutor;
   private final String userName;
   private final String authToken;
   private final ImapClientState clientState;
+  private final ImapCodec codec;
   private final ConcurrentLinkedQueue<PendingCommand> pendingWriteQueue;
   private final AtomicBoolean connectionClosed;
+
+  private Channel channel;
 
   private final Promise<Void> loginPromise;
 
   private volatile Promise currentCommandPromise;
 
-
-  public ImapClient(ImapConfiguration configuration, Channel channel, EventExecutorGroup promiseExecutor, EventExecutorGroup idleExecutor, String userName, String authToken) {
+  public ImapClient(ImapConfiguration configuration, Bootstrap bootstrap, EventExecutorGroup promiseExecutor, EventExecutorGroup idleExecutor, String userName, String authToken) {
     this.configuration = configuration;
-    this.channel = channel;
-
+    this.bootstrap = bootstrap;
     this.promiseExecutor = promiseExecutor;
     this.idleExecutor = idleExecutor;
     this.userName = userName;
     this.authToken = authToken;
     this.clientState = new ImapClientState(promiseExecutor);
+    this.codec = new ImapCodec(clientState);
     this.pendingWriteQueue = new ConcurrentLinkedQueue<>();
     this.connectionClosed = new AtomicBoolean(false);
 
     loginPromise = promiseExecutor.next().newPromise();
+  }
 
-    this.channel.pipeline().addLast(new ImapCodec(clientState));
+  public ChannelFuture connect() {
+    ChannelFuture future = bootstrap.connect(configuration.getHostAndPort().getHostText(),
+        configuration.getHostAndPort().getPort());
+
+    future.addListener(f -> {
+      if (f.isSuccess()) {
+        configureChannel(((ChannelFuture) f).channel());
+      }
+    });
+
+    if (pendingWriteQueue.peek() != null) {
+      try {
+        writeNext();
+      } catch (ConnectionClosedException e) {
+        LOGGER.debug("Connection closed during reconnect, this shouldnt happen", e);
+      }
+    }
+
+    return future;
+  }
+
+  private void configureChannel(Channel channel) {
+    this.channel = channel;
+    this.channel.pipeline().addLast(codec);
     this.channel.pipeline().addLast(this);
     this.channel.pipeline().addLast(promiseExecutor, this.clientState);
   }
@@ -151,11 +179,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   public boolean isLoggedIn() {
-    return loginPromise.isSuccess() && channel.isOpen();
+    return loginPromise.isSuccess() && channel.isActive();
   }
 
-  public boolean isOpen() {
-    return channel.isOpen();
+  public boolean isConnected() {
+    return channel != null && channel.isActive();
   }
 
   public void awaitLogin() throws InterruptedException, ExecutionException {
@@ -194,7 +222,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
       throw new ConnectionClosedException("Cannot write to closed connection.");
     }
 
-    if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
+    if ((currentCommandPromise != null && !currentCommandPromise.isDone()) || !isConnected()) {
       PendingCommand pendingCommand = PendingCommand.newInstance(command, promise);
       pendingWriteQueue.add(pendingCommand);
     } else {
@@ -217,6 +245,19 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   @Override
+  public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    super.channelActive(ctx);
+  }
+
+  @Override
+  public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    if (configuration.getReconnectBackoffMs() >= 0 && !connectionClosed.get()) {
+      ctx.executor().schedule(() -> this.connect(), configuration.getReconnectBackoffMs(), TimeUnit.MILLISECONDS);
+    }
+    super.channelInactive(ctx);
+  }
+
+  @Override
   @SuppressWarnings("unchecked")
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
     if (msg instanceof ContinuationResponse) {
@@ -224,6 +265,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     } else if (msg instanceof TaggedResponse) {
       TaggedResponse taggedResponse = ((TaggedResponse) msg);
 
+      if (currentCommandPromise.isDone() && !currentCommandPromise.isSuccess()) {
+        LOGGER.debug("Got tagged response to failed command, skipping");
+        return;
+      }
       try {
         currentCommandPromise.setSuccess(taggedResponse);
       } catch (IllegalStateException e) {
@@ -260,7 +305,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
 
   @Override
   public void close() {
-    if (isOpen()) {
+    if (isConnected()) {
       if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
         try {
           if (!currentCommandPromise.await(10, TimeUnit.SECONDS)) {

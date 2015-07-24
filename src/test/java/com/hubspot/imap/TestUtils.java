@@ -23,10 +23,12 @@ public class TestUtils {
           .build()
   );
 
+  public static ImapClient getClient() throws InterruptedException {
+    return CLIENT_FACTORY.connect(USER_NAME, PASSWORD);
+  }
 
   public static ImapClient getLoggedInClient() throws ExecutionException, InterruptedException, ConnectionClosedException {
-    ImapClient client = CLIENT_FACTORY.connect(USER_NAME, PASSWORD);
-
+    ImapClient client = getClient();
     client.login();
     client.awaitLogin();
 

@@ -1,10 +1,7 @@
 package com.hubspot.imap.client;
 
 import com.hubspot.imap.protocol.command.BaseCommand;
-import com.hubspot.imap.protocol.command.Command;
 import com.hubspot.imap.protocol.command.CommandType;
-import com.hubspot.imap.protocol.command.fetch.FetchCommand;
-import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
@@ -62,15 +59,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
           ctx.fireUserEventTriggered(new OpenEvent(((OpenResponse) taggedResponse)));
           break;
         case FETCH:
-          Command command = clientState.getCurrentCommand();
-          FetchCommand fetchCommand;
-          if (command instanceof UidCommand) {
-            fetchCommand = ((FetchCommand) ((UidCommand) command).getWrappedCommand());
-          } else {
-            fetchCommand = ((FetchCommand) clientState.getCurrentCommand());
-          }
-
-          taggedResponse = new FetchResponse.Builder().fromResponse(fetchCommand, taggedResponse);
+          taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse);
           break;
         case NOOP:
           taggedResponse = new NoopResponse.Builder().fromResponse(taggedResponse);

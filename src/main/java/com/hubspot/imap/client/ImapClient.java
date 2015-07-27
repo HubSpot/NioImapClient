@@ -190,6 +190,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     return channel != null && channel.isActive();
   }
 
+  public boolean isClosed() {
+    return connectionClosed.get();
+  }
+
   public void awaitLogin() throws InterruptedException, ExecutionException {
     loginPromise.get();
   }
@@ -321,15 +325,16 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     if (isConnected()) {
       if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
         try {
+          connectionClosed.set(true);
           if (!currentCommandPromise.await(10, TimeUnit.SECONDS)) {
-            connectionClosed.set(true);
-
             pendingWriteQueue.iterator().forEachRemaining(c -> c.promise.setFailure(new ConnectionClosedException()));
             currentCommandPromise.cancel(true);
           }
         } catch (InterruptedException e) {
           throw Throwables.propagate(e);
         }
+      } else {
+        connectionClosed.set(true);
       }
 
       Promise<TaggedResponse> logoutPromise = promiseExecutor.next().newPromise();

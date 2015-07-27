@@ -7,7 +7,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 public interface ConnectionListener extends ChannelInboundHandler {
   void connected();
   void disconnected();
-  void closed();
 
   abstract class ConnectionListenerAdapter extends ChannelInboundHandlerAdapter implements ConnectionListener {
     @Override

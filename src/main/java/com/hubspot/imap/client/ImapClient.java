@@ -258,17 +258,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   @Override
-  public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-    if (configuration.getReconnectBackoffMs() >= 0 && !connectionClosed.get()) {
-      ctx.executor().schedule(() -> {
-        reconnect();
-        return null;
-      }, configuration.getReconnectBackoffMs(), TimeUnit.MILLISECONDS);
-    }
-    super.channelInactive(ctx);
-  }
-
-  @Override
   @SuppressWarnings("unchecked")
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
     if (msg instanceof ContinuationResponse) {
@@ -312,12 +301,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     } else {
       ctx.fireExceptionCaught(cause);
     }
-  }
-
-  private void reconnect() throws ConnectionClosedException {
-    pendingWriteQueue.clear();
-    login();
-    this.connect();
   }
 
   @Override

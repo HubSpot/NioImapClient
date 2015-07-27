@@ -13,7 +13,6 @@ public interface ImapConfiguration {
 
   int getNoopKeepAliveIntervalSec();
   int getSocketTimeoutMs();
-  int getReconnectBackoffMs();
 
   enum AuthType {
     PASSWORD,
@@ -28,7 +27,6 @@ public interface ImapConfiguration {
 
     private int noopKeepAliveIntervalSec;
     private int socketTimeoutMs = 1000;
-    private int reconnectBackoffMs = -1;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -75,15 +73,6 @@ public interface ImapConfiguration {
       return this;
     }
 
-    public int getReconnectBackoffMs() {
-      return this.reconnectBackoffMs;
-    }
-
-    public Builder setReconnectBackoffMs(int reconnectBackoffMs) {
-      this.reconnectBackoffMs = reconnectBackoffMs;
-      return this;
-    }
-
     public ImapConfiguration build() {
       return this;
     }
@@ -96,7 +85,6 @@ public interface ImapConfiguration {
           .add("useEpoll", useEpoll)
           .add("noopKeepAliveIntervalSec", noopKeepAliveIntervalSec)
           .add("socketTimeoutMs", socketTimeoutMs)
-          .add("reconnectBackoffMs", reconnectBackoffMs)
           .toString();
     }
 
@@ -112,14 +100,13 @@ public interface ImapConfiguration {
       return Objects.equal(getUseEpoll(), builder.getUseEpoll()) &&
           Objects.equal(getNoopKeepAliveIntervalSec(), builder.getNoopKeepAliveIntervalSec()) &&
           Objects.equal(getSocketTimeoutMs(), builder.getSocketTimeoutMs()) &&
-          Objects.equal(getReconnectBackoffMs(), builder.getReconnectBackoffMs()) &&
           Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
           Objects.equal(getAuthType(), builder.getAuthType());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getReconnectBackoffMs());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs());
     }
   }
 }

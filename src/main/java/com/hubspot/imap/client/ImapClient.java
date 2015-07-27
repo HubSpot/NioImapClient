@@ -319,8 +319,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   @Override
   public void close() {
     if (isConnected()) {
-      channel.pipeline().fireUserEventTriggered(new ClientClosedEvent());
-
       if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
         try {
           if (!currentCommandPromise.await(10, TimeUnit.SECONDS)) {

@@ -81,8 +81,6 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       for (OpenEventListener listener: openEventListeners) {
         executorGroup.submit(() -> listener.handle(event));
       }
-    } else if (evt instanceof ClientClosedEvent) {
-      connectionListeners.forEach(l -> ctx.pipeline().remove(l));
     }
 
     super.userEventTriggered(ctx, evt);

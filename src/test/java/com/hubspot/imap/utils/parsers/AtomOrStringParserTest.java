@@ -9,9 +9,9 @@ import java.util.Arrays;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OptionallyQuotedStringParserTest {
+public class AtomOrStringParserTest {
   private static final AppendableCharSequence SEQUENCE = new AppendableCharSequence(1000);
-  private static final OptionallyQuotedStringParser PARSER = new OptionallyQuotedStringParser(SEQUENCE, 1000);
+  private static final AtomOrStringParser PARSER = new AtomOrStringParser(SEQUENCE, 1000);
 
   private static final byte[] UNQUOTED = "Unquoted".getBytes(StandardCharsets.UTF_8);
   private static final byte[] QUOTED = "\"This is quoted\"".getBytes(StandardCharsets.UTF_8);

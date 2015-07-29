@@ -3,7 +3,7 @@ package com.hubspot.imap.utils.parsers.fetch;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapAddress;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
-import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;
+import com.hubspot.imap.utils.parsers.AtomOrStringParser;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class EnvelopeParser {
-  private final OptionallyQuotedStringParser quotedStringParser;
+  private final AtomOrStringParser quotedStringParser;
   private final NestedArrayParser<String> nestedArrayParser;
 
-  public EnvelopeParser(OptionallyQuotedStringParser quotedStringParser) {
+  public EnvelopeParser(AtomOrStringParser quotedStringParser) {
     this.quotedStringParser = quotedStringParser;
     this.nestedArrayParser = new NestedArrayParser<>(quotedStringParser);
   }

@@ -22,7 +22,7 @@ import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.LineParser;
 import com.hubspot.imap.utils.parsers.MatchingParenthesesParser;
 import com.hubspot.imap.utils.parsers.NumberParser;
-import com.hubspot.imap.utils.parsers.OptionallyQuotedStringParser;
+import com.hubspot.imap.utils.parsers.AtomOrStringParser;
 import com.hubspot.imap.utils.parsers.WordParser;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
 import io.netty.buffer.ByteBuf;
@@ -71,7 +71,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
-  private final OptionallyQuotedStringParser quotedStringParser;
+  private final AtomOrStringParser quotedStringParser;
   private final ArrayParser arrayParser;
   private final NumberParser numberParser;
   private final MatchingParenthesesParser matchingParenthesesParser;
@@ -87,7 +87,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.charSeq = new AppendableCharSequence(100000);
     this.lineParser = new LineParser(charSeq, 100000);
     this.wordParser = new WordParser(charSeq, 100000);
-    this.quotedStringParser = new OptionallyQuotedStringParser(charSeq, 100000);
+    this.quotedStringParser = new AtomOrStringParser(charSeq, 100000);
     this.numberParser = new NumberParser(charSeq, 19);
     this.matchingParenthesesParser = new MatchingParenthesesParser();
     this.arrayParser = new ArrayParser(charSeq);

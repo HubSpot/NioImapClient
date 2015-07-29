@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.internal.AppendableCharSequence;
 
-public class OptionallyQuotedStringParser implements ByteBufParser<String> {
+public class AtomOrStringParser implements ByteBufParser<String> {
   private static final char QUOTE = '"';
   private static final char BACKSLASH = '\\';
 
@@ -13,7 +13,7 @@ public class OptionallyQuotedStringParser implements ByteBufParser<String> {
 
   private int size;
 
-  public OptionallyQuotedStringParser(AppendableCharSequence seq, int maxStringLength) {
+  public AtomOrStringParser(AppendableCharSequence seq, int maxStringLength) {
     this.seq = seq;
     this.maxStringLength = maxStringLength;
   }

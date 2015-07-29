@@ -26,7 +26,6 @@ import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.WordParser;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.handler.codec.http.HttpConstants;
@@ -82,7 +81,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private ImapMessage.Builder currentMessage;
 
-  public ResponseDecoder(ByteBufAllocator allocator) {
+  public ResponseDecoder() {
     super(State.SKIP_CONTROL_CHARS);
     this.charSeq = new AppendableCharSequence(100000);
     this.lineParser = new LineParser(charSeq, 100000);

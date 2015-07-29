@@ -2,22 +2,12 @@ package com.hubspot.imap.utils.parsers.fetch;
 
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapAddress;
-import com.hubspot.imap.utils.parsers.AtomOrStringParser;
-import com.hubspot.imap.utils.parsers.NestedArrayParser;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class EnvelopeParser {
-  private final AtomOrStringParser quotedStringParser;
-  private final NestedArrayParser<String> nestedArrayParser;
-
-  public EnvelopeParser(AtomOrStringParser quotedStringParser) {
-    this.quotedStringParser = quotedStringParser;
-    this.nestedArrayParser = new NestedArrayParser<>(quotedStringParser);
-  }
-
   /**
    * This parses an envelope response according to RFC3501:
    *

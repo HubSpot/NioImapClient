@@ -2,9 +2,8 @@ package com.hubspot.imap.utils.parsers.fetch;
 
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapAddress;
-import com.hubspot.imap.utils.parsers.NestedArrayParser;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
-import io.netty.buffer.ByteBuf;
+import com.hubspot.imap.utils.parsers.NestedArrayParser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,19 +31,19 @@ public class EnvelopeParser {
    * @param in ByteBuf containing the full envelope response.
    * @return Parsed Envelope object.
    */
-  public Envelope parse(ByteBuf in) {
-    String dateString = quotedStringParser.parse(in);
-    String subject = quotedStringParser.parse(in);
+  public Envelope parse(List<Object> in) {
+    String dateString = ((String) in.get(0));
+    String subject = ((String) in.get(1));
 
-    List<ImapAddress> from = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<ImapAddress> sender = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<ImapAddress> replyTo = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<ImapAddress> to = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<ImapAddress> cc = emailAddressesFromNestedList(nestedArrayParser.parse(in));
-    List<ImapAddress> bcc = emailAddressesFromNestedList(nestedArrayParser.parse(in));
+    List<ImapAddress> from = emailAddressesFromNestedList(castToList(in.get(2)));
+    List<ImapAddress> sender = emailAddressesFromNestedList(castToList(in.get(3)));
+    List<ImapAddress> replyTo = emailAddressesFromNestedList(castToList(in.get(4)));
+    List<ImapAddress> to = emailAddressesFromNestedList(castToList(in.get(5)));
+    List<ImapAddress> cc = emailAddressesFromNestedList(castToList(in.get(6)));
+    List<ImapAddress> bcc = emailAddressesFromNestedList(castToList(in.get(7)));
 
-    String inReplyTo = quotedStringParser.parse(in);
-    String messageId = quotedStringParser.parse(in);
+    String inReplyTo = ((String) in.get(8));
+    String messageId = ((String) in.get(9));
 
     Envelope envelope = new Envelope.Builder()
         .setDateFromString(dateString)
@@ -60,6 +59,20 @@ public class EnvelopeParser {
         .build();
 
     return envelope;
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Object> castToList(Object object) {
+    if (object instanceof String) {
+      String string = ((String) object);
+      if (string.startsWith("NIL")) {
+        return new ArrayList<>();
+      } else {
+        throw new IllegalStateException("A list cannot have string value other than \"NIL\"");
+      }
+    } else {
+      return ((List<Object>) object);
+    }
   }
 
   @SuppressWarnings("unchecked")

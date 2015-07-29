@@ -19,10 +19,10 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse.Builder;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.ArrayParser;
-import com.hubspot.imap.utils.parsers.LineParser;
-import com.hubspot.imap.utils.parsers.MatchingParenthesesParser;
-import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
+import com.hubspot.imap.utils.parsers.LineParser;
+import com.hubspot.imap.utils.parsers.NestedArrayParser;
+import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.WordParser;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
 import io.netty.buffer.ByteBuf;
@@ -74,8 +74,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final AtomOrStringParser quotedStringParser;
   private final ArrayParser arrayParser;
   private final NumberParser numberParser;
-  private final MatchingParenthesesParser matchingParenthesesParser;
   private final EnvelopeParser envelopeParser;
+  private final NestedArrayParser<String> nestedArrayParser;
 
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
@@ -89,9 +89,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.wordParser = new WordParser(charSeq, 100000);
     this.quotedStringParser = new AtomOrStringParser(charSeq, 100000);
     this.numberParser = new NumberParser(charSeq, 19);
-    this.matchingParenthesesParser = new MatchingParenthesesParser();
     this.arrayParser = new ArrayParser(charSeq);
     this.envelopeParser = new EnvelopeParser(quotedStringParser);
+    this.nestedArrayParser = new NestedArrayParser<>(quotedStringParser);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
@@ -207,7 +207,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setUid(numberParser.parse(in));
         break;
       case ENVELOPE:
-        currentMessage.setEnvelope(parseEnvelope(ctx, in));
+        currentMessage.setEnvelope(parseEnvelope(in));
         break;
       case X_GM_MSGID:
         currentMessage.setGmailMessageId(numberParser.parse(in));
@@ -333,9 +333,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .build();
   }
 
-  private Envelope parseEnvelope(ChannelHandlerContext ctx, ByteBuf in) {
-    ByteBuf envelopeBytes = matchingParenthesesParser.parse(in, ctx.alloc());
-    return envelopeParser.parse(envelopeBytes);
+  private Envelope parseEnvelope(ByteBuf in) {
+    List<Object> envelopeData = nestedArrayParser.parse(in);
+    return envelopeParser.parse(envelopeData);
   }
 
   private FolderFlags parseFlags(ByteBuf in, boolean permanent) {

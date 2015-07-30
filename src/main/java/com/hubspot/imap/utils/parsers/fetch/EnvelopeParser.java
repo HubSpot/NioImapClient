@@ -2,8 +2,11 @@ package com.hubspot.imap.utils.parsers.fetch;
 
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapAddress;
+import com.hubspot.imap.protocol.message.ImapAddress.Builder;
+import com.hubspot.imap.utils.NilMarker;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,8 +25,8 @@ public class EnvelopeParser {
    * @return Parsed Envelope object.
    */
   public Envelope parse(List<Object> in) {
-    String dateString = ((String) in.get(0));
-    String subject = ((String) in.get(1));
+    String dateString = castToString(in.get(0));
+    String subject = castToString(in.get(1));
 
     List<ImapAddress> from = emailAddressesFromNestedList(castToList(in.get(2)));
     List<ImapAddress> sender = emailAddressesFromNestedList(castToList(in.get(3)));
@@ -32,8 +35,8 @@ public class EnvelopeParser {
     List<ImapAddress> cc = emailAddressesFromNestedList(castToList(in.get(6)));
     List<ImapAddress> bcc = emailAddressesFromNestedList(castToList(in.get(7)));
 
-    String inReplyTo = ((String) in.get(8));
-    String messageId = ((String) in.get(9));
+    String inReplyTo = castToString(in.get(8));
+    String messageId = castToString(in.get(9));
 
     Envelope envelope = new Envelope.Builder()
         .setDateFromString(dateString)
@@ -60,8 +63,21 @@ public class EnvelopeParser {
       } else {
         throw new IllegalStateException("A list cannot have string value other than \"NIL\"");
       }
+    } else if (object instanceof NilMarker) {
+      return Collections.emptyList();
     } else {
       return ((List<Object>) object);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private String castToString(Object object) {
+    if (object instanceof String) {
+      return ((String) object);
+    } else if (object instanceof NilMarker) {
+      return null;
+    } else {
+      throw new IllegalStateException(String.format("Cannot use instance of type %s as string", object.getClass().getName()));
     }
   }
 
@@ -72,8 +88,20 @@ public class EnvelopeParser {
     }
 
     return in.stream()
-        .map(o -> ((List<String>) o))
-        .map(o -> new ImapAddress.Builder().parseFrom(o).build())
+        .map(o -> {
+          if (o instanceof NilMarker) {
+            return Collections.<String>emptyList();
+          } else {
+            return ((List<Object>) o).stream().map(e -> {
+              if (e instanceof NilMarker) {
+                return null;
+              } else {
+                return ((String) e);
+              }
+            }).collect(Collectors.toList());
+          }
+        })
+        .map(o -> new Builder().parseFrom(o).build())
         .collect(Collectors.toList());
   }
 }

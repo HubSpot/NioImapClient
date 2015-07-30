@@ -36,7 +36,7 @@ public interface ImapAddress {
      */
     public Builder parseFrom(List<String> imapAddress) {
       String personal = imapAddress.get(0);
-      if (!personal.equals(NIL)) {
+      if (personal != null) {
         setPersonal(personal);
       }
 

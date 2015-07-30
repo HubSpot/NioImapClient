@@ -1,5 +1,6 @@
 package com.hubspot.imap.utils.parsers;
 
+import com.hubspot.imap.utils.NilMarker;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
@@ -35,10 +36,14 @@ public class NestedArrayParser<T> {
       } else if (nextByte == RPAREN) {
         return values;
       } else if (Character.isWhitespace(nextByte)) {
-      } else if (nextByte == 'N' && !foundLeftParen) {
+      } else if (nextByte == 'N') {
         // NIL, read the remaining 2 bytes and return an empty list;
         buffer.readBytes(2);
-        return values;
+        if (!foundLeftParen) {
+          return values;
+        } else {
+          values.add(NilMarker.INSTANCE);
+        }
       } else {
         buffer.readerIndex(buffer.readerIndex() - 1);
         values.add(itemParser.parse(buffer));

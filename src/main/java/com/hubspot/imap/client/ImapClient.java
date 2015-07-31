@@ -46,6 +46,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
+  private static final String KEEP_ALIVE_HANDLER = "imap noop keep alive";
+
   private final ImapConfiguration configuration;
   private final Bootstrap bootstrap;
   private final EventExecutorGroup promiseExecutor;
@@ -146,7 +148,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private void startKeepAlive() {
     int keepAliveInterval = configuration.getNoopKeepAliveIntervalSec();
     if (keepAliveInterval > 0) {
-      this.channel.pipeline().addFirst(new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
+      this.channel.pipeline().addFirst(KEEP_ALIVE_HANDLER, new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
     }
   }
 
@@ -306,6 +308,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   @Override
   public void close() {
     if (isConnected()) {
+      channel.pipeline().remove(KEEP_ALIVE_HANDLER);
+
       if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
         try {
           connectionClosed.set(true);

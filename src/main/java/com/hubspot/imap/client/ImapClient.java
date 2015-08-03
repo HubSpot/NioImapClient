@@ -36,6 +36,7 @@ import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -43,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
+public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
   private static final String KEEP_ALIVE_HANDLER = "imap noop keep alive";

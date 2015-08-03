@@ -1,6 +1,7 @@
 package com.hubspot.imap.utils.parsers;
 
 import com.hubspot.imap.protocol.message.Envelope;
+import com.hubspot.imap.utils.parsers.NestedArrayParser.Recycler;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
 import io.netty.util.internal.AppendableCharSequence;
 import org.junit.Test;
@@ -17,9 +18,13 @@ public class EnvelopeParseTest {
 
   @Test
   public void testCanParseEnvelope() throws Exception {
+    NestedArrayParser.Recycler<String> arrayParserRecycler = new Recycler<>(new AtomOrStringParser(new AppendableCharSequence(100000), 100000));
     EnvelopeParser envelopeParser = new EnvelopeParser();
-    NestedArrayParser<String> nestedArrayParser = new NestedArrayParser<>(new AtomOrStringParser(new AppendableCharSequence(100000), 100000));
+
+    NestedArrayParser<String> nestedArrayParser = arrayParserRecycler.get();
     Envelope envelope = envelopeParser.parse(nestedArrayParser.parse(wrappedBuffer(TEST_ENVELOPE)));
+    nestedArrayParser.recycle();
+
     assertThat(envelope.getSubject()).isNotEmpty();
   }
 }

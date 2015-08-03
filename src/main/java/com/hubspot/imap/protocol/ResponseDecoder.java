@@ -70,11 +70,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
-  private final AtomOrStringParser quotedStringParser;
+  private final AtomOrStringParser atomOrStringParser;
   private final ArrayParser arrayParser;
   private final NumberParser numberParser;
   private final EnvelopeParser envelopeParser;
-  private final NestedArrayParser<String> nestedArrayParser;
+  private final NestedArrayParser.Recycler<String> nestedArrayParserRecycler;
 
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
@@ -86,11 +86,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.charSeq = new AppendableCharSequence(100000);
     this.lineParser = new LineParser(charSeq, 100000);
     this.wordParser = new WordParser(charSeq, 100000);
-    this.quotedStringParser = new AtomOrStringParser(charSeq, 100000);
+    this.atomOrStringParser = new AtomOrStringParser(charSeq, 100000);
     this.numberParser = new NumberParser(charSeq, 19);
     this.arrayParser = new ArrayParser(charSeq);
     this.envelopeParser = new EnvelopeParser();
-    this.nestedArrayParser = new NestedArrayParser<>(quotedStringParser);
+    this.nestedArrayParserRecycler = new NestedArrayParser.Recycler<>(atomOrStringParser);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
@@ -196,7 +196,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setFlagStrings(flags);
         break;
       case INTERNALDATE:
-        String internalDate = quotedStringParser.parse(in);
+        String internalDate = atomOrStringParser.parse(in);
         currentMessage.setInternalDate(internalDate);
         break;
       case RFC822_SIZE:
@@ -333,7 +333,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private Envelope parseEnvelope(ByteBuf in) {
-    List<Object> envelopeData = nestedArrayParser.parse(in);
+    NestedArrayParser<String> arrayParser = nestedArrayParserRecycler.get();
+    List<Object> envelopeData = arrayParser.parse(in);
+    arrayParser.recycle();
+
     return envelopeParser.parse(envelopeData);
   }
 
@@ -350,8 +353,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     skipControlCharacters(in);
     Set<FolderAttribute> attributes = parseFolderAttributes(in);
 
-    String context = quotedStringParser.parse(in);
-    String name = quotedStringParser.parse(in);
+    String context = atomOrStringParser.parse(in);
+    String name = atomOrStringParser.parse(in);
 
     // Make sure we parse to the end of the line
     lineParser.parse(in);

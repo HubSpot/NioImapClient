@@ -7,15 +7,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NestedArrayParser<T> {
+
   private static final char LPAREN = '(';
   private static final char RPAREN = ')';
 
   private List<Object> values;
   private boolean foundLeftParen;
   private final ByteBufParser<T> itemParser;
+  private final Recycler<T> recycler;
+  private final io.netty.util.Recycler.Handle handle;
 
-  public NestedArrayParser(ByteBufParser<T> itemParser) {
+  public NestedArrayParser(ByteBufParser<T> itemParser, Recycler<T> recycler, io.netty.util.Recycler.Handle handle) {
     this.itemParser = itemParser;
+    this.recycler = recycler;
+    this.handle = handle;
   }
 
   public List<Object> parse(ByteBuf buffer) {
@@ -29,7 +34,10 @@ public class NestedArrayParser<T> {
       if (nextByte == LPAREN) {
         if (foundLeftParen) {
           buffer.readerIndex(buffer.readerIndex() - 1); // This is actually the start of the next array
-          values.add(new NestedArrayParser<>(itemParser).parse(buffer));
+
+          NestedArrayParser<T> nestedArrayParser = recycler.get();
+          values.add(nestedArrayParser.parse(buffer));
+          nestedArrayParser.recycle();
         } else {
           foundLeftParen = true;
         }
@@ -51,5 +59,25 @@ public class NestedArrayParser<T> {
     }
 
     return values;
+  }
+
+  public void recycle() {
+    values = new ArrayList<>();
+    foundLeftParen = false;
+    recycler.recycle(this, handle);
+  }
+
+  public static class Recycler<X> extends io.netty.util.Recycler<NestedArrayParser<X>> {
+
+    private final ByteBufParser<X> itemParser;
+
+    public Recycler(ByteBufParser<X> itemParser) {
+      this.itemParser = itemParser;
+    }
+
+    @Override
+    protected NestedArrayParser<X> newObject(Handle handle) {
+      return new NestedArrayParser<>(itemParser, this, handle);
+    }
   }
 }

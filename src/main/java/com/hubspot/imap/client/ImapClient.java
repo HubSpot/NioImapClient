@@ -58,6 +58,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   private final ImapCodec codec;
   private final ConcurrentLinkedQueue<PendingCommand> pendingWriteQueue;
   private final AtomicBoolean connectionClosed;
+  private final AtomicBoolean keepAliveStarted;
 
   private Channel channel;
 
@@ -76,6 +77,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     this.codec = new ImapCodec(clientState);
     this.pendingWriteQueue = new ConcurrentLinkedQueue<>();
     this.connectionClosed = new AtomicBoolean(false);
+    this.keepAliveStarted = new AtomicBoolean(false);
 
     loginPromise = promiseExecutor.next().newPromise();
   }
@@ -149,6 +151,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
     int keepAliveInterval = configuration.getNoopKeepAliveIntervalSec();
     if (keepAliveInterval > 0) {
       this.channel.pipeline().addFirst(KEEP_ALIVE_HANDLER, new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
+      keepAliveStarted.set(true);
     }
   }
 
@@ -308,7 +311,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   @Override
   public void close() {
     if (isConnected()) {
-      channel.pipeline().remove(KEEP_ALIVE_HANDLER);
+      if (keepAliveStarted.get()) {
+        channel.pipeline().remove(KEEP_ALIVE_HANDLER);
+        keepAliveStarted.set(false);
+      }
 
       if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
         try {

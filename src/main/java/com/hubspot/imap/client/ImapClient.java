@@ -209,12 +209,9 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   /**
-   * Sends a command.
+   * Sends a command. If there is currently a command in progress, this command will be queued and executed when the currently running command finishes.
+   * It is possible for a command to be queued and then a connection closed before it is actually executed, so it is important to listen to the returned future in order to ensure that the command was completed.
    *
-   * This method will wait for any currently running command to finish before executing, this is a blocking operation.
-   *
-   * NOTE: It is critical that this method never be called from the event loop. This should not be a problem for user level application, but internal operations like keep-alive must be very careful to use separate executors when calling this method.
-   *       The other important thing that one must pay attention too is that the threads used to execute this method not be from the same group as used to generate the promises, because the threads are given out at random and calling promise.await on the thread that is responsible for that promise will deadlock.
    * @param command Command to send
    * @param <T> Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
@@ -251,9 +248,16 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable {
   }
 
   public synchronized void writeNext() throws ConnectionClosedException {
-    PendingCommand pendingCommand = pendingWriteQueue.poll();
-    if (pendingCommand != null) {
-      send(pendingCommand.command, pendingCommand.promise);
+    if (pendingWriteQueue.peek() != null) {
+      if (channel.isWritable()) {
+        PendingCommand pendingCommand = pendingWriteQueue.poll();
+        send(pendingCommand.command, pendingCommand.promise);
+      } else {
+        channel.eventLoop().schedule(() -> {
+          this.writeNext();
+          return null;
+        }, configuration.getWriteBackOffMs(), TimeUnit.MILLISECONDS);
+      }
     }
   }
 

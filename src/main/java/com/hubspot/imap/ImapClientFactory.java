@@ -65,6 +65,8 @@ public class ImapClientFactory implements AutoCloseable {
         .option(ChannelOption.SO_LINGER, 0)
         .option(ChannelOption.SO_KEEPALIVE, true)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+        .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
+        .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
         .handler(new ImapChannelInitializer(context, hostAndPort));
 
     if (configuration.getUseEpoll()) {

@@ -14,6 +14,8 @@ public interface ImapConfiguration {
   int getNoopKeepAliveIntervalSec();
   int getSocketTimeoutMs();
 
+  int getWriteBackOffMs();
+
   enum AuthType {
     PASSWORD,
     XOAUTH2;
@@ -27,6 +29,8 @@ public interface ImapConfiguration {
 
     private int noopKeepAliveIntervalSec;
     private int socketTimeoutMs = 1000;
+
+    private int writeBackOffMs = 10;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -73,6 +77,15 @@ public interface ImapConfiguration {
       return this;
     }
 
+    public int getWriteBackOffMs() {
+      return this.writeBackOffMs;
+    }
+
+    public Builder setWriteBackOffMs(int writeBackOffMs) {
+      this.writeBackOffMs = writeBackOffMs;
+      return this;
+    }
+
     public ImapConfiguration build() {
       return this;
     }
@@ -85,6 +98,7 @@ public interface ImapConfiguration {
           .add("useEpoll", useEpoll)
           .add("noopKeepAliveIntervalSec", noopKeepAliveIntervalSec)
           .add("socketTimeoutMs", socketTimeoutMs)
+          .add("writeBackOffMs", writeBackOffMs)
           .toString();
     }
 
@@ -100,13 +114,14 @@ public interface ImapConfiguration {
       return Objects.equal(getUseEpoll(), builder.getUseEpoll()) &&
           Objects.equal(getNoopKeepAliveIntervalSec(), builder.getNoopKeepAliveIntervalSec()) &&
           Objects.equal(getSocketTimeoutMs(), builder.getSocketTimeoutMs()) &&
+          Objects.equal(getWriteBackOffMs(), builder.getWriteBackOffMs()) &&
           Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
           Objects.equal(getAuthType(), builder.getAuthType());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs());
     }
   }
 }

@@ -24,9 +24,9 @@ public class ConnectionListenerTest {
         @Override
         public void disconnected() {}
       });
-    }
 
-    assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+      assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+    }
   }
 
   @Test

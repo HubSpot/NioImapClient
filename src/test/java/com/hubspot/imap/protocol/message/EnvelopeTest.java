@@ -14,10 +14,11 @@ public class EnvelopeTest {
       "Sat, 11 Jul 2015 22:38:40 +0000",
       "Tue, 21 Jul 2015 20:14:36 UT",
       "Sun, 5 Jul 2015 06:43:10 +0000",
-      "Thu, 23 Jul 2015 7:37:44 -0700");
+      "Thu, 23 Jul 2015 7:37:44 -0700",
+      "Tue,  4 Aug 2015 17:02:29 +0000 (GMT)");
 
   @Test
   public void testDoesParseWeirdFormats() throws Exception {
-    INPUT.forEach(Builder.RFC2822_FORMATTER::parse);
+    INPUT.forEach(Builder::parseDate);
   }
 }

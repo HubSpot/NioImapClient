@@ -54,7 +54,7 @@ public interface Envelope {
         return this;
       }
 
-      return setDate(ZonedDateTime.parse(date, RFC2822_FORMATTER));
+      return setDate(parseDate(date));
     }
 
     public String getSubject() {
@@ -136,6 +136,12 @@ public interface Envelope {
     public Builder setMessageId(String messageId) {
       this.messageId = messageId;
       return this;
+    }
+
+    @VisibleForTesting
+    static ZonedDateTime parseDate(String in) {
+      in = in.replaceAll("\\s+", " ");
+      return ZonedDateTime.parse(in, RFC2822_FORMATTER);
     }
   }
 }

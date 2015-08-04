@@ -23,7 +23,7 @@ public interface Envelope {
 
   class Builder implements Envelope {
     @VisibleForTesting
-    static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (zzz)]").withLocale(Locale.US);
+    static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]").withLocale(Locale.US);
 
     private ZonedDateTime date;
     private String subject;

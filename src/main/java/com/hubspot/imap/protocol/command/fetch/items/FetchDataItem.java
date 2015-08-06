@@ -27,6 +27,7 @@ public interface FetchDataItem {
     UID("UID"),
     X_GM_MSGID("X-GM-MSGID"),
     X_GM_THRID("X-GM-THRID"),
+    X_GM_LABELS("X-GM-LABELS"),
     INVALID("----");
 
     private String string;

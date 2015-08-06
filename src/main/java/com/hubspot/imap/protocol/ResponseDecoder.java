@@ -5,6 +5,7 @@ import com.google.seventeen.common.primitives.Ints;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
+import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
 import com.hubspot.imap.protocol.folder.FolderAttribute;
 import com.hubspot.imap.protocol.folder.FolderFlags;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
@@ -213,6 +214,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         break;
       case X_GM_THRID:
         currentMessage.setGmailThreadId(numberParser.parse(in));
+        break;
+      case X_GM_LABELS:
+        currentMessage.setGMailLabels(arrayParser.parse(in).stream().map(GMailLabel::get).collect(Collectors.toSet()));
         break;
       case INVALID:
       default:

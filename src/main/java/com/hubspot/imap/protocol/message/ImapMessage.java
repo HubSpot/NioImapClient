@@ -1,6 +1,7 @@
 package com.hubspot.imap.protocol.message;
 
 import com.google.common.base.Objects;
+import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,6 +20,7 @@ public interface ImapMessage {
   Envelope getEnvelope() throws UnfetchedFieldException;
   long getGmailMessageId() throws UnfetchedFieldException;
   long getGmailThreadId() throws UnfetchedFieldException;
+  Set<GMailLabel> getGMailLabels() throws UnfetchedFieldException;
 
   class Builder implements ImapMessage {
     private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
@@ -31,6 +33,7 @@ public interface ImapMessage {
     private Optional<Envelope> envelope = Optional.empty();
     private Optional<Long> gmailMessageId = Optional.empty();
     private Optional<Long> gmailThreadId = Optional.empty();
+    private Optional<Set<GMailLabel>> gMailLabels = Optional.empty();
 
     public ImapMessage build() {
       return this;
@@ -100,7 +103,7 @@ public interface ImapMessage {
     }
 
     public long getGmailMessageId() throws UnfetchedFieldException {
-      return gmailMessageId.orElseThrow(() -> new UnfetchedFieldException("envelope"));
+      return gmailMessageId.orElseThrow(() -> new UnfetchedFieldException("gmail message id"));
     }
 
     public Builder setGmailMessageId(long msgId) {
@@ -109,11 +112,20 @@ public interface ImapMessage {
     }
 
     public long getGmailThreadId() throws UnfetchedFieldException {
-      return gmailThreadId.orElseThrow(() -> new UnfetchedFieldException("envelope"));
+      return gmailThreadId.orElseThrow(() -> new UnfetchedFieldException("gmail thread id"));
     }
 
     public Builder setGmailThreadId(long msgId) {
       this.gmailThreadId = Optional.of(msgId);
+      return this;
+    }
+
+    public Set<GMailLabel> getGMailLabels() throws UnfetchedFieldException {
+      return gMailLabels.orElseThrow(() -> new UnfetchedFieldException("gmail labels"));
+    }
+
+    public Builder setGMailLabels(Set<GMailLabel> gmailLabels) {
+      this.gMailLabels = Optional.of(gmailLabels);
       return this;
     }
 
@@ -128,6 +140,7 @@ public interface ImapMessage {
           .add("envelope", envelope)
           .add("gmailMessageId", gmailMessageId)
           .add("gmailThreadId", gmailThreadId)
+          .add("gMailLabels", gMailLabels)
           .toString();
     }
 
@@ -147,12 +160,13 @@ public interface ImapMessage {
           Objects.equal(size, builder.size) &&
           Objects.equal(envelope, builder.envelope) &&
           Objects.equal(gmailMessageId, builder.gmailMessageId) &&
-          Objects.equal(gmailThreadId, builder.gmailThreadId);
+          Objects.equal(gmailThreadId, builder.gmailThreadId) &&
+          Objects.equal(gMailLabels, builder.gMailLabels);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(flags, messageNumber, uid, internalDate, size, envelope, gmailMessageId, gmailThreadId);
+      return Objects.hashCode(flags, messageNumber, uid, internalDate, size, envelope, gmailMessageId, gmailThreadId, gMailLabels);
     }
   }
 }

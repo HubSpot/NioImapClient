@@ -45,6 +45,10 @@ public class FetchCommand extends BaseCommand {
   }
 
   private String getFetchItems() {
+    if (fetchDataItems.size() == 1) {
+      return fetchDataItems.get(0).toString();
+    }
+
     return String.format("(%s)",
         JOINER.join(fetchDataItems.stream().map(FetchDataItem::toString).collect(Collectors.toList())));
   }

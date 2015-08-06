@@ -37,7 +37,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
   protected void encode(ChannelHandlerContext ctx, BaseCommand msg, List<Object> out) throws Exception {
     String data = msg.commandString();
     String tag = clientState.getNextTag();
-    LOGGER.info("IMAP SEND: {}{}", tag, data);
+    LOGGER.debug("SEND: {}{}", tag, data);
     out.add(tag + data + "\r\n");
   }
 

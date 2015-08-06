@@ -111,7 +111,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
     for (;;) {
-      dumpLine("RCV", in);
+      if (LOGGER.isDebugEnabled()) {
+        dumpLine("RCV", in);
+      }
+
       switch (state()) {
         case SKIP_CONTROL_CHARS:
           try {
@@ -412,7 +415,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void dumpLine(String prefix, ByteBuf in) {
     int index = in.readerIndex();
     String line = lineParser.parse(in).toString();
-    LOGGER.info("{}: {}", prefix, line);
+    LOGGER.debug("{}: {}", prefix, line);
 
     in.readerIndex(index);
   }

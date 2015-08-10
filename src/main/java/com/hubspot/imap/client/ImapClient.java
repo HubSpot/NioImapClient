@@ -63,7 +63,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private Channel channel;
 
-  private final Promise<Void> loginPromise;
+  private final Promise<TaggedResponse> loginPromise;
 
   private volatile Promise currentCommandPromise;
 
@@ -134,7 +134,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         if (taggedResponse.getCode() == ResponseCode.BAD) {
           loginPromise.setFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
         } else {
-          loginPromise.setSuccess(null);
+          loginPromise.setSuccess(taggedResponse);
         }
       }
     });
@@ -145,7 +145,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       }
     });
 
-    return loginFuture;
+    return loginPromise;
   }
 
   private void startKeepAlive() {

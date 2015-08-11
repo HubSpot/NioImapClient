@@ -3,8 +3,12 @@ package com.hubspot.imap.protocol.message;
 
 import com.google.seventeen.common.annotations.VisibleForTesting;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.List;
 import java.util.Locale;
 
@@ -141,7 +145,14 @@ public interface Envelope {
     @VisibleForTesting
     static ZonedDateTime parseDate(String in) {
       in = in.replaceAll("\\s+", " ");
-      return ZonedDateTime.parse(in, RFC2822_FORMATTER);
+
+      TemporalAccessor temporalAccessor = RFC2822_FORMATTER.parseBest(in, ZonedDateTime::from, LocalDateTime::from, LocalDate::from);
+      if (temporalAccessor instanceof LocalDateTime) {
+        return ((LocalDateTime) temporalAccessor).atZone(ZoneId.of("UTC"));
+      } else if (temporalAccessor instanceof LocalDate) {
+        return ((LocalDate) temporalAccessor).atStartOfDay(ZoneId.of("UTC"));
+      }
+      return ((ZonedDateTime) temporalAccessor);
     }
   }
 }

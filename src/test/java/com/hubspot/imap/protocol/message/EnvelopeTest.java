@@ -24,7 +24,8 @@ public class EnvelopeTest {
         "Tue, 21 Jul 2015 20:14:36 UT",
         "Sun, 5 Jul 2015 06:43:10 +0000",
         "Thu, 23 Jul 2015 7:37:44 -0700",
-        "Tue,  4 Aug 2015 17:02:29 +0000 (GMT)"
+        "Tue,  4 Aug 2015 17:02:29 +0000 (GMT)",
+        "Sat, 8 Aug 2015 14:23:59"
     );
   }
 

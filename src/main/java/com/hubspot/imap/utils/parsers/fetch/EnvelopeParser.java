@@ -1,16 +1,32 @@
 package com.hubspot.imap.utils.parsers.fetch;
 
+import com.google.seventeen.common.annotations.VisibleForTesting;
+import com.google.seventeen.common.base.Strings;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapAddress;
 import com.hubspot.imap.protocol.message.ImapAddress.Builder;
 import com.hubspot.imap.utils.NilMarker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class EnvelopeParser {
+  private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
+
+  static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]").withLocale(Locale.US);
+
   /**
    * This parses an envelope response according to RFC3501:
    *
@@ -38,8 +54,7 @@ public class EnvelopeParser {
     String inReplyTo = castToString(in.get(8));
     String messageId = castToString(in.get(9));
 
-    Envelope envelope = new Envelope.Builder()
-        .setDateFromString(dateString)
+    Envelope.Builder envelope = new Envelope.Builder()
         .setSubject(subject)
         .setFrom(from)
         .setSender(sender)
@@ -48,10 +63,17 @@ public class EnvelopeParser {
         .setCc(cc)
         .setBcc(bcc)
         .setInReplyTo(inReplyTo)
-        .setMessageId(messageId)
-        .build();
+        .setMessageId(messageId);
 
-    return envelope;
+    try {
+      if (!Strings.isNullOrEmpty(dateString) && !dateString.equalsIgnoreCase("nil")) {
+        envelope.setDate(parseDate(dateString));
+      }
+    } catch (DateTimeParseException e) {
+      LOGGER.warn("Failed to parse date {}", dateString, e);
+    }
+
+    return envelope.build();
   }
 
   @SuppressWarnings("unchecked")
@@ -103,5 +125,18 @@ public class EnvelopeParser {
         })
         .map(o -> new Builder().parseFrom(o).build())
         .collect(Collectors.toList());
+  }
+
+  @VisibleForTesting
+  public static ZonedDateTime parseDate(String in) {
+    in = in.replaceAll("\\s+", " ");
+
+    TemporalAccessor temporalAccessor = RFC2822_FORMATTER.parseBest(in, ZonedDateTime::from, LocalDateTime::from, LocalDate::from);
+    if (temporalAccessor instanceof LocalDateTime) {
+      return ((LocalDateTime) temporalAccessor).atZone(ZoneId.of("UTC"));
+    } else if (temporalAccessor instanceof LocalDate) {
+      return ((LocalDate) temporalAccessor).atStartOfDay(ZoneId.of("UTC"));
+    }
+    return ((ZonedDateTime) temporalAccessor);
   }
 }

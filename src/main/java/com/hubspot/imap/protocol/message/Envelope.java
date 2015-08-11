@@ -1,16 +1,8 @@
 package com.hubspot.imap.protocol.message;
 
 
-import com.google.seventeen.common.annotations.VisibleForTesting;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.List;
-import java.util.Locale;
 
 public interface Envelope {
   ZonedDateTime getDate();
@@ -26,8 +18,6 @@ public interface Envelope {
   String getMessageId();
 
   class Builder implements Envelope {
-    @VisibleForTesting
-    static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]").withLocale(Locale.US);
 
     private ZonedDateTime date;
     private String subject;
@@ -51,14 +41,6 @@ public interface Envelope {
     public Builder setDate(ZonedDateTime date) {
       this.date = date;
       return this;
-    }
-
-    public Builder setDateFromString(String date) {
-      if (date.startsWith("N")) { // Handle NIL
-        return this;
-      }
-
-      return setDate(parseDate(date));
     }
 
     public String getSubject() {
@@ -142,17 +124,6 @@ public interface Envelope {
       return this;
     }
 
-    @VisibleForTesting
-    static ZonedDateTime parseDate(String in) {
-      in = in.replaceAll("\\s+", " ");
 
-      TemporalAccessor temporalAccessor = RFC2822_FORMATTER.parseBest(in, ZonedDateTime::from, LocalDateTime::from, LocalDate::from);
-      if (temporalAccessor instanceof LocalDateTime) {
-        return ((LocalDateTime) temporalAccessor).atZone(ZoneId.of("UTC"));
-      } else if (temporalAccessor instanceof LocalDate) {
-        return ((LocalDate) temporalAccessor).atStartOfDay(ZoneId.of("UTC"));
-      }
-      return ((ZonedDateTime) temporalAccessor);
-    }
   }
 }

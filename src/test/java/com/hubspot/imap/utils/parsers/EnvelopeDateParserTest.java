@@ -1,7 +1,7 @@
-package com.hubspot.imap.protocol.message;
+package com.hubspot.imap.utils.parsers;
 
 import com.google.seventeen.common.collect.Lists;
-import com.hubspot.imap.protocol.message.Envelope.Builder;
+import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -13,7 +13,7 @@ import java.util.Collection;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
-public class EnvelopeTest {
+public class EnvelopeDateParserTest {
 
   @Parameters
   public static Collection<String> parameters() {
@@ -34,6 +34,6 @@ public class EnvelopeTest {
 
   @Test
   public void testDoesParseWeirdFormats() throws Exception {
-    assertThat(Builder.parseDate(input)).isNotNull();
+    assertThat(EnvelopeParser.parseDate(input)).isNotNull();
   }
 }

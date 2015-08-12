@@ -21,6 +21,7 @@ public interface ImapMessage {
   long getGmailMessageId() throws UnfetchedFieldException;
   long getGmailThreadId() throws UnfetchedFieldException;
   Set<GMailLabel> getGMailLabels() throws UnfetchedFieldException;
+  MimeMessage getBody() throws UnfetchedFieldException;
 
   class Builder implements ImapMessage {
     private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
@@ -34,6 +35,7 @@ public interface ImapMessage {
     private Optional<Long> gmailMessageId = Optional.empty();
     private Optional<Long> gmailThreadId = Optional.empty();
     private Optional<Set<GMailLabel>> gMailLabels = Optional.empty();
+    private Optional<MimeMessage> body = Optional.empty();
 
     public ImapMessage build() {
       return this;
@@ -129,19 +131,13 @@ public interface ImapMessage {
       return this;
     }
 
-    @Override
-    public String toString() {
-      return Objects.toStringHelper(this)
-          .add("flags", flags)
-          .add("messageNumber", messageNumber)
-          .add("uid", uid)
-          .add("internalDate", internalDate)
-          .add("size", size)
-          .add("envelope", envelope)
-          .add("gmailMessageId", gmailMessageId)
-          .add("gmailThreadId", gmailThreadId)
-          .add("gMailLabels", gMailLabels)
-          .toString();
+    public MimeMessage getBody() throws UnfetchedFieldException {
+      return this.body.orElseThrow(() -> new UnfetchedFieldException("body"));
+    }
+
+    public Builder setBody(Optional<MimeMessage> body) {
+      this.body = body;
+      return this;
     }
 
     @Override
@@ -161,12 +157,13 @@ public interface ImapMessage {
           Objects.equal(envelope, builder.envelope) &&
           Objects.equal(gmailMessageId, builder.gmailMessageId) &&
           Objects.equal(gmailThreadId, builder.gmailThreadId) &&
-          Objects.equal(gMailLabels, builder.gMailLabels);
+          Objects.equal(gMailLabels, builder.gMailLabels) &&
+          Objects.equal(body, builder.body);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(flags, messageNumber, uid, internalDate, size, envelope, gmailMessageId, gmailThreadId, gMailLabels);
+      return Objects.hashCode(flags, messageNumber, uid, internalDate, size, envelope, gmailMessageId, gmailThreadId, gMailLabels, body);
     }
   }
 }

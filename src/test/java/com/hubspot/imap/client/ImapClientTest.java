@@ -2,6 +2,7 @@ package com.hubspot.imap.client;
 
 import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.TestUtils;
+import com.hubspot.imap.protocol.command.fetch.items.BodyFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
@@ -164,6 +165,27 @@ public class ImapClientTest {
     assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.BODY);
+
+    try {
+      responseFuture.get();
+    } catch (ExecutionException e) {
+      assertThat(e.getCause()).hasCauseInstanceOf(UnknownFetchItemTypeException.class);
+    } finally {
+      try {
+        client.close();
+      } catch (Exception e) {
+        // This may also throw depending on the order in which things are parsed.
+      }
+    }
+  }
+
+  @Test
+  public void testFetchBodyHeaders_doesParseHeaders() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), new BodyFetchDataItem(true, "HEADER"));
 
     try {
       responseFuture.get();

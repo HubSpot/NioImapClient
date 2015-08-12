@@ -21,7 +21,9 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
+import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
 import com.hubspot.imap.utils.parsers.LineParser;
+import com.hubspot.imap.utils.parsers.LiteralStringParser;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
 import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.WordParser;
@@ -71,7 +73,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
+  private final FetchResponseTypeParser fetchResponseTypeParser;
   private final AtomOrStringParser atomOrStringParser;
+  private final LiteralStringParser literalStringParser;
   private final ArrayParser arrayParser;
   private final NumberParser numberParser;
   private final EnvelopeParser envelopeParser;
@@ -87,7 +91,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.charSeq = new AppendableCharSequence(100000);
     this.lineParser = new LineParser(charSeq, 100000);
     this.wordParser = new WordParser(charSeq, 100000);
+    this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, 100000);
     this.atomOrStringParser = new AtomOrStringParser(charSeq, 100000);
+    this.literalStringParser = new LiteralStringParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
     this.arrayParser = new ArrayParser(charSeq);
     this.envelopeParser = new EnvelopeParser();
@@ -187,7 +193,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       }
     }
 
-    String fetchItemString = wordParser.parse(in).toString();
+    String fetchItemString = fetchResponseTypeParser.parse(in).toString();
     if (StringUtils.isBlank(fetchItemString)) {
       checkpoint(State.FETCH);
       return;
@@ -212,6 +218,12 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case ENVELOPE:
         currentMessage.setEnvelope(parseEnvelope(in));
         break;
+      case BODY:
+        String bracketed = wordParser.parse(in).toString();
+        String body = literalStringParser.parse(in);
+
+        LOGGER.info("Got body part {}: {}", bracketed, body);
+        break;
       case X_GM_MSGID:
         currentMessage.setGmailMessageId(numberParser.parse(in));
         break;
@@ -222,8 +234,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setGMailLabels(arrayParser.parse(in).stream().map(GMailLabel::get).collect(Collectors.toSet()));
         break;
       case INVALID:
-      default:
-        // This is really bad because we need to know what type of response to parse for each tag.
+      default: // This is really bad because we need to know what type of response to parse for each tag.
         // Given an unknown fetch type, we can't find the next fetch type tag, so we just have to stop.
         lineParser.parse(in);
         checkpoint(State.RESET);

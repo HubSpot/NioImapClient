@@ -170,12 +170,6 @@ public class ImapClientTest {
       responseFuture.get();
     } catch (ExecutionException e) {
       assertThat(e.getCause()).hasCauseInstanceOf(UnknownFetchItemTypeException.class);
-    } finally {
-      try {
-        client.close();
-      } catch (Exception e) {
-        // This may also throw depending on the order in which things are parsed.
-      }
     }
   }
 

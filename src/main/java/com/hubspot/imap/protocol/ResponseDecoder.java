@@ -354,6 +354,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     String bodySection = "";
     if (c != '[') {
       // This is effectively BODYSTRUCTURE which is not yet supported
+      lineParser.parse(in);
+      checkpoint(State.RESET);
       throw new UnknownFetchItemTypeException("BODYSTRUCTURE");
     } else {
       charSeq.reset();

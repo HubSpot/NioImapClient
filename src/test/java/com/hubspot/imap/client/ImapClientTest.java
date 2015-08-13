@@ -2,7 +2,7 @@ package com.hubspot.imap.client;
 
 import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.TestUtils;
-import com.hubspot.imap.protocol.command.fetch.items.BodyFetchDataItem;
+import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
@@ -185,7 +185,7 @@ public class ImapClientTest {
     OpenResponse or = openResponseFuture.get();
     assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), new BodyFetchDataItem(true, "HEADER"));
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), new BodyPeekFetchDataItem("HEADER"));
     FetchResponse response = responseFuture.get();
     assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {

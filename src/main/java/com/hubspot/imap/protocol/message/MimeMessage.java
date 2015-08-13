@@ -26,6 +26,7 @@ public interface MimeMessage {
 
       String line;
       while ((line = reader.readLine()) != null) {
+        line = line.trim();
         if (Strings.isNullOrEmpty(line)) {
           break;
         }

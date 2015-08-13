@@ -195,7 +195,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       }
     }
 
-    String fetchItemString = fetchResponseTypeParser.parse(in).toString();
+    String fetchItemString = fetchResponseTypeParser.parse(in);
     if (StringUtils.isBlank(fetchItemString)) {
       checkpoint(State.FETCH);
       return;
@@ -221,9 +221,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setEnvelope(parseEnvelope(in));
         break;
       case BODY:
-        String body = literalStringParser.parse(in);
-
-        currentMessage.setBody(new MimeMessage.Builder().parseFrom(body).build());
+        currentMessage.setBody(parseBody(in));
         break;
       case X_GM_MSGID:
         currentMessage.setGmailMessageId(numberParser.parse(in));
@@ -328,7 +326,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void handleMessageCountResponse(UntaggedResponseType type, String value, ChannelHandlerContext ctx) {
     UntaggedIntResponse intResponse = handleIntResponse(type, value);
     untaggedResponses.add(intResponse);
-
   }
 
   private void handleBye(ByteBuf in, ChannelHandlerContext handlerContext) {
@@ -349,6 +346,31 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .setType(type)
         .setValue(Long.parseLong(value))
         .build();
+  }
+
+  private MimeMessage parseBody(ByteBuf in) throws UnknownFetchItemTypeException, IOException {
+    char c = ((char) in.readUnsignedByte());
+
+    String bodySection = "";
+    if (c != '[') {
+      // This is effectively BODYSTRUCTURE which is not yet supported
+      throw new UnknownFetchItemTypeException("BODYSTRUCTURE");
+    } else {
+      charSeq.reset();
+
+      c = ((char) in.readUnsignedByte());
+      while (c != ']') {
+        charSeq.append(c);
+        c = ((char) in.readUnsignedByte());
+      }
+
+      if (charSeq.length() > 0) {
+        bodySection = charSeq.toString();
+      }
+    }
+    String body = literalStringParser.parse(in);
+
+    return new MimeMessage.Builder().parseFrom(body).build();
   }
 
   private Envelope parseEnvelope(ByteBuf in) {

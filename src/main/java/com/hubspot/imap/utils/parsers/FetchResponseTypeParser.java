@@ -1,32 +1,42 @@
 package com.hubspot.imap.utils.parsers;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.internal.AppendableCharSequence;
 
-public class FetchResponseTypeParser extends BaseStringParser {
+public class FetchResponseTypeParser implements ByteBufParser<String> {
+  private final AppendableCharSequence seq;
   private final int maxWordLength;
+  private int size = 0;
 
   public FetchResponseTypeParser(AppendableCharSequence seq, int maxWordLength) {
-    super(seq);
+    this.seq = seq;
     this.maxWordLength = maxWordLength;
   }
 
   @Override
-  public boolean process(byte value) throws Exception {
-    char nextByte = (char) value;
-    if (Character.isWhitespace(nextByte)) {
-      return size == 0;
-    } else if (!Character.isLetterOrDigit(nextByte) && nextByte != '.' && nextByte != '-') {
-      return false;
-    } else {
-      if (size >= maxWordLength) {
-        throw new TooLongFrameException(
-            "Word is larger than " + maxWordLength +
-                " bytes.");
+  public String parse(ByteBuf in) {
+    seq.reset();
+    for (;;) {
+      char nextByte = (char) in.readUnsignedByte();
+      if (Character.isWhitespace(nextByte)) {
+        if (size > 0) {
+          break;
+        }
+      } else if (!Character.isLetterOrDigit(nextByte) && nextByte != '.' && nextByte != '-') {
+        in.readerIndex(in.readerIndex() - 1);
+        break;
+      } else {
+        if (size >= maxWordLength) {
+          throw new TooLongFrameException(
+              "Word is larger than " + maxWordLength +
+                  " bytes.");
+        }
+        size++;
+        seq.append(nextByte);
       }
-      size++;
-      seq.append(nextByte);
-      return true;
     }
+
+    return seq.toString();
   }
 }

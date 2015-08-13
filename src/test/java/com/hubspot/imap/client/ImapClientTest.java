@@ -186,18 +186,16 @@ public class ImapClientTest {
     assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), new BodyFetchDataItem(true, "HEADER"));
-
-    try {
-      responseFuture.get();
-    } catch (ExecutionException e) {
-      assertThat(e.getCause()).hasCauseInstanceOf(UnknownFetchItemTypeException.class);
-    } finally {
+    FetchResponse response = responseFuture.get();
+    assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {
-        client.close();
-      } catch (Exception e) {
-        // This may also throw depending on the order in which things are parsed.
+        return m.getBody().getHeaderValue("Message-ID").isPresent();
+      } catch (UnfetchedFieldException e) {
+        throw Throwables.propagate(e);
       }
-    }
+    }, "message id"));
+
+    responseFuture.get();
   }
 
   @Test

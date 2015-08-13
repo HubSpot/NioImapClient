@@ -11,6 +11,7 @@ import com.hubspot.imap.protocol.folder.FolderFlags;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapMessage;
+import com.hubspot.imap.protocol.message.MimeMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
@@ -38,6 +39,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -174,7 +176,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
   }
 
-  private void parseFetch(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException {
+  private void parseFetch(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException, IOException {
     skipControlCharacters(in);
 
     char next = ((char) in.readUnsignedByte());
@@ -219,10 +221,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setEnvelope(parseEnvelope(in));
         break;
       case BODY:
-        String bracketed = wordParser.parse(in).toString();
         String body = literalStringParser.parse(in);
 
-        LOGGER.info("Got body part {}: {}", bracketed, body);
+        currentMessage.setBody(new MimeMessage.Builder().parseFrom(body).build());
         break;
       case X_GM_MSGID:
         currentMessage.setGmailMessageId(numberParser.parse(in));

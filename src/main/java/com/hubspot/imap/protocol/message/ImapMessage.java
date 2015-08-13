@@ -135,8 +135,8 @@ public interface ImapMessage {
       return this.body.orElseThrow(() -> new UnfetchedFieldException("body"));
     }
 
-    public Builder setBody(Optional<MimeMessage> body) {
-      this.body = body;
+    public Builder setBody(MimeMessage body) {
+      this.body = Optional.of(body);
       return this;
     }
 

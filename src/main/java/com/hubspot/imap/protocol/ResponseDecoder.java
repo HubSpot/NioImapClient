@@ -11,6 +11,7 @@ import com.hubspot.imap.protocol.folder.FolderFlags;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapMessage;
+import com.hubspot.imap.protocol.message.MimeMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
@@ -21,7 +22,9 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
+import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
 import com.hubspot.imap.utils.parsers.LineParser;
+import com.hubspot.imap.utils.parsers.LiteralStringParser;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
 import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.WordParser;
@@ -36,6 +39,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -71,7 +75,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final AppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
+  private final FetchResponseTypeParser fetchResponseTypeParser;
   private final AtomOrStringParser atomOrStringParser;
+  private final LiteralStringParser literalStringParser;
   private final ArrayParser arrayParser;
   private final NumberParser numberParser;
   private final EnvelopeParser envelopeParser;
@@ -87,7 +93,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.charSeq = new AppendableCharSequence(100000);
     this.lineParser = new LineParser(charSeq, 100000);
     this.wordParser = new WordParser(charSeq, 100000);
+    this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, 100000);
     this.atomOrStringParser = new AtomOrStringParser(charSeq, 100000);
+    this.literalStringParser = new LiteralStringParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
     this.arrayParser = new ArrayParser(charSeq);
     this.envelopeParser = new EnvelopeParser();
@@ -168,7 +176,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
   }
 
-  private void parseFetch(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException {
+  private void parseFetch(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException, IOException {
     skipControlCharacters(in);
 
     char next = ((char) in.readUnsignedByte());
@@ -187,7 +195,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       }
     }
 
-    String fetchItemString = wordParser.parse(in).toString();
+    String fetchItemString = fetchResponseTypeParser.parse(in);
     if (StringUtils.isBlank(fetchItemString)) {
       checkpoint(State.FETCH);
       return;
@@ -212,6 +220,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case ENVELOPE:
         currentMessage.setEnvelope(parseEnvelope(in));
         break;
+      case BODY:
+        currentMessage.setBody(parseBody(in));
+        break;
       case X_GM_MSGID:
         currentMessage.setGmailMessageId(numberParser.parse(in));
         break;
@@ -222,8 +233,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setGMailLabels(arrayParser.parse(in).stream().map(GMailLabel::get).collect(Collectors.toSet()));
         break;
       case INVALID:
-      default:
-        // This is really bad because we need to know what type of response to parse for each tag.
+      default: // This is really bad because we need to know what type of response to parse for each tag.
         // Given an unknown fetch type, we can't find the next fetch type tag, so we just have to stop.
         lineParser.parse(in);
         checkpoint(State.RESET);
@@ -316,7 +326,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void handleMessageCountResponse(UntaggedResponseType type, String value, ChannelHandlerContext ctx) {
     UntaggedIntResponse intResponse = handleIntResponse(type, value);
     untaggedResponses.add(intResponse);
-
   }
 
   private void handleBye(ByteBuf in, ChannelHandlerContext handlerContext) {
@@ -337,6 +346,33 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .setType(type)
         .setValue(Long.parseLong(value))
         .build();
+  }
+
+  private MimeMessage parseBody(ByteBuf in) throws UnknownFetchItemTypeException, IOException {
+    char c = ((char) in.readUnsignedByte());
+
+    String bodySection = "";
+    if (c != '[') {
+      // This is effectively BODYSTRUCTURE which is not yet supported
+      lineParser.parse(in);
+      checkpoint(State.RESET);
+      throw new UnknownFetchItemTypeException("BODYSTRUCTURE");
+    } else {
+      charSeq.reset();
+
+      c = ((char) in.readUnsignedByte());
+      while (c != ']') {
+        charSeq.append(c);
+        c = ((char) in.readUnsignedByte());
+      }
+
+      if (charSeq.length() > 0) {
+        bodySection = charSeq.toString();
+      }
+    }
+    String body = literalStringParser.parse(in);
+
+    return new MimeMessage.Builder().parseFrom(body).build();
   }
 
   private Envelope parseEnvelope(ByteBuf in) {

@@ -18,7 +18,6 @@ public interface FetchDataItem {
     INTERNALDATE("INTERNALDATE"),
     ENVELOPE("ENVELOPE"),
     BODY("BODY"),
-    BODY_PEEK("BODY.PEEK"),
     BODYSTRUCTURE("BODYSTRUCTURE"),
     RFC822("RFC822"),
     RFC822_HEADER("RFC822.HEADER"),
@@ -48,9 +47,6 @@ public interface FetchDataItem {
       }
 
       KeyValuePair<FetchDataItemType> candidate = responseType.next();
-      if (responseType.hasNext()) {
-        return INVALID;
-      }
 
       if (word.equalsIgnoreCase(candidate.getKey().toString())) {
         return candidate.getValue();

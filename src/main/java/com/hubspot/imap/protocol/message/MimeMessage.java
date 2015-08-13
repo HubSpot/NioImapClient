@@ -2,7 +2,7 @@ package com.hubspot.imap.protocol.message;
 
 import com.google.seventeen.common.base.Splitter;
 import com.google.seventeen.common.base.Strings;
-import com.google.seventeen.common.collect.HashMultimap;
+import com.google.seventeen.common.collect.ImmutableMultimap;
 import com.google.seventeen.common.collect.Multimap;
 
 import java.io.BufferedReader;
@@ -19,12 +19,14 @@ public interface MimeMessage {
 
   class Builder implements MimeMessage {
     private static final Splitter COLON_SPLITTER = Splitter.on(":").omitEmptyStrings().trimResults();
-    private Multimap<String, String> headers = HashMultimap.create();
+
+    private Multimap<String, String> headers;
 
     public Builder parseFrom(String input) throws IOException {
       BufferedReader reader = new BufferedReader(new StringReader(input));
 
       String line;
+      ImmutableMultimap.Builder<String, String> multiMapBuilder = ImmutableMultimap.builder();
       while ((line = reader.readLine()) != null) {
         line = line.trim();
         if (Strings.isNullOrEmpty(line)) {
@@ -33,9 +35,10 @@ public interface MimeMessage {
 
         List<String> items = COLON_SPLITTER.splitToList(line);
 
-        headers.put(items.get(0), items.get(1));
+        multiMapBuilder.put(items.get(0), items.get(1));
       }
 
+      headers = multiMapBuilder.build();
       return this;
     }
 

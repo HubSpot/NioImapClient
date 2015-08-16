@@ -133,6 +133,7 @@
       <groupId>org.apache.james</groupId>
       <artifactId>apache-mime4j</artifactId>
       <version>0.7.2</version>
+      <type>pom</type>
     </dependency>
 
     <dependency>

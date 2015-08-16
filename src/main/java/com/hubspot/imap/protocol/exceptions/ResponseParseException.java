@@ -4,4 +4,8 @@ public class ResponseParseException extends Exception {
   public ResponseParseException(String message) {
     super(message);
   }
+
+  public ResponseParseException(Throwable cause) {
+    super(cause);
+  }
 }

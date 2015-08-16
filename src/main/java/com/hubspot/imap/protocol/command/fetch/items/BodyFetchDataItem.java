@@ -8,6 +8,10 @@ public class BodyFetchDataItem implements FetchDataItem {
     this.section = section;
   }
 
+  public BodyFetchDataItem() {
+    this.section = "";
+  }
+
   @Override
   public String toString() {
     return "BODY[" + section + "]";

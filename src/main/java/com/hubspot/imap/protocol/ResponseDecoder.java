@@ -1,9 +1,11 @@
 package com.hubspot.imap.protocol;
 
 import com.google.common.collect.Lists;
+import com.google.seventeen.common.base.Throwables;
 import com.google.seventeen.common.primitives.Ints;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
+import com.hubspot.imap.protocol.exceptions.ResponseParseException;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
 import com.hubspot.imap.protocol.folder.FolderAttribute;
@@ -11,7 +13,6 @@ import com.hubspot.imap.protocol.folder.FolderFlags;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapMessage;
-import com.hubspot.imap.protocol.message.MimeMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
@@ -36,10 +37,16 @@ import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.internal.AppendableCharSequence;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
+import org.apache.james.mime4j.MimeException;
+import org.apache.james.mime4j.dom.Message;
+import org.apache.james.mime4j.dom.MessageServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -63,6 +70,16 @@ import java.util.stream.Collectors;
  */
 public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ResponseDecoder.class);
+
+  private static final MessageServiceFactory MESSAGE_SERVICE_FACTORY;
+
+  static {
+    try {
+      MESSAGE_SERVICE_FACTORY = MessageServiceFactory.newInstance();
+    } catch (MimeException e) {
+      throw Throwables.propagate(e);
+    }
+  }
 
   private static final char UNTAGGED_PREFIX = '*';
   private static final char CONTINUATION_PREFIX = '+';
@@ -167,7 +184,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
           handleTagged(in, out);
           break;
         case FETCH:
-          parseFetch(ctx, in, out);
+          parseFetch(in);
           break;
         case RESET:
           reset(in);
@@ -176,7 +193,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
   }
 
-  private void parseFetch(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws UnknownFetchItemTypeException, IOException {
+  private void parseFetch(ByteBuf in) throws UnknownFetchItemTypeException, IOException, ResponseParseException {
     skipControlCharacters(in);
 
     char next = ((char) in.readUnsignedByte());
@@ -221,7 +238,13 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setEnvelope(parseEnvelope(in));
         break;
       case BODY:
-        currentMessage.setBody(parseBody(in));
+        try {
+          currentMessage.setBody(parseBody(in));
+        } catch (ResponseParseException e) {
+          lineParser.parse(in);
+          checkpoint(State.RESET);
+          throw e;
+        }
         break;
       case X_GM_MSGID:
         currentMessage.setGmailMessageId(numberParser.parse(in));
@@ -348,7 +371,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .build();
   }
 
-  private MimeMessage parseBody(ByteBuf in) throws UnknownFetchItemTypeException, IOException {
+  private Message parseBody(ByteBuf in) throws UnknownFetchItemTypeException, IOException, ResponseParseException {
     char c = ((char) in.readUnsignedByte());
 
     //String bodySection = ""; At some point we will need to actually store the body section that is being parsed below
@@ -365,7 +388,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
     String body = literalStringParser.parse(in);
 
-    return new MimeMessage.Builder().parseFrom(body).build();
+    try (InputStream inputStream = new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8))) {
+      return MESSAGE_SERVICE_FACTORY.newMessageBuilder().parseMessage(inputStream);
+    } catch (MimeException e) {
+      throw new ResponseParseException(e);
+    }
   }
 
   private Envelope parseEnvelope(ByteBuf in) {

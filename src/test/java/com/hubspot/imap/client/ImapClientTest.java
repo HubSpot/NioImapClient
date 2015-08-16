@@ -16,11 +16,16 @@ import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import io.netty.util.concurrent.Future;
+import org.apache.james.mime4j.dom.Entity;
+import org.apache.james.mime4j.dom.Multipart;
+import org.apache.james.mime4j.dom.SingleBody;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -189,6 +194,37 @@ public class ImapClientTest {
         throw Throwables.propagate(e);
       }
     }, "message id"));
+
+    responseFuture.get();
+  }
+
+  @Test
+  public void testFetchBody_doesFetchTextBody() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), new BodyPeekFetchDataItem());
+    FetchResponse response = responseFuture.get();
+    assertThat(response.getMessages()).have(new Condition<>(m -> {
+      try {
+        if (m.getBody().isMultipart()) {
+          Multipart multipart = (Multipart) m.getBody().getBody();
+
+          for (Entity entity: multipart.getBodyParts()) {
+            if (entity.getMimeType().equalsIgnoreCase("text/plain")) {
+              ByteArrayOutputStream baos = new ByteArrayOutputStream();
+              ((SingleBody) entity.getBody()).writeTo(baos);
+              return !Strings.isNullOrEmpty(baos.toString(entity.getCharset()));
+            }
+          }
+        }
+      } catch (UnfetchedFieldException|IOException e) {
+        throw Throwables.propagate(e);
+      }
+
+      return false;
+    }, "text body"));
 
     responseFuture.get();
   }

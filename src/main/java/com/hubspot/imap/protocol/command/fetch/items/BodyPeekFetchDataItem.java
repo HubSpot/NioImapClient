@@ -5,6 +5,10 @@ public class BodyPeekFetchDataItem extends BodyFetchDataItem {
     super(section);
   }
 
+  public BodyPeekFetchDataItem() {
+    super();
+  }
+
   @Override
   public String toString() {
     return "BODY.PEEK[" + section + "]";

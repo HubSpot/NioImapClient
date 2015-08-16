@@ -1,5 +1,6 @@
 package com.hubspot.imap.client;
 
+import com.google.seventeen.common.base.Strings;
 import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.TestUtils;
 import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
@@ -179,11 +180,11 @@ public class ImapClientTest {
     OpenResponse or = openResponseFuture.get();
     assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), new BodyPeekFetchDataItem("HEADER"));
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(10L), new BodyPeekFetchDataItem("HEADER"));
     FetchResponse response = responseFuture.get();
     assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {
-        return m.getBody().getHeaderValue("Message-ID").isPresent();
+        return !Strings.isNullOrEmpty(m.getBody().getHeader().getField("Message-ID").getBody());
       } catch (UnfetchedFieldException e) {
         throw Throwables.propagate(e);
       }

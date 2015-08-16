@@ -2,6 +2,7 @@ package com.hubspot.imap.protocol.message;
 
 import com.google.common.base.Objects;
 import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
+import org.apache.james.mime4j.dom.Message;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,7 +22,7 @@ public interface ImapMessage {
   long getGmailMessageId() throws UnfetchedFieldException;
   long getGmailThreadId() throws UnfetchedFieldException;
   Set<GMailLabel> getGMailLabels() throws UnfetchedFieldException;
-  MimeMessage getBody() throws UnfetchedFieldException;
+  Message getBody() throws UnfetchedFieldException;
 
   class Builder implements ImapMessage {
     private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
@@ -35,7 +36,7 @@ public interface ImapMessage {
     private Optional<Long> gmailMessageId = Optional.empty();
     private Optional<Long> gmailThreadId = Optional.empty();
     private Optional<Set<GMailLabel>> gMailLabels = Optional.empty();
-    private Optional<MimeMessage> body = Optional.empty();
+    private Optional<Message> body = Optional.empty();
 
     public ImapMessage build() {
       return this;
@@ -131,11 +132,11 @@ public interface ImapMessage {
       return this;
     }
 
-    public MimeMessage getBody() throws UnfetchedFieldException {
+    public Message getBody() throws UnfetchedFieldException {
       return this.body.orElseThrow(() -> new UnfetchedFieldException("body"));
     }
 
-    public Builder setBody(MimeMessage body) {
+    public Builder setBody(Message body) {
       this.body = Optional.of(body);
       return this;
     }

@@ -351,23 +351,16 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private MimeMessage parseBody(ByteBuf in) throws UnknownFetchItemTypeException, IOException {
     char c = ((char) in.readUnsignedByte());
 
-    String bodySection = "";
+    //String bodySection = ""; At some point we will need to actually store the body section that is being parsed below
     if (c != '[') {
       // This is effectively BODYSTRUCTURE which is not yet supported
       lineParser.parse(in);
       checkpoint(State.RESET);
       throw new UnknownFetchItemTypeException("BODYSTRUCTURE");
     } else {
-      charSeq.reset();
-
       c = ((char) in.readUnsignedByte());
-      while (c != ']') {
-        charSeq.append(c);
+      while (c != ']') { // Skip characters within "[]"
         c = ((char) in.readUnsignedByte());
-      }
-
-      if (charSeq.length() > 0) {
-        bodySection = charSeq.toString();
       }
     }
     String body = literalStringParser.parse(in);

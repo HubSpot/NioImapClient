@@ -184,7 +184,15 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
           handleTagged(in, out);
           break;
         case FETCH:
-          parseFetch(in);
+          try {
+            parseFetch(in);
+          } catch (Exception e) {
+            if (state() != State.RESET) {
+              lineParser.parse(in);
+              checkpoint(State.RESET);
+              throw e;
+            }
+          }
           break;
         case RESET:
           reset(in);
@@ -238,13 +246,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setEnvelope(parseEnvelope(in));
         break;
       case BODY:
-        try {
-          currentMessage.setBody(parseBody(in));
-        } catch (ResponseParseException e) {
-          lineParser.parse(in);
-          checkpoint(State.RESET);
-          throw e;
-        }
+        currentMessage.setBody(parseBody(in));
         break;
       case X_GM_MSGID:
         currentMessage.setGmailMessageId(numberParser.parse(in));
@@ -256,10 +258,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setGMailLabels(arrayParser.parse(in).stream().map(GMailLabel::get).collect(Collectors.toSet()));
         break;
       case INVALID:
-      default: // This is really bad because we need to know what type of response to parse for each tag.
-        // Given an unknown fetch type, we can't find the next fetch type tag, so we just have to stop.
-        lineParser.parse(in);
-        checkpoint(State.RESET);
+      default:
         throw new UnknownFetchItemTypeException(fetchItemString);
     }
 

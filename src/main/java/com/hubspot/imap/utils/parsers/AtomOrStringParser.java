@@ -44,6 +44,9 @@ public class AtomOrStringParser implements ByteBufParser<String> {
         } else {            // End Quote
           break;
         }
+      } else if (!isQuoted && (c == ')' || c == '(')) {
+        buffer.readerIndex(buffer.readerIndex() - 1);
+        break;
       } else {
         append(c);
       }

@@ -255,7 +255,12 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setGmailThreadId(numberParser.parse(in));
         break;
       case X_GM_LABELS:
-        currentMessage.setGMailLabels(arrayParser.parse(in).stream().map(GMailLabel::get).collect(Collectors.toSet()));
+        currentMessage.setGMailLabels(
+            nestedArrayParserRecycler.get().parse(in).stream()
+                .map(o -> ((String) o))
+                .map(GMailLabel::get)
+                .collect(Collectors.toSet())
+        );
         break;
       case INVALID:
       default:

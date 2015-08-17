@@ -41,12 +41,12 @@ public class ImapClientFactory implements AutoCloseable {
 
     if (configuration.getUseEpoll()) {
       LOGGER.info("Using epoll eventloop");
-      this.eventLoopGroup = new EpollEventLoopGroup();
+      this.eventLoopGroup = new EpollEventLoopGroup(configuration.getNumEventLoopThreads());
     } else {
-      this.eventLoopGroup = new NioEventLoopGroup();
+      this.eventLoopGroup = new NioEventLoopGroup(configuration.getNumEventLoopThreads());
     }
 
-    this.promiseExecutorGroup = new DefaultEventExecutorGroup(16);
+    this.promiseExecutorGroup = new DefaultEventExecutorGroup(configuration.getNumExecutorThreads());
     this.idleExecutorGroup = new DefaultEventExecutorGroup(4);
 
     SslContext context;

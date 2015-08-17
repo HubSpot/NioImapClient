@@ -16,6 +16,9 @@ public interface ImapConfiguration {
 
   int getWriteBackOffMs();
 
+  int getNumEventLoopThreads();
+  int getNumExecutorThreads();
+
   enum AuthType {
     PASSWORD,
     XOAUTH2;
@@ -31,6 +34,9 @@ public interface ImapConfiguration {
     private int socketTimeoutMs = 1000;
 
     private int writeBackOffMs = 10;
+
+    private int numEventLoopThreads = 0;
+    private int numExecutorThreads = 16;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -86,20 +92,41 @@ public interface ImapConfiguration {
       return this;
     }
 
+    public int getNumEventLoopThreads() {
+      return this.numEventLoopThreads;
+    }
+
+    public Builder setNumEventLoopThreads(int numEventLoopThreads) {
+      this.numEventLoopThreads = numEventLoopThreads;
+      return this;
+    }
+
+    public int getNumExecutorThreads() {
+      return this.numExecutorThreads;
+    }
+
+    public Builder setNumExecutorThreads(int numExecutorThreads) {
+      this.numExecutorThreads = numExecutorThreads;
+      return this;
+    }
+
     public ImapConfiguration build() {
       return this;
     }
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
-          .add("hostAndPort", hostAndPort)
-          .add("authType", authType)
-          .add("useEpoll", useEpoll)
-          .add("noopKeepAliveIntervalSec", noopKeepAliveIntervalSec)
-          .add("socketTimeoutMs", socketTimeoutMs)
-          .add("writeBackOffMs", writeBackOffMs)
-          .toString();
+      final StringBuilder sb = new StringBuilder("Builder{");
+      sb.append("hostAndPort=").append(hostAndPort);
+      sb.append(", authType=").append(authType);
+      sb.append(", useEpoll=").append(useEpoll);
+      sb.append(", noopKeepAliveIntervalSec=").append(noopKeepAliveIntervalSec);
+      sb.append(", socketTimeoutMs=").append(socketTimeoutMs);
+      sb.append(", writeBackOffMs=").append(writeBackOffMs);
+      sb.append(", numEventLoopThreads=").append(numEventLoopThreads);
+      sb.append(", numExecutorThreads=").append(numExecutorThreads);
+      sb.append('}');
+      return sb.toString();
     }
 
     @Override
@@ -115,13 +142,15 @@ public interface ImapConfiguration {
           Objects.equal(getNoopKeepAliveIntervalSec(), builder.getNoopKeepAliveIntervalSec()) &&
           Objects.equal(getSocketTimeoutMs(), builder.getSocketTimeoutMs()) &&
           Objects.equal(getWriteBackOffMs(), builder.getWriteBackOffMs()) &&
+          Objects.equal(getNumEventLoopThreads(), builder.getNumEventLoopThreads()) &&
+          Objects.equal(getNumExecutorThreads(), builder.getNumExecutorThreads()) &&
           Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
           Objects.equal(getAuthType(), builder.getAuthType());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads());
     }
   }
 }

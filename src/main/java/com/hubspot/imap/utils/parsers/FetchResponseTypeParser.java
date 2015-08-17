@@ -17,6 +17,7 @@ public class FetchResponseTypeParser implements ByteBufParser<String> {
   @Override
   public String parse(ByteBuf in) {
     seq.reset();
+    size = 0;
     for (;;) {
       char nextByte = (char) in.readUnsignedByte();
       if (Character.isWhitespace(nextByte)) {

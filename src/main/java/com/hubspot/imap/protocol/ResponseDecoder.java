@@ -21,7 +21,6 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse.Builder;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
-import com.hubspot.imap.utils.parsers.ArrayParser;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
 import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
 import com.hubspot.imap.utils.parsers.LineParser;
@@ -95,7 +94,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final FetchResponseTypeParser fetchResponseTypeParser;
   private final AtomOrStringParser atomOrStringParser;
   private final LiteralStringParser literalStringParser;
-  private final ArrayParser arrayParser;
   private final NumberParser numberParser;
   private final EnvelopeParser envelopeParser;
   private final NestedArrayParser.Recycler<String> nestedArrayParserRecycler;
@@ -114,7 +112,6 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.atomOrStringParser = new AtomOrStringParser(charSeq, 100000);
     this.literalStringParser = new LiteralStringParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
-    this.arrayParser = new ArrayParser(charSeq);
     this.envelopeParser = new EnvelopeParser();
     this.nestedArrayParserRecycler = new NestedArrayParser.Recycler<>(atomOrStringParser);
 
@@ -229,7 +226,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     FetchDataItemType fetchType = FetchDataItemType.getFetchType(fetchItemString);
     switch (fetchType) {
       case FLAGS:
-        List<String> flags = arrayParser.parse(in);
+        List<String> flags = nestedArrayParserRecycler.get().parse(in).stream()
+            .map(o -> ((String) o))
+            .collect(Collectors.toList());
         currentMessage.setFlagStrings(flags);
         break;
       case INTERNALDATE:
@@ -409,7 +408,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private FolderFlags parseFlags(ByteBuf in, boolean permanent) {
     skipControlCharacters(in);
-    List<String> flags = arrayParser.parse(in);
+    List<String> flags = nestedArrayParserRecycler.get().parse(in).stream()
+        .map(o -> ((String) o))
+        .collect(Collectors.toList());
 
     lineParser.parse(in);
 
@@ -434,7 +435,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private Set<FolderAttribute> parseFolderAttributes(ByteBuf in) {
-    return arrayParser.parse(in).stream()
+    return nestedArrayParserRecycler.get().parse(in).stream()
+        .map(o -> ((String) o))
         .map(FolderAttribute::getAttribute)
         .filter(Optional::isPresent)
         .map(Optional::get)

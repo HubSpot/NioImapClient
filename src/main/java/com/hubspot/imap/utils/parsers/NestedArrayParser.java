@@ -45,13 +45,24 @@ public class NestedArrayParser<T> {
         return values;
       } else if (Character.isWhitespace(nextByte)) {
       } else if (nextByte == 'N') {
-        // NIL, read the remaining 2 bytes and return an empty list;
-        buffer.readBytes(2);
-        if (!foundLeftParen) {
-          return values;
-        } else {
-          values.add(NilMarker.INSTANCE);
+        int read = 2;
+        nextByte = ((char) buffer.readUnsignedByte());
+        if (nextByte == 'I') {
+          nextByte = ((char) buffer.readUnsignedByte());
+          read++;
+          if (nextByte == 'L') {
+            if (!foundLeftParen) {
+              return values;
+            } else {
+              values.add(NilMarker.INSTANCE);
+            }
+
+            continue;
+          }
         }
+
+        buffer.readerIndex(buffer.readerIndex() - read);
+        values.add(itemParser.parse(buffer));
       } else {
         buffer.readerIndex(buffer.readerIndex() - 1);
         values.add(itemParser.parse(buffer));

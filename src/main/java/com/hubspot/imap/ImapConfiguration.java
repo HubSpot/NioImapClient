@@ -19,6 +19,8 @@ public interface ImapConfiguration {
   int getNumEventLoopThreads();
   int getNumExecutorThreads();
 
+  int getMaxLineLength();
+
   enum AuthType {
     PASSWORD,
     XOAUTH2;
@@ -37,6 +39,8 @@ public interface ImapConfiguration {
 
     private int numEventLoopThreads = 0;
     private int numExecutorThreads = 16;
+
+    private int maxLineLength = 100000;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -110,23 +114,32 @@ public interface ImapConfiguration {
       return this;
     }
 
+    public int getMaxLineLength() {
+      return this.maxLineLength;
+    }
+
+    public Builder setMaxLineLength(int maxLineLength) {
+      this.maxLineLength = maxLineLength;
+      return this;
+    }
+
     public ImapConfiguration build() {
       return this;
     }
 
     @Override
     public String toString() {
-      final StringBuilder sb = new StringBuilder("Builder{");
-      sb.append("hostAndPort=").append(hostAndPort);
-      sb.append(", authType=").append(authType);
-      sb.append(", useEpoll=").append(useEpoll);
-      sb.append(", noopKeepAliveIntervalSec=").append(noopKeepAliveIntervalSec);
-      sb.append(", socketTimeoutMs=").append(socketTimeoutMs);
-      sb.append(", writeBackOffMs=").append(writeBackOffMs);
-      sb.append(", numEventLoopThreads=").append(numEventLoopThreads);
-      sb.append(", numExecutorThreads=").append(numExecutorThreads);
-      sb.append('}');
-      return sb.toString();
+      return Objects.toStringHelper(this)
+          .add("hostAndPort", hostAndPort)
+          .add("authType", authType)
+          .add("useEpoll", useEpoll)
+          .add("noopKeepAliveIntervalSec", noopKeepAliveIntervalSec)
+          .add("socketTimeoutMs", socketTimeoutMs)
+          .add("writeBackOffMs", writeBackOffMs)
+          .add("numEventLoopThreads", numEventLoopThreads)
+          .add("numExecutorThreads", numExecutorThreads)
+          .add("maxLineLength", maxLineLength)
+          .toString();
     }
 
     @Override
@@ -137,20 +150,22 @@ public interface ImapConfiguration {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      Builder builder = (Builder) o;
-      return Objects.equal(getUseEpoll(), builder.getUseEpoll()) &&
-          Objects.equal(getNoopKeepAliveIntervalSec(), builder.getNoopKeepAliveIntervalSec()) &&
-          Objects.equal(getSocketTimeoutMs(), builder.getSocketTimeoutMs()) &&
-          Objects.equal(getWriteBackOffMs(), builder.getWriteBackOffMs()) &&
-          Objects.equal(getNumEventLoopThreads(), builder.getNumEventLoopThreads()) &&
-          Objects.equal(getNumExecutorThreads(), builder.getNumExecutorThreads()) &&
-          Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
-          Objects.equal(getAuthType(), builder.getAuthType());
+      Builder that = (Builder) o;
+      return Objects.equal(getUseEpoll(), that.getUseEpoll()) &&
+          Objects.equal(getNoopKeepAliveIntervalSec(), that.getNoopKeepAliveIntervalSec()) &&
+          Objects.equal(getSocketTimeoutMs(), that.getSocketTimeoutMs()) &&
+          Objects.equal(getWriteBackOffMs(), that.getWriteBackOffMs()) &&
+          Objects.equal(getNumEventLoopThreads(), that.getNumEventLoopThreads()) &&
+          Objects.equal(getNumExecutorThreads(), that.getNumExecutorThreads()) &&
+          Objects.equal(getMaxLineLength(), that.getMaxLineLength()) &&
+          Objects.equal(getHostAndPort(), that.getHostAndPort()) &&
+          Objects.equal(getAuthType(), that.getAuthType());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads(), getMaxLineLength());
     }
+
   }
 }

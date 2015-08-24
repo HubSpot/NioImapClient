@@ -3,6 +3,7 @@ package com.hubspot.imap.protocol;
 import com.google.common.collect.Lists;
 import com.google.seventeen.common.base.Throwables;
 import com.google.seventeen.common.primitives.Ints;
+import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.ResponseParseException;
@@ -39,6 +40,8 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.apache.james.mime4j.MimeException;
 import org.apache.james.mime4j.dom.Message;
 import org.apache.james.mime4j.dom.MessageServiceFactory;
+import org.apache.james.mime4j.message.DefaultMessageBuilder;
+import org.apache.james.mime4j.stream.MimeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,23 +100,29 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final NumberParser numberParser;
   private final EnvelopeParser envelopeParser;
   private final NestedArrayParser.Recycler<String> nestedArrayParserRecycler;
+  private final DefaultMessageBuilder messageBuilder;
 
   private List<Object> untaggedResponses;
   private TaggedResponse.Builder responseBuilder;
 
   private ImapMessage.Builder currentMessage;
 
-  public ResponseDecoder() {
+  public ResponseDecoder(ImapConfiguration configuration) {
     super(State.SKIP_CONTROL_CHARS);
-    this.charSeq = new AppendableCharSequence(100000);
-    this.lineParser = new LineParser(charSeq, 100000);
-    this.wordParser = new WordParser(charSeq, 100000);
-    this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, 100000);
-    this.atomOrStringParser = new AtomOrStringParser(charSeq, 100000);
+    this.charSeq = new AppendableCharSequence(configuration.getMaxLineLength());
+    this.lineParser = new LineParser(charSeq, configuration.getMaxLineLength());
+    this.wordParser = new WordParser(charSeq, configuration.getMaxLineLength());
+    this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, configuration.getMaxLineLength());
+    this.atomOrStringParser = new AtomOrStringParser(charSeq, configuration.getMaxLineLength());
     this.literalStringParser = new LiteralStringParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
     this.envelopeParser = new EnvelopeParser();
     this.nestedArrayParserRecycler = new NestedArrayParser.Recycler<>(atomOrStringParser);
+    this.messageBuilder = ((DefaultMessageBuilder) MESSAGE_SERVICE_FACTORY.newMessageBuilder());
+
+    MimeConfig mimeConfig = new MimeConfig();
+    mimeConfig.setMaxLineLen(configuration.getMaxLineLength());
+    messageBuilder.setMimeEntityConfig(mimeConfig);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
@@ -392,8 +401,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     String body = literalStringParser.parse(in);
 
     try (InputStream inputStream = new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8))) {
-      return MESSAGE_SERVICE_FACTORY.newMessageBuilder().parseMessage(inputStream);
-    } catch (MimeException e) {
+      return messageBuilder.parseMessage(inputStream);
+    } catch (IOException e) {
       throw new ResponseParseException(e);
     }
   }

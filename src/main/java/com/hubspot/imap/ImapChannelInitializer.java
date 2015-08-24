@@ -1,6 +1,5 @@
 package com.hubspot.imap;
 
-import com.google.common.net.HostAndPort;
 import com.hubspot.imap.protocol.ResponseDecoder;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelInitializer;
@@ -16,19 +15,22 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
   private static final StringEncoder STRING_ENCODER = new StringEncoder(Charset.forName("UTF-8"));
 
   private final SslContext sslContext;
-  private final HostAndPort hostAndPort;
+  private final ImapConfiguration configuration;
 
-  public ImapChannelInitializer(SslContext sslContext, HostAndPort hostAndPort) {
+  public ImapChannelInitializer(SslContext sslContext, ImapConfiguration configuration) {
     this.sslContext = sslContext;
-    this.hostAndPort = hostAndPort;
+    this.configuration = configuration;
   }
 
   @Override
   protected void initChannel(SocketChannel socketChannel) throws Exception {
     ChannelPipeline channelPipeline = socketChannel.pipeline();
 
-    channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(), hostAndPort.getHostText(), hostAndPort.getPortOrDefault(993)));
-    channelPipeline.addLast(new ResponseDecoder());
+    channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(),
+        configuration.getHostAndPort().getHostText(),
+        configuration.getHostAndPort().getPortOrDefault(993)));
+
+    channelPipeline.addLast(new ResponseDecoder(configuration));
     channelPipeline.addLast(STRING_ENCODER);
   }
 }

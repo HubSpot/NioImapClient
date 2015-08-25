@@ -22,6 +22,7 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse.Builder;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
 import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
 import com.hubspot.imap.utils.parsers.LineParser;
@@ -34,7 +35,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.handler.codec.http.HttpConstants;
-import io.netty.util.internal.AppendableCharSequence;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.james.mime4j.MimeException;
@@ -91,7 +91,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final char RPAREN = ')';
 
   // This AppendableCharSequence is shared by all of the parsers for memory efficiency.
-  private final AppendableCharSequence charSeq;
+  private final SoftReferencedAppendableCharSequence charSeq;
   private final LineParser lineParser;
   private final WordParser wordParser;
   private final FetchResponseTypeParser fetchResponseTypeParser;
@@ -109,7 +109,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   public ResponseDecoder(ImapConfiguration configuration) {
     super(State.SKIP_CONTROL_CHARS);
-    this.charSeq = new AppendableCharSequence(configuration.getMaxLineLength());
+    this.charSeq = new SoftReferencedAppendableCharSequence(configuration);
     this.lineParser = new LineParser(charSeq, configuration.getMaxLineLength());
     this.wordParser = new WordParser(charSeq, configuration.getMaxLineLength());
     this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, configuration.getMaxLineLength());
@@ -167,9 +167,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
           break;
         case UNTAGGED:
           skipControlCharacters(in);
-          String word = wordParser.parse(in).toString();
+          String word = wordParser.parse(in);
           if (NumberUtils.isDigits(word)) {
-            UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in).toString());
+            UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in));
             handleUntaggedValue(type, word, ctx);
           } else {
             if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
@@ -279,10 +279,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private void handleTagged(ByteBuf in, List<Object> out) {
-    String tag = wordParser.parse(in).toString();
-    String codeString = wordParser.parse(in).toString();
+    String tag = wordParser.parse(in);
+    String codeString = wordParser.parse(in);
     ResponseCode code = ResponseCode.valueOf(codeString);
-    String message = lineParser.parse(in).toString();
+    String message = lineParser.parse(in);
 
     responseBuilder.setTag(tag);
     responseBuilder.setCode(code);
@@ -317,7 +317,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private void handleContinuation(ByteBuf in, List<Object> out) {
-    String message = lineParser.parse(in).toString();
+    String message = lineParser.parse(in);
 
     ContinuationResponse response = new ContinuationResponse.Builder().setMessage(message).build();
     out.add(response);
@@ -326,7 +326,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private void handleUntagged(ByteBuf in, ChannelHandlerContext ctx) {
-    String responseTypeString = wordParser.parse(in).toString();
+    String responseTypeString = wordParser.parse(in);
     UntaggedResponseType type = UntaggedResponseType.getResponseType(responseTypeString);
     handleUntagged(type, in, ctx);
   }
@@ -352,7 +352,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         untaggedResponses.add(parseIntResponse(type, in));
         break;
       default:
-        untaggedResponses.add(lineParser.parse(in).toString());
+        untaggedResponses.add(lineParser.parse(in));
     }
 
     checkpoint(State.RESET);
@@ -364,7 +364,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private void handleBye(ByteBuf in, ChannelHandlerContext handlerContext) {
-    String message = lineParser.parse(in).toString();
+    String message = lineParser.parse(in);
 
     UntaggedResponse response = new UntaggedResponse.Builder()
         .setType(UntaggedResponseType.BYE)
@@ -485,7 +485,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private void dumpLine(String prefix, ByteBuf in) {
     int index = in.readerIndex();
-    String line = lineParser.parse(in).toString();
+    String line = lineParser.parse(in);
     LOGGER.debug("{}: {}", prefix, line);
 
     in.readerIndex(index);

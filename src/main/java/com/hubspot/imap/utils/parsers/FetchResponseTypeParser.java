@@ -1,21 +1,24 @@
 package com.hubspot.imap.utils.parsers;
 
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class FetchResponseTypeParser implements ByteBufParser<String> {
-  private final AppendableCharSequence seq;
+  private final SoftReferencedAppendableCharSequence sequenceRef;
   private final int maxWordLength;
   private int size = 0;
 
-  public FetchResponseTypeParser(AppendableCharSequence seq, int maxWordLength) {
-    this.seq = seq;
+  public FetchResponseTypeParser(SoftReferencedAppendableCharSequence sequenceRef, int maxWordLength) {
+    this.sequenceRef = sequenceRef;
     this.maxWordLength = maxWordLength;
   }
 
   @Override
   public String parse(ByteBuf in) {
+    AppendableCharSequence seq = sequenceRef.get();
+
     seq.reset();
     size = 0;
     for (;;) {

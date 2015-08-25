@@ -1,5 +1,6 @@
 package com.hubspot.imap.utils.parsers;
 
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.internal.AppendableCharSequence;
@@ -8,17 +9,19 @@ public class AtomOrStringParser implements ByteBufParser<String> {
   private static final char QUOTE = '"';
   private static final char BACKSLASH = '\\';
 
-  protected final AppendableCharSequence seq;
+  protected final SoftReferencedAppendableCharSequence sequenceRef;
   private final int maxStringLength;
 
   private int size;
 
-  public AtomOrStringParser(AppendableCharSequence seq, int maxStringLength) {
-    this.seq = seq;
+  public AtomOrStringParser(SoftReferencedAppendableCharSequence sequenceRef, int maxStringLength) {
+    this.sequenceRef = sequenceRef;
     this.maxStringLength = maxStringLength;
   }
 
   public String parse(ByteBuf buffer) {
+    AppendableCharSequence seq = sequenceRef.get();
+
     seq.reset();
     size = 0;
 
@@ -34,7 +37,7 @@ public class AtomOrStringParser implements ByteBufParser<String> {
 
       if (Character.isWhitespace(c)) {
         if (isQuoted) {
-          append(c);
+          append(seq, c);
         } else if (size > 0) {
           break;
         }
@@ -48,7 +51,7 @@ public class AtomOrStringParser implements ByteBufParser<String> {
         buffer.readerIndex(buffer.readerIndex() - 1);
         break;
       } else {
-        append(c);
+        append(seq, c);
       }
 
       previousChar = c;
@@ -57,7 +60,7 @@ public class AtomOrStringParser implements ByteBufParser<String> {
     return seq.toString();
   }
 
-  private void append(char c) {
+  private void append(AppendableCharSequence seq, char c) {
     if (size >= maxStringLength) {
       throw new TooLongFrameException("String is larger than " + maxStringLength + " bytes.");
     }

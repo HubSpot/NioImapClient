@@ -1,23 +1,26 @@
 package com.hubspot.imap.utils.parsers;
 
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class LiteralStringParser implements ByteBufParser<String> {
 
-  private final AppendableCharSequence seq;
+  private final SoftReferencedAppendableCharSequence sequenceRef;
   private final AtomOrStringParser stringParser;
   private final SizeParser sizeParser;
 
-  public LiteralStringParser(AppendableCharSequence seq) {
-    this.seq = seq;
-    this.stringParser = new AtomOrStringParser(seq, 10000);
-    this.sizeParser = new SizeParser();
+  public LiteralStringParser(SoftReferencedAppendableCharSequence sequenceRef) {
+    this.sequenceRef = sequenceRef;
+    this.stringParser = new AtomOrStringParser(sequenceRef, 10000);
+    this.sizeParser = new SizeParser(sequenceRef);
   }
 
   @Override
   public String parse(ByteBuf in) {
+    AppendableCharSequence seq = sequenceRef.get();
+
     seq.reset();
     int size = 0;
 
@@ -52,8 +55,16 @@ public class LiteralStringParser implements ByteBufParser<String> {
 
   private class SizeParser implements ByteBufParser<Integer> {
 
+    SoftReferencedAppendableCharSequence sequenceRef;
+
+    public SizeParser(SoftReferencedAppendableCharSequence sequenceRef) {
+      this.sequenceRef = sequenceRef;
+    }
+
     @Override
     public Integer parse(ByteBuf in) {
+      AppendableCharSequence seq = sequenceRef.get();
+
       seq.reset();
       boolean foundStart = false;
 

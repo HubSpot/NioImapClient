@@ -20,6 +20,7 @@ public interface ImapConfiguration {
   int getNumExecutorThreads();
 
   int getMaxLineLength();
+  int getDefaultResponseBufferSize();
 
   enum AuthType {
     PASSWORD,
@@ -41,6 +42,7 @@ public interface ImapConfiguration {
     private int numExecutorThreads = 16;
 
     private int maxLineLength = 100000;
+    private int defaultResponseBufferSize = 1000;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -123,6 +125,15 @@ public interface ImapConfiguration {
       return this;
     }
 
+    public int getDefaultResponseBufferSize() {
+      return this.defaultResponseBufferSize;
+    }
+
+    public Builder setDefaultResponseBufferSize(int defaultResponseBufferSize) {
+      this.defaultResponseBufferSize = defaultResponseBufferSize;
+      return this;
+    }
+
     public ImapConfiguration build() {
       return this;
     }
@@ -139,6 +150,7 @@ public interface ImapConfiguration {
           .add("numEventLoopThreads", numEventLoopThreads)
           .add("numExecutorThreads", numExecutorThreads)
           .add("maxLineLength", maxLineLength)
+          .add("defaultResponseBufferSize", defaultResponseBufferSize)
           .toString();
     }
 
@@ -158,14 +170,14 @@ public interface ImapConfiguration {
           Objects.equal(getNumEventLoopThreads(), that.getNumEventLoopThreads()) &&
           Objects.equal(getNumExecutorThreads(), that.getNumExecutorThreads()) &&
           Objects.equal(getMaxLineLength(), that.getMaxLineLength()) &&
+          Objects.equal(getDefaultResponseBufferSize(), that.getDefaultResponseBufferSize()) &&
           Objects.equal(getHostAndPort(), that.getHostAndPort()) &&
           Objects.equal(getAuthType(), that.getAuthType());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads(), getMaxLineLength());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads(), getMaxLineLength(), getDefaultResponseBufferSize());
     }
-
   }
 }

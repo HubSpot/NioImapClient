@@ -1,14 +1,14 @@
 package com.hubspot.imap.utils.parsers;
 
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.HttpConstants;
-import io.netty.util.internal.AppendableCharSequence;
 
 // TODO: Stolen from SMTPProxy, move somewhere common
 public class LineParser extends BaseStringParser {
   private final int maxLineLength;
 
-  public LineParser(AppendableCharSequence seq, int maxLineLength) {
+  public LineParser(SoftReferencedAppendableCharSequence seq, int maxLineLength) {
     super(seq);
     this.maxLineLength = maxLineLength;
   }

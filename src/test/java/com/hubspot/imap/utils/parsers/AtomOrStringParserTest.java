@@ -1,6 +1,7 @@
 package com.hubspot.imap.utils.parsers;
 
-import io.netty.util.internal.AppendableCharSequence;
+import com.hubspot.imap.ImapConfiguration.Builder;
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -10,8 +11,8 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AtomOrStringParserTest {
-  private static final AppendableCharSequence SEQUENCE = new AppendableCharSequence(1000);
-  private static final AtomOrStringParser PARSER = new AtomOrStringParser(SEQUENCE, 1000);
+  private static final SoftReferencedAppendableCharSequence SEQUENCE_REF = new SoftReferencedAppendableCharSequence(new Builder().build());
+  private static final AtomOrStringParser PARSER = new AtomOrStringParser(SEQUENCE_REF, 1000);
 
   private static final byte[] UNQUOTED = "Unquoted".getBytes(StandardCharsets.UTF_8);
   private static final byte[] QUOTED = "\"This is quoted\"".getBytes(StandardCharsets.UTF_8);

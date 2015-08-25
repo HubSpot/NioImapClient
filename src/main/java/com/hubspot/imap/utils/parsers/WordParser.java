@@ -1,12 +1,12 @@
 package com.hubspot.imap.utils.parsers;
 
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import io.netty.handler.codec.TooLongFrameException;
-import io.netty.util.internal.AppendableCharSequence;
 
 public class WordParser extends BaseStringParser {
   private final int maxWordLength;
 
-  public WordParser(AppendableCharSequence seq, int maxWordLength) {
+  public WordParser(SoftReferencedAppendableCharSequence seq, int maxWordLength) {
     super(seq);
     this.maxWordLength = maxWordLength;
   }

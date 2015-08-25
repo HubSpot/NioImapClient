@@ -53,7 +53,7 @@ public class LiteralStringParser implements ByteBufParser<String> {
     }
   }
 
-  private class SizeParser implements ByteBufParser<Integer> {
+  private static class SizeParser implements ByteBufParser<Integer> {
 
     SoftReferencedAppendableCharSequence sequenceRef;
 

@@ -58,12 +58,8 @@ public interface GMailLabel {
   }
 
   static GMailLabel get(String label) {
-    if (label.startsWith("\"")) {
-      label = label.substring(1, label.length()-1);
-
-      if (label.startsWith("\\")) {
-        label = label.substring(1);
-      }
+    if (label.startsWith("\\")) {
+      label = label.substring(1);
     }
 
     if (SystemLabel.INDEX.containsKey(label)) {

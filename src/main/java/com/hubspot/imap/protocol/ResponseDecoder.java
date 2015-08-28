@@ -121,7 +121,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.messageBuilder = ((DefaultMessageBuilder) MESSAGE_SERVICE_FACTORY.newMessageBuilder());
 
     MimeConfig mimeConfig = new MimeConfig();
-    mimeConfig.setMaxLineLen(configuration.getMaxLineLength());
+    mimeConfig.setMaxLineLen(-1);
+    mimeConfig.setMaxHeaderLen(-1);
     messageBuilder.setMimeEntityConfig(mimeConfig);
 
     this.untaggedResponses = new ArrayList<>();

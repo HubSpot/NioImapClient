@@ -117,7 +117,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.literalStringParser = new LiteralStringParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
     this.envelopeParser = new EnvelopeParser();
-    this.nestedArrayParserRecycler = new NestedArrayParser.Recycler<>(atomOrStringParser);
+    this.nestedArrayParserRecycler = new NestedArrayParser.Recycler<>(literalStringParser);
     this.messageBuilder = ((DefaultMessageBuilder) MESSAGE_SERVICE_FACTORY.newMessageBuilder());
 
     MimeConfig mimeConfig = new MimeConfig();

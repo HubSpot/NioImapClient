@@ -27,12 +27,9 @@ public class LiteralStringParser implements ByteBufParser<String> {
     int expectedSize = -1;
     for (;;) {
       char c = ((char) in.readUnsignedByte());
-      if (c == '{') {
+      if (c == '{' && expectedSize < 0) {
         in.readerIndex(in.readerIndex() - 1);
         expectedSize = sizeParser.parse(in);
-      } else if (c == '"'){
-        in.readerIndex(in.readerIndex() - 1);
-        return stringParser.parse(in);
       } else if (expectedSize >= 0) {
         if (c == HttpConstants.LF || c == HttpConstants.CR) {
           continue;
@@ -49,6 +46,11 @@ public class LiteralStringParser implements ByteBufParser<String> {
         }
 
         return seq.toString();
+      } else if (Character.isWhitespace(c)) {
+        continue;
+      } else {
+        in.readerIndex(in.readerIndex() - 1);
+        return stringParser.parse(in);
       }
     }
   }

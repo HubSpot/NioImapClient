@@ -3,9 +3,11 @@ package com.hubspot.imap.protocol.message;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface Envelope {
-  ZonedDateTime getDate();
+  Optional<ZonedDateTime> getDate();
+  String getDateString();
   String getSubject();
   List<ImapAddress> getFrom();
   List<ImapAddress> getSender();
@@ -19,7 +21,8 @@ public interface Envelope {
 
   class Builder implements Envelope {
 
-    private ZonedDateTime date;
+    private Optional<ZonedDateTime> date = Optional.empty();
+    private String dateString;
     private String subject;
     private List<ImapAddress> from;
     private List<ImapAddress> sender;
@@ -34,12 +37,21 @@ public interface Envelope {
       return this;
     }
 
-    public ZonedDateTime getDate() {
+    public Optional<ZonedDateTime> getDate() {
       return this.date;
     }
 
     public Builder setDate(ZonedDateTime date) {
-      this.date = date;
+      this.date = Optional.ofNullable(date);
+      return this;
+    }
+
+    public String getDateString() {
+      return this.dateString;
+    }
+
+    public Builder setDateString(String dateString) {
+      this.dateString = dateString;
       return this;
     }
 

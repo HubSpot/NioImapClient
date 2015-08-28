@@ -55,6 +55,7 @@ public class EnvelopeParser {
     String messageId = castToString(in.get(9));
 
     Envelope.Builder envelope = new Envelope.Builder()
+        .setDateString(dateString)
         .setSubject(subject)
         .setFrom(from)
         .setSender(sender)
@@ -70,7 +71,7 @@ public class EnvelopeParser {
         envelope.setDate(parseDate(dateString));
       }
     } catch (DateTimeParseException e) {
-      LOGGER.warn("Failed to parse date {}", dateString, e);
+      LOGGER.debug("Failed to parse date {}", dateString, e);
     }
 
     return envelope.build();

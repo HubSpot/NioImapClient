@@ -4,7 +4,9 @@ import com.google.common.collect.Lists;
 import com.google.seventeen.common.base.Throwables;
 import com.google.seventeen.common.primitives.Ints;
 import com.hubspot.imap.ImapConfiguration;
+import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
+import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.ResponseParseException;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
@@ -35,6 +37,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.handler.codec.http.HttpConstants;
+import io.netty.util.concurrent.EventExecutorGroup;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.james.mime4j.MimeException;
@@ -53,6 +56,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /**
@@ -90,6 +94,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final char LPAREN = '(';
   private static final char RPAREN = ')';
 
+  private final ImapClientState clientState;
+  private final EventExecutorGroup executorGroup;
+
   // This AppendableCharSequence is shared by all of the parsers for memory efficiency.
   private final SoftReferencedAppendableCharSequence charSeq;
   private final LineParser lineParser;
@@ -107,8 +114,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private ImapMessage.Builder currentMessage;
 
-  public ResponseDecoder(ImapConfiguration configuration) {
+  public ResponseDecoder(ImapConfiguration configuration, ImapClientState clientState, EventExecutorGroup executorGroup) {
     super(State.SKIP_CONTROL_CHARS);
+    this.clientState = clientState;
+    this.executorGroup = executorGroup;
+
     this.charSeq = new SoftReferencedAppendableCharSequence(configuration);
     this.lineParser = new LineParser(charSeq, configuration.getMaxLineLength());
     this.wordParser = new WordParser(charSeq, configuration.getMaxLineLength());
@@ -218,9 +228,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       char second = ((char) in.readUnsignedByte());
       if (second == HttpConstants.CR || second == HttpConstants.LF) {
         // At the end of the fetch, add the current message to the untagged responses and reset
-        untaggedResponses.add(currentMessage.build());
-        currentMessage = null;
-        checkpoint(State.RESET);
+        messageComplete();
         return;
       } else {
         in.readerIndex(in.readerIndex() - 2);
@@ -277,6 +285,25 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
 
     checkpoint(State.FETCH);
+  }
+
+  private void messageComplete() {
+    ImapMessage message = currentMessage.build();
+    currentMessage = null;
+
+    if (clientState.getCurrentCommand() instanceof StreamingFetchCommand) {
+      StreamingFetchCommand fetchCommand = ((StreamingFetchCommand) clientState.getCurrentCommand());
+      Future<Void> future = executorGroup.submit(() -> {
+        fetchCommand.handle(message);
+        return null;
+      });
+
+      untaggedResponses.add(future);
+    } else {
+      untaggedResponses.add(message);
+    }
+
+    checkpoint(State.RESET);
   }
 
   private void handleTagged(ByteBuf in, List<Object> out) {

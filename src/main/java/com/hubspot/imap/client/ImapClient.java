@@ -2,6 +2,7 @@ package com.hubspot.imap.client;
 
 import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.ImapConfiguration;
+import com.hubspot.imap.protocol.ResponseDecoder;
 import com.hubspot.imap.protocol.command.BaseCommand;
 import com.hubspot.imap.protocol.command.Command;
 import com.hubspot.imap.protocol.command.CommandType;
@@ -9,10 +10,12 @@ import com.hubspot.imap.protocol.command.ListCommand;
 import com.hubspot.imap.protocol.command.OpenCommand;
 import com.hubspot.imap.protocol.command.XOAuth2Command;
 import com.hubspot.imap.protocol.command.fetch.FetchCommand;
+import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
+import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
@@ -20,6 +23,7 @@ import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
+import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -43,6 +47,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
@@ -105,6 +110,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private void configureChannel(Channel channel) {
     this.channel = channel;
+    this.channel.pipeline().addLast(new ResponseDecoder(configuration, clientState, promiseExecutor));
     this.channel.pipeline().addLast(codec);
     this.channel.pipeline().addLast(this);
     this.channel.pipeline().addLast(promiseExecutor, this.clientState);
@@ -178,6 +184,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
     return send(new FetchCommand(startId, stopId, fetchDataItems));
+  }
+
+  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
+    return send(new UidCommand(CommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems)));
+  }
+
+  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
+    return send(new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems));
   }
 
   public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {

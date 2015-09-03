@@ -15,6 +15,7 @@ import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
+import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import io.netty.util.concurrent.Future;
 import org.apache.james.mime4j.dom.Entity;
 import org.apache.james.mime4j.dom.Multipart;
@@ -28,7 +29,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -245,6 +249,33 @@ public class ImapClientTest {
 
     assertThat(uidresponse.getMessages().size()).isEqualTo(1);
     assertThat(uidresponse.getMessages().iterator().next().getUid()).isEqualTo(message.getUid());
+  }
+
+  @Test
+  public void testStreamingFetch_doesExecuteConsumerForAllMessages() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Set<Long> uids = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
+
+    Future<StreamingFetchResponse> fetchResponseFuture = client.fetch(1, Optional.<Long>empty(), message -> {
+      try {
+        uids.add(message.getUid());
+      } catch (UnfetchedFieldException e) {
+        throw Throwables.propagate(e);
+      }
+    }, FetchDataItemType.UID);
+
+    StreamingFetchResponse fetchResponse = fetchResponseFuture.get();
+
+    int successful = 0;
+    for (Future consumerFuture : fetchResponse.getMessageConsumerFutures()) {
+      consumerFuture.get();
+      successful++;
+    }
+
+    assertThat(successful).isEqualTo(uids.size());
   }
 
   @Test

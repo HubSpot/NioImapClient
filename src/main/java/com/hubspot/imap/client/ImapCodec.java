@@ -3,6 +3,7 @@ package com.hubspot.imap.client;
 import com.hubspot.imap.protocol.command.BaseCommand;
 import com.hubspot.imap.protocol.command.CommandType;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
+import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
@@ -61,7 +62,9 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
           ctx.fireUserEventTriggered(new OpenEvent(((OpenResponse) taggedResponse)));
           break;
         case FETCH:
-          if (clientState.getCurrentCommand() instanceof StreamingFetchCommand) {
+          if (clientState.getCurrentCommand() instanceof StreamingFetchCommand ||
+              (clientState.getCurrentCommand() instanceof UidCommand &&
+                  ((UidCommand) clientState.getCurrentCommand()).getWrappedCommand() instanceof StreamingFetchCommand)) {
             taggedResponse = new StreamingFetchResponse.Builder().fromResponse(taggedResponse);
           } else {
             taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse);

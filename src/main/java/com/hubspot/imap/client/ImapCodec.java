@@ -2,8 +2,6 @@ package com.hubspot.imap.client;
 
 import com.hubspot.imap.protocol.command.BaseCommand;
 import com.hubspot.imap.protocol.command.CommandType;
-import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
-import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
@@ -18,6 +16,7 @@ import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
+import com.hubspot.imap.utils.CommandUtils;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.slf4j.Logger;
@@ -62,9 +61,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
           ctx.fireUserEventTriggered(new OpenEvent(((OpenResponse) taggedResponse)));
           break;
         case FETCH:
-          if (clientState.getCurrentCommand() instanceof StreamingFetchCommand ||
-              (clientState.getCurrentCommand() instanceof UidCommand &&
-                  ((UidCommand) clientState.getCurrentCommand()).getWrappedCommand() instanceof StreamingFetchCommand)) {
+          if (CommandUtils.isStreamingFetch(clientState.getCurrentCommand())) {
             taggedResponse = new StreamingFetchResponse.Builder().fromResponse(taggedResponse);
           } else {
             taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse);

@@ -7,6 +7,7 @@ import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
+import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.ResponseParseException;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
@@ -24,6 +25,7 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse.Builder;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
+import com.hubspot.imap.utils.CommandUtils;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
 import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
@@ -291,8 +293,14 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     ImapMessage message = currentMessage.build();
     currentMessage = null;
 
-    if (clientState.getCurrentCommand() instanceof StreamingFetchCommand) {
-      StreamingFetchCommand fetchCommand = ((StreamingFetchCommand) clientState.getCurrentCommand());
+    if (CommandUtils.isStreamingFetch(clientState.getCurrentCommand())) {
+      StreamingFetchCommand fetchCommand;
+      if (clientState.getCurrentCommand() instanceof UidCommand) {
+        fetchCommand = ((StreamingFetchCommand) ((UidCommand) clientState.getCurrentCommand()).getWrappedCommand());
+      } else {
+        fetchCommand = ((StreamingFetchCommand) clientState.getCurrentCommand());
+      }
+
       Future<Void> future = executorGroup.submit(() -> {
         fetchCommand.handle(message);
         return null;

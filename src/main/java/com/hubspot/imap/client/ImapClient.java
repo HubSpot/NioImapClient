@@ -267,6 +267,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       if (channel.isWritable()) {
         PendingCommand pendingCommand = pendingWriteQueue.poll();
         send(pendingCommand.command, pendingCommand.promise);
+
+        pendingCommand.recycle();
       } else {
         channel.eventLoop().schedule(() -> {
           this.writeNext();

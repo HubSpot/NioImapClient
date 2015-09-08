@@ -354,7 +354,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       try {
         logoutPromise.get(10, TimeUnit.SECONDS);
       } catch (InterruptedException|ExecutionException|TimeoutException e) {
-        LOGGER.error("Caught exception while closing client", e);
+        LOGGER.debug("Caught exception while closing client", e);
       } finally {
         channel.close();
       }

@@ -11,6 +11,7 @@ import com.hubspot.imap.protocol.response.events.FetchEvent;
 import com.hubspot.imap.protocol.response.events.OpenEvent;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -31,6 +32,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final List<FetchEventListener> fetchEventListeners;
   private final List<OpenEventListener> openEventListeners;
   private final List<ConnectionListener> connectionListeners;
+  private final List<ChannelHandler> handlers;
 
   private Channel channel;
 
@@ -45,12 +47,14 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     this.fetchEventListeners = new ArrayList<>();
     this.openEventListeners = new ArrayList<>();
     this.connectionListeners = new ArrayList<>();
+    this.handlers = new ArrayList<>();
   }
 
   @Override
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
     this.channel = ctx.channel();
 
+    handlers.forEach(h -> channel.pipeline().addLast(executorGroup, h));
     connectionListeners.forEach(w -> channel.pipeline().addLast(executorGroup, w));
     super.channelActive(ctx);
   }
@@ -98,9 +102,17 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     this.openEventListeners.add(listener);
   }
 
+  public void addHandler(ChannelHandler handler) {
+    if (channel != null) {
+      channel.pipeline().addLast(executorGroup, handler);
+    }
+
+    handlers.add(handler);
+  }
+
   public void addConnectionListener(ConnectionListener listener) {
     if (channel != null) {
-      channel.pipeline().addLast(listener);
+      channel.pipeline().addLast(executorGroup, listener);
     }
 
     connectionListeners.add(listener);

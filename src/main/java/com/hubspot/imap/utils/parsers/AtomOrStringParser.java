@@ -54,7 +54,12 @@ public class AtomOrStringParser implements ByteBufParser<String> {
         append(seq, c);
       }
 
-      previousChar = c;
+      // Always ignore any characters after a backslash
+      if (previousChar != BACKSLASH) {
+        previousChar = c;
+      } else {
+        previousChar = ' ';
+      }
     }
 
     return seq.toString();

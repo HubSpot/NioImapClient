@@ -2,7 +2,6 @@ package com.hubspot.imap.utils.parsers;
 
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import io.netty.buffer.ByteBuf;
-import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class LiteralStringParser implements ByteBufParser<String> {
@@ -30,11 +29,9 @@ public class LiteralStringParser implements ByteBufParser<String> {
       if (c == '{' && expectedSize < 0) {
         in.readerIndex(in.readerIndex() - 1);
         expectedSize = sizeParser.parse(in);
-      } else if (expectedSize >= 0) {
-        if (c == HttpConstants.LF || c == HttpConstants.CR) {
-          continue;
-        }
 
+        in.readerIndex(in.readerIndex() + 2); // Skip CRLF
+      } else if (expectedSize >= 0) {
         seq.reset();
         seq.append(c);
         size++;

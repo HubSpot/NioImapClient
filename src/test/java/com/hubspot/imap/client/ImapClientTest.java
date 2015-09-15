@@ -3,12 +3,17 @@ package com.hubspot.imap.client;
 import com.google.seventeen.common.base.Strings;
 import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.TestUtils;
+import com.hubspot.imap.protocol.command.CommandType;
+import com.hubspot.imap.protocol.command.SilentStoreCommand;
+import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
+import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapMessage;
+import com.hubspot.imap.protocol.message.MessageFlag;
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
@@ -16,6 +21,7 @@ import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
+import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import io.netty.util.concurrent.Future;
 import org.apache.james.mime4j.dom.Entity;
 import org.apache.james.mime4j.dom.Multipart;
@@ -302,5 +308,42 @@ public class ImapClientTest {
         throw Throwables.propagate(e);
       }
     }, "gmail thread id"));
+  }
+
+  @Test
+  public void testStore() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<FetchResponse> responseFuture = client.fetch(or.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    FetchResponse fetchResponse = responseFuture.get();
+    ImapMessage message = fetchResponse.getMessages().iterator().next();
+
+    TaggedResponse storeResponse = client.send(new UidCommand(
+        CommandType.STORE,
+        new SilentStoreCommand(StoreAction.ADD_FLAGS, message.getUid(), message.getUid(), MessageFlag.FLAGGED)
+    )).get();
+
+    assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);
+
+    responseFuture = client.fetch(or.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    fetchResponse = responseFuture.get();
+    ImapMessage messageWithFlagged = fetchResponse.getMessages().iterator().next();
+
+    assertThat(messageWithFlagged.getFlags()).contains(MessageFlag.FLAGGED);
+
+    storeResponse = client.send(new UidCommand(
+        CommandType.STORE,
+        new SilentStoreCommand(StoreAction.REMOVE_FLAGS, message.getUid(), message.getUid(), MessageFlag.FLAGGED)
+    )).get();
+
+    assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);
+
+    responseFuture = client.fetch(or.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    fetchResponse = responseFuture.get();
+    ImapMessage messageNotFlagged = fetchResponse.getMessages().iterator().next();
+
+    assertThat(messageNotFlagged.getFlags()).isEqualTo(message.getFlags());
   }
 }

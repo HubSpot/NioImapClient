@@ -22,4 +22,8 @@ public enum  MessageFlag {
       return Optional.empty();
     }
   }
+
+  public String getString() {
+    return "\\" + this.name();
+  }
 }

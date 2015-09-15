@@ -6,7 +6,7 @@ import com.google.common.collect.Lists;
 import java.util.List;
 
 public class BaseCommand implements Command {
-  private static final Joiner JOINER = Joiner.on(" ").skipNulls();
+  protected static final Joiner JOINER = Joiner.on(" ").skipNulls();
 
   protected final CommandType type;
   protected final List<String> args;

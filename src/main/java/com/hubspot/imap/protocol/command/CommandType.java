@@ -10,5 +10,6 @@ public enum CommandType {
   EXAMINE,
   SELECT,
   FETCH,
-  BLANK;
+  BLANK,
+  STORE;
 }

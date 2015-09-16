@@ -48,7 +48,7 @@ public interface ImapMessage {
 
     public Builder setFlagStrings(Collection<String> flags) {
       this.flags = Optional.of(flags.stream()
-          .map(MessageFlag::getFlag)
+          .map(StandardMessageFlag::getFlag)
           .filter(Optional::isPresent)
           .map(Optional::get)
           .collect(Collectors.toSet()));

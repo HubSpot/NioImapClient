@@ -13,7 +13,7 @@ import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapMessage;
-import com.hubspot.imap.protocol.message.MessageFlag;
+import com.hubspot.imap.protocol.message.StandardMessageFlag;
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
@@ -322,7 +322,7 @@ public class ImapClientTest {
 
     TaggedResponse storeResponse = client.send(new UidCommand(
         CommandType.STORE,
-        new SilentStoreCommand(StoreAction.ADD_FLAGS, message.getUid(), message.getUid(), MessageFlag.FLAGGED)
+        new SilentStoreCommand(StoreAction.ADD_FLAGS, message.getUid(), message.getUid(), StandardMessageFlag.FLAGGED)
     )).get();
 
     assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);
@@ -331,11 +331,11 @@ public class ImapClientTest {
     fetchResponse = responseFuture.get();
     ImapMessage messageWithFlagged = fetchResponse.getMessages().iterator().next();
 
-    assertThat(messageWithFlagged.getFlags()).contains(MessageFlag.FLAGGED);
+    assertThat(messageWithFlagged.getFlags()).contains(StandardMessageFlag.FLAGGED);
 
     storeResponse = client.send(new UidCommand(
         CommandType.STORE,
-        new SilentStoreCommand(StoreAction.REMOVE_FLAGS, message.getUid(), message.getUid(), MessageFlag.FLAGGED)
+        new SilentStoreCommand(StoreAction.REMOVE_FLAGS, message.getUid(), message.getUid(), StandardMessageFlag.FLAGGED)
     )).get();
 
     assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);

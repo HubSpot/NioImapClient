@@ -11,5 +11,6 @@ public enum CommandType {
   SELECT,
   FETCH,
   BLANK,
-  STORE;
+  STORE,
+  SEARCH;
 }

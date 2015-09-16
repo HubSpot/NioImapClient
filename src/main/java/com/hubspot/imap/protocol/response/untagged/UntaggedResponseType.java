@@ -21,6 +21,7 @@ public enum UntaggedResponseType {
   HIGHESTMODSEQ("[HIGHESTMODSEQ"),
   FLAGS("FLAGS"),
   FETCH("FETCH"),
+  SEARCH("SEARCH"),
   INVALID("-----");
 
   private final String prefix;

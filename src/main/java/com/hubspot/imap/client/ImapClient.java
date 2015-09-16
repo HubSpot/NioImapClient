@@ -13,6 +13,8 @@ import com.hubspot.imap.protocol.command.fetch.FetchCommand;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem;
+import com.hubspot.imap.protocol.command.search.SearchCommand;
+import com.hubspot.imap.protocol.command.search.SearchTermType;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import com.hubspot.imap.protocol.message.ImapMessage;
@@ -23,6 +25,7 @@ import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
+import com.hubspot.imap.protocol.response.tagged.SearchResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import io.netty.bootstrap.Bootstrap;
@@ -196,6 +199,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
     return send(new UidCommand(CommandType.FETCH, new FetchCommand(startId, stopId, fetchDataItems)));
+  }
+
+  public Future<SearchResponse> search(SearchTermType type, String arg) throws ConnectionClosedException {
+    return send(new SearchCommand(type, arg));
   }
 
   public Future<NoopResponse> noop() throws ConnectionClosedException {

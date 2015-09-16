@@ -382,6 +382,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         untaggedResponses.add(parseFlags(in, false));
         break;
       // Bracketed responses. Fallthrough here is intentional.
+      case SEARCH:
       case HIGHESTMODSEQ:
       case UIDNEXT:
       case UIDVALIDITY:
@@ -490,7 +491,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private UntaggedIntResponse parseIntResponse(UntaggedResponseType type, ByteBuf in) {
     long value = numberParser.parse(in);
-    wordParser.parse(in); // Clear any extra non-digit data
+    lineParser.parse(in);
 
     return new Builder()
         .setType(type)

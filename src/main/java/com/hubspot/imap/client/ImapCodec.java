@@ -12,6 +12,7 @@ import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.protocol.response.tagged.ListResponse.Builder;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
+import com.hubspot.imap.protocol.response.tagged.SearchResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
@@ -51,6 +52,9 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
       TaggedResponse taggedResponse = ((TaggedResponse) msg);
       fireEvents(ctx, taggedResponse);
       switch (clientState.getCurrentCommand().getCommandType()) {
+        case SEARCH:
+          taggedResponse = new SearchResponse.Builder().fromResponse(taggedResponse);
+          break;
         case LIST:
           taggedResponse = new Builder().fromResponse(taggedResponse);
           break;

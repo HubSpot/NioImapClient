@@ -9,6 +9,7 @@ import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
+import com.hubspot.imap.protocol.command.search.SearchTermType.StandardSearchTermType;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
@@ -20,6 +21,7 @@ import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
+import com.hubspot.imap.protocol.response.tagged.SearchResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import io.netty.util.concurrent.Future;
@@ -346,4 +348,20 @@ public class ImapClientTest {
 
     assertThat(messageNotFlagged.getFlags()).isEqualTo(message.getFlags());
   }
+
+  @Test
+  public void testSimpleSearch() throws Exception {
+    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+    OpenResponse or = openResponseFuture.get();
+    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
+
+    Future<FetchResponse> responseFuture = client.fetch(or.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    FetchResponse fetchResponse = responseFuture.get();
+    ImapMessage message = fetchResponse.getMessages().iterator().next();
+
+    SearchResponse response = client.search(StandardSearchTermType.UID, String.valueOf(message.getUid())).get();
+    assertThat(response.getMessageIds()).containsExactly(message.getUid());
+  }
+
+
 }

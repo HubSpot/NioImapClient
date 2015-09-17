@@ -208,9 +208,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new UidCommand(CommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
+  public Future<SearchResponse> uidsearch(SearchTermType type, String arg) throws ConnectionClosedException {
+    return send(new UidCommand(CommandType.SEARCH, new SearchCommand(type, arg)));
+  }
+
   public Future<SearchResponse> search(SearchTermType type, String arg) throws ConnectionClosedException {
     return send(new SearchCommand(type, arg));
   }
+
 
   public Future<NoopResponse> noop() throws ConnectionClosedException {
     return send(CommandType.NOOP);

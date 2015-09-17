@@ -38,10 +38,12 @@ import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -355,12 +357,22 @@ public class ImapClientTest {
     OpenResponse or = openResponseFuture.get();
     assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
-    Future<FetchResponse> responseFuture = client.fetch(or.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    Future<FetchResponse> responseFuture = client.fetch(or.getExists() - 2, Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
     FetchResponse fetchResponse = responseFuture.get();
     ImapMessage message = fetchResponse.getMessages().iterator().next();
 
-    SearchResponse response = client.search(StandardSearchTermType.UID, String.valueOf(message.getUid())).get();
-    assertThat(response.getMessageIds()).containsExactly(message.getUid());
+    SearchResponse response = client.search(StandardSearchTermType.UID, String.valueOf(message.getUid()) + ":" + or.getUidNext()).get();
+    assertThat(response.getMessageIds().size()).isEqualTo(fetchResponse.getMessages().size());
+
+    List<Long> expectedUids = fetchResponse.getMessages().stream().map(m -> {
+      try {
+        return m.getUid();
+      } catch (UnfetchedFieldException e) {
+        throw new RuntimeException(e);
+      }
+    }).collect(Collectors.toList());
+
+    assertThat(response.getMessageIds()).containsAll(expectedUids);
   }
 
 

@@ -1,4 +1,6 @@
-package com.hubspot.imap.protocol.command.search;
+package com.hubspot.imap.protocol.extension.gmail;
+
+import com.hubspot.imap.protocol.command.search.SearchTermType;
 
 public enum GmailSearchTerm implements SearchTermType {
   RAW("X-GM-RAW"),

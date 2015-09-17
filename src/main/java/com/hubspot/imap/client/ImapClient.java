@@ -8,6 +8,8 @@ import com.hubspot.imap.protocol.command.Command;
 import com.hubspot.imap.protocol.command.CommandType;
 import com.hubspot.imap.protocol.command.ListCommand;
 import com.hubspot.imap.protocol.command.OpenCommand;
+import com.hubspot.imap.protocol.command.SilentStoreCommand;
+import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.XOAuth2Command;
 import com.hubspot.imap.protocol.command.fetch.FetchCommand;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
@@ -18,6 +20,7 @@ import com.hubspot.imap.protocol.command.search.SearchTermType;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import com.hubspot.imap.protocol.message.ImapMessage;
+import com.hubspot.imap.protocol.message.MessageFlag;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
@@ -199,6 +202,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
     return send(new UidCommand(CommandType.FETCH, new FetchCommand(startId, stopId, fetchDataItems)));
+  }
+
+  public Future<TaggedResponse> uidStore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) throws ConnectionClosedException {
+    return send(new UidCommand(CommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
   public Future<SearchResponse> search(SearchTermType type, String arg) throws ConnectionClosedException {

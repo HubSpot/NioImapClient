@@ -25,6 +25,7 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse.Builder;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
+import com.hubspot.imap.protocol.response.untagged.UntaggedSearchResponse;
 import com.hubspot.imap.utils.CommandUtils;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
@@ -383,6 +384,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         break;
       // Bracketed responses. Fallthrough here is intentional.
       case SEARCH:
+        untaggedResponses.add(parseSearch(in));
+        break;
       case HIGHESTMODSEQ:
       case UIDNEXT:
       case UIDVALIDITY:
@@ -461,6 +464,22 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     lineParser.parse(in);
 
     return FolderFlags.fromStrings(flags, permanent);
+  }
+
+  private UntaggedSearchResponse parseSearch(ByteBuf in) {
+    List<Long> ids = new ArrayList<>();
+    for (;;) {
+      char c = ((char) in.readUnsignedByte());
+      in.readerIndex(in.readerIndex() - 1);
+      if (c == HttpConstants.CR || c == HttpConstants.LF) {
+        lineParser.parse(in);
+        break;
+      }
+
+      ids.add(Long.parseLong(atomOrStringParser.parse(in)));
+    }
+
+    return new UntaggedSearchResponse(ids);
   }
 
   private FolderMetadata parseFolderMetadata(ByteBuf in) {

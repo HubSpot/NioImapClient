@@ -4,7 +4,7 @@ public class StringMessageFlag implements MessageFlag {
   public String flag;
 
   public StringMessageFlag(String flag) {
-    this.flag = flag;
+    this.flag = "\"" + flag + "\"";
   }
 
   @Override

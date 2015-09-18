@@ -204,7 +204,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new UidCommand(CommandType.FETCH, new FetchCommand(startId, stopId, fetchDataItems)));
   }
 
-  public Future<TaggedResponse> uidStore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) throws ConnectionClosedException {
+  public Future<TaggedResponse> uidstore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) throws ConnectionClosedException {
     return send(new UidCommand(CommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
@@ -216,6 +216,9 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new SearchCommand(type, arg));
   }
 
+  public Future<TaggedResponse> expunge() throws ConnectionClosedException {
+    return send(CommandType.EXPUNGE);
+  }
 
   public Future<NoopResponse> noop() throws ConnectionClosedException {
     return send(CommandType.NOOP);

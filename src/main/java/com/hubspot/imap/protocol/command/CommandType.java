@@ -4,6 +4,7 @@ public enum CommandType {
   LOGIN,
   LOGOUT,
   NOOP,
+  EXPUNGE,
   IDLE,
   AUTHENTICATE,
   LIST,
@@ -12,5 +13,6 @@ public enum CommandType {
   FETCH,
   BLANK,
   STORE,
-  SEARCH;
+  SEARCH,
+  COPY;
 }

@@ -51,7 +51,7 @@
         <dependency>
           <groupId>io.netty</groupId>
           <artifactId>netty-transport-native-epoll</artifactId>
-          <version>4.0.29.Final</version>
+          <version>${netty.version}</version>
           <classifier>${os.detected.classifier}</classifier>
         </dependency>
       </dependencies>
@@ -67,7 +67,7 @@
         <dependency>
           <groupId>io.netty</groupId>
           <artifactId>netty-transport-native-epoll</artifactId>
-          <version>4.0.29.Final</version>
+          <version>${netty.version}</version>
         </dependency>
       </dependencies>
     </profile>
@@ -179,7 +179,7 @@
       <extension>
         <groupId>kr.motd.maven</groupId>
         <artifactId>os-maven-plugin</artifactId>
-        <version>1.2.3.Final</version>
+        <version>1.4.1.Final</version>
       </extension>
     </extensions>
   </build>

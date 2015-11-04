@@ -16,8 +16,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,11 +43,11 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     this.commandCount = new AtomicLong(0);
     this.messageNumber = new AtomicLong(0);
 
-    this.messageAddListeners = new ArrayList<>();
-    this.fetchEventListeners = new ArrayList<>();
-    this.openEventListeners = new ArrayList<>();
-    this.connectionListeners = new ArrayList<>();
-    this.handlers = new ArrayList<>();
+    this.messageAddListeners = new CopyOnWriteArrayList<>();
+    this.fetchEventListeners = new CopyOnWriteArrayList<>();
+    this.openEventListeners = new CopyOnWriteArrayList<>();
+    this.connectionListeners = new CopyOnWriteArrayList<>();
+    this.handlers = new CopyOnWriteArrayList<>();
   }
 
   @Override

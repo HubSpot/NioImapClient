@@ -354,31 +354,33 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   @Override
   public void close() {
     if (isConnected()) {
-      if (keepAliveStarted.get()) {
-        channel.pipeline().remove(KEEP_ALIVE_HANDLER);
-        keepAliveStarted.set(false);
-      }
-
-      if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
-        try {
-          connectionClosed.set(true);
-          if (!currentCommandPromise.await(10, TimeUnit.SECONDS)) {
-            pendingWriteQueue.iterator().forEachRemaining(c -> c.promise.setFailure(new ConnectionClosedException()));
-            currentCommandPromise.cancel(true);
-          }
-        } catch (InterruptedException e) {
-          throw Throwables.propagate(e);
-        }
-      } else {
-        connectionClosed.set(true);
-      }
-
-      Promise<TaggedResponse> logoutPromise = promiseExecutor.next().newPromise();
-      actuallySend(new BaseCommand(CommandType.LOGOUT), logoutPromise);
       try {
-        logoutPromise.get(10, TimeUnit.SECONDS);
-      } catch (InterruptedException|ExecutionException|TimeoutException e) {
-        LOGGER.debug("Caught exception while closing client", e);
+        if (keepAliveStarted.get()) {
+          channel.pipeline().remove(KEEP_ALIVE_HANDLER);
+          keepAliveStarted.set(false);
+        }
+
+        if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
+          try {
+            connectionClosed.set(true);
+            if (!currentCommandPromise.await(10, TimeUnit.SECONDS)) {
+              pendingWriteQueue.iterator().forEachRemaining(c -> c.promise.setFailure(new ConnectionClosedException()));
+              currentCommandPromise.cancel(true);
+            }
+          } catch (InterruptedException e) {
+            throw Throwables.propagate(e);
+          }
+        } else {
+          connectionClosed.set(true);
+        }
+
+        Promise<TaggedResponse> logoutPromise = promiseExecutor.next().newPromise();
+        actuallySend(new BaseCommand(CommandType.LOGOUT), logoutPromise);
+        try {
+          logoutPromise.get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+          LOGGER.debug("Caught exception while closing client", e);
+        }
       } finally {
         channel.close();
       }

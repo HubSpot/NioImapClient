@@ -158,7 +158,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return loginPromise;
   }
 
-  private synchronized void startKeepAlive() {
+  private void startKeepAlive() {
     int keepAliveInterval = configuration.getNoopKeepAliveIntervalSec();
     if (keepAliveInterval > 0) {
       if (!connectionClosed.get() && channel.pipeline().get(KEEP_ALIVE_HANDLER) == null) {
@@ -327,10 +327,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
-      idleExecutor.next().submit(() -> {
-        noop();
-        return null;
-      });
+      if (!connectionClosed.get()) {
+        idleExecutor.next().submit(() -> {
+          noop();
+          return null;
+        });
+      }
     } else if (evt instanceof ByeEvent) {
       if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != CommandType.LOGOUT) {
         channel.close();
@@ -351,13 +353,9 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   @Override
-  public synchronized void close() {
+  public void close() {
     if (isConnected()) {
       try {
-        if (channel.pipeline().get(KEEP_ALIVE_HANDLER) != null) {
-          channel.pipeline().remove(KEEP_ALIVE_HANDLER);
-        }
-
         if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
           try {
             connectionClosed.set(true);

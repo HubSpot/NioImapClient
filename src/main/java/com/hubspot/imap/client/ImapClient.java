@@ -355,30 +355,47 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   @Override
   public void close() {
     if (isConnected()) {
+      int stepTimeoutSec = configuration.getCloseTimeoutSec() / 3;
       try {
+        connectionClosed.set(true);
         if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
           try {
-            connectionClosed.set(true);
-            if (!currentCommandPromise.await(10, TimeUnit.SECONDS)) {
+            if (!currentCommandPromise.await(stepTimeoutSec, TimeUnit.SECONDS)) {
               pendingWriteQueue.iterator().forEachRemaining(c -> c.promise.setFailure(new ConnectionClosedException()));
               currentCommandPromise.cancel(true);
             }
           } catch (InterruptedException e) {
             throw Throwables.propagate(e);
           }
-        } else {
-          connectionClosed.set(true);
         }
 
         Promise<TaggedResponse> logoutPromise = promiseExecutor.next().newPromise();
         actuallySend(new BaseCommand(CommandType.LOGOUT), logoutPromise);
         try {
-          logoutPromise.get(10, TimeUnit.SECONDS);
+          logoutPromise.get(stepTimeoutSec, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
           LOGGER.debug("Caught exception while closing client", e);
         }
       } finally {
-        channel.close();
+        try {
+          channel.close().get(stepTimeoutSec, TimeUnit.SECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+          throw Throwables.propagate(e);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+  }
+
+  public void closeNow() {
+    if (channel != null) {
+      try {
+        channel.close().get(configuration.getCloseTimeoutSec(), TimeUnit.SECONDS);
+      } catch (ExecutionException | TimeoutException e) {
+        throw Throwables.propagate(e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
   }

@@ -22,6 +22,8 @@ public interface ImapConfiguration {
   int getMaxLineLength();
   int getDefaultResponseBufferSize();
 
+  int getCloseTimeoutSec();
+
   enum AuthType {
     PASSWORD,
     XOAUTH2;
@@ -43,6 +45,8 @@ public interface ImapConfiguration {
 
     private int maxLineLength = 100000;
     private int defaultResponseBufferSize = 1000;
+
+    private int closeTimeoutSec = 30;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -134,24 +138,17 @@ public interface ImapConfiguration {
       return this;
     }
 
-    public ImapConfiguration build() {
+    public int getCloseTimeoutSec() {
+      return this.closeTimeoutSec;
+    }
+
+    public Builder setCloseTimeoutSec(int closeTimeoutSec) {
+      this.closeTimeoutSec = closeTimeoutSec;
       return this;
     }
 
-    @Override
-    public String toString() {
-      return Objects.toStringHelper(this)
-          .add("hostAndPort", hostAndPort)
-          .add("authType", authType)
-          .add("useEpoll", useEpoll)
-          .add("noopKeepAliveIntervalSec", noopKeepAliveIntervalSec)
-          .add("socketTimeoutMs", socketTimeoutMs)
-          .add("writeBackOffMs", writeBackOffMs)
-          .add("numEventLoopThreads", numEventLoopThreads)
-          .add("numExecutorThreads", numExecutorThreads)
-          .add("maxLineLength", maxLineLength)
-          .add("defaultResponseBufferSize", defaultResponseBufferSize)
-          .toString();
+    public ImapConfiguration build() {
+      return this;
     }
 
     @Override
@@ -162,22 +159,23 @@ public interface ImapConfiguration {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      Builder that = (Builder) o;
-      return Objects.equal(getUseEpoll(), that.getUseEpoll()) &&
-          Objects.equal(getNoopKeepAliveIntervalSec(), that.getNoopKeepAliveIntervalSec()) &&
-          Objects.equal(getSocketTimeoutMs(), that.getSocketTimeoutMs()) &&
-          Objects.equal(getWriteBackOffMs(), that.getWriteBackOffMs()) &&
-          Objects.equal(getNumEventLoopThreads(), that.getNumEventLoopThreads()) &&
-          Objects.equal(getNumExecutorThreads(), that.getNumExecutorThreads()) &&
-          Objects.equal(getMaxLineLength(), that.getMaxLineLength()) &&
-          Objects.equal(getDefaultResponseBufferSize(), that.getDefaultResponseBufferSize()) &&
-          Objects.equal(getHostAndPort(), that.getHostAndPort()) &&
-          Objects.equal(getAuthType(), that.getAuthType());
+      Builder builder = (Builder) o;
+      return getUseEpoll() == builder.getUseEpoll() &&
+          getNoopKeepAliveIntervalSec() == builder.getNoopKeepAliveIntervalSec() &&
+          getSocketTimeoutMs() == builder.getSocketTimeoutMs() &&
+          getWriteBackOffMs() == builder.getWriteBackOffMs() &&
+          getNumEventLoopThreads() == builder.getNumEventLoopThreads() &&
+          getNumExecutorThreads() == builder.getNumExecutorThreads() &&
+          getMaxLineLength() == builder.getMaxLineLength() &&
+          getDefaultResponseBufferSize() == builder.getDefaultResponseBufferSize() &&
+          getCloseTimeoutSec() == builder.getCloseTimeoutSec() &&
+          Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
+          getAuthType() == builder.getAuthType();
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads(), getMaxLineLength(), getDefaultResponseBufferSize());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads(), getMaxLineLength(), getDefaultResponseBufferSize(), getCloseTimeoutSec());
     }
   }
 }

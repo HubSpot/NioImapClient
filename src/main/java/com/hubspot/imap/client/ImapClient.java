@@ -215,6 +215,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new SearchCommand(type, arg));
   }
 
+  public Future<SearchResponse> search(SearchCommand cmd) throws ConnectionClosedException {
+    return send(cmd);
+  }
+
   public Future<TaggedResponse> expunge() throws ConnectionClosedException {
     return send(CommandType.EXPUNGE);
   }

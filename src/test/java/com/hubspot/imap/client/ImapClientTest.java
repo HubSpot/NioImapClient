@@ -38,11 +38,14 @@ import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -359,21 +362,32 @@ public class ImapClientTest {
 
     Future<FetchResponse> responseFuture = client.fetch(or.getExists() - 2, Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
     FetchResponse fetchResponse = responseFuture.get();
-    ImapMessage message = fetchResponse.getMessages().iterator().next();
+    ImapMessage message = fetchResponse.getMessages()
+      .stream()
+      .collect(Collectors.minBy(Comparator.comparing(this::extractImapMessageUid)))
+      .get();
 
     SearchResponse response = client.search(new UidSearchKey(String.valueOf(message.getUid()) + ":" + or.getUidNext())).get();
     assertThat(response.getMessageIds().size()).isEqualTo(fetchResponse.getMessages().size());
 
-    List<Long> expectedUids = fetchResponse.getMessages().stream().map(m -> {
-      try {
-        return m.getUid();
-      } catch (UnfetchedFieldException e) {
-        throw new RuntimeException(e);
-      }
-    }).collect(Collectors.toList());
+    List<Long> expectedUids = fetchResponse.getMessages().stream().map(this::extractImapMessageUid).collect(Collectors.toList());
 
-    assertThat(response.getMessageIds()).containsAll(expectedUids);
+    Set<ImapMessage> responseMessages = new HashSet<>();
+    for (long messasgeId : response.getMessageIds()) {
+      responseMessages.addAll(client.fetch(messasgeId, Optional.empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID).get().getMessages());
+    }
+
+    assertThat(responseMessages.stream()
+                 .map(this::extractImapMessageUid)
+                 .collect(Collectors.toList()))
+      .containsOnlyElementsOf(expectedUids);
   }
 
-
+  private long extractImapMessageUid(ImapMessage message) {
+    try {
+      return message.getUid();
+    } catch (UnfetchedFieldException e) {
+      throw new RuntimeException(e);
+    }
+  }
 }

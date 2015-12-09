@@ -338,7 +338,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       }
     } else if (evt instanceof ByeEvent) {
       if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != CommandType.LOGOUT) {
-        channel.close();
+        closeNow();
       }
     }
 
@@ -368,6 +368,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
               currentCommandPromise.cancel(true);
             }
           } catch (InterruptedException e) {
+            LOGGER.error("Interrupted completing pending commands on close.", e);
             throw Throwables.propagate(e);
           }
         }
@@ -383,9 +384,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         try {
           channel.close().get(stepTimeoutSec, TimeUnit.SECONDS);
         } catch (ExecutionException | TimeoutException e) {
+          LOGGER.error("Exception closing channel.", e);
           throw Throwables.propagate(e);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
+          LOGGER.warn("Interrupted closing channel.", e);
         }
       }
     }
@@ -396,9 +399,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       try {
         channel.close().get(configuration.getCloseTimeoutSec(), TimeUnit.SECONDS);
       } catch (ExecutionException | TimeoutException e) {
+        LOGGER.error("Exception closing channel.", e);
         throw Throwables.propagate(e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
+        LOGGER.warn("Interrupted closing channel.", e);
       }
     }
   }

@@ -1,9 +1,9 @@
-package com.hubspot.imap.protocol.command.search;
+package com.hubspot.imap.protocol.command.search.keys;
 
-public interface SearchTermType {
-  String toString();
+public interface SearchKeyType {
+  String keyString();
 
-  enum StandardSearchTermType implements SearchTermType {
+  enum StandardSearchKeyTypes implements SearchKeyType {
     ALL,
     ANSWERED,
     BCC,
@@ -41,8 +41,8 @@ public interface SearchTermType {
     UNSEEN;
 
     @Override
-    public String toString() {
+    public String keyString() {
       return name();
     }
-  }
+    }
 }

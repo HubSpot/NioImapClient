@@ -9,7 +9,7 @@ import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
-import com.hubspot.imap.protocol.command.search.SearchTermType.StandardSearchTermType;
+import com.hubspot.imap.protocol.command.search.keys.id.UidSearchKey;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
@@ -361,7 +361,7 @@ public class ImapClientTest {
     FetchResponse fetchResponse = responseFuture.get();
     ImapMessage message = fetchResponse.getMessages().iterator().next();
 
-    SearchResponse response = client.search(StandardSearchTermType.UID, String.valueOf(message.getUid()) + ":" + or.getUidNext()).get();
+    SearchResponse response = client.search(new UidSearchKey(String.valueOf(message.getUid()) + ":" + or.getUidNext())).get();
     assertThat(response.getMessageIds().size()).isEqualTo(fetchResponse.getMessages().size());
 
     List<Long> expectedUids = fetchResponse.getMessages().stream().map(m -> {

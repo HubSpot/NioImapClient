@@ -16,7 +16,7 @@ import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem;
 import com.hubspot.imap.protocol.command.search.SearchCommand;
-import com.hubspot.imap.protocol.command.search.SearchTermType;
+import com.hubspot.imap.protocol.command.search.keys.SearchKey;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import com.hubspot.imap.protocol.message.ImapMessage;
@@ -45,7 +45,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -207,12 +206,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new UidCommand(CommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
-  public Future<SearchResponse> uidsearch(SearchTermType type, String arg) throws ConnectionClosedException {
-    return send(new UidCommand(CommandType.SEARCH, new SearchCommand(type, arg)));
+  public Future<SearchResponse> uidsearch(SearchKey... keys) throws ConnectionClosedException {
+    return send(new UidCommand(CommandType.SEARCH, new SearchCommand(keys)));
   }
 
-  public Future<SearchResponse> search(SearchTermType type, String arg) throws ConnectionClosedException {
-    return send(new SearchCommand(type, arg));
+  public Future<SearchResponse> search(SearchKey... keys) throws ConnectionClosedException {
+    return send(new SearchCommand(keys));
   }
 
   public Future<SearchResponse> search(SearchCommand cmd) throws ConnectionClosedException {

@@ -1,7 +1,6 @@
 package com.hubspot.imap.protocol.command;
 
 import com.hubspot.imap.protocol.message.MessageFlag;
-import com.hubspot.imap.protocol.message.StandardMessageFlag;
 
 public class SilentStoreCommand extends StoreCommand {
 

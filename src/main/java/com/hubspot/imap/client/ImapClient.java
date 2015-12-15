@@ -16,7 +16,9 @@ import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem;
 import com.hubspot.imap.protocol.command.search.SearchCommand;
+import com.hubspot.imap.protocol.command.search.keys.BaseSearchKey;
 import com.hubspot.imap.protocol.command.search.keys.SearchKey;
+import com.hubspot.imap.protocol.command.search.keys.SearchTermType;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import com.hubspot.imap.protocol.message.ImapMessage;
@@ -206,8 +208,24 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new UidCommand(ImapCommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
+  /**
+   * @deprecated Use {@link #uidsearch(SearchKey...)}
+   */
+  @Deprecated
+  public Future<SearchResponse> uidsearch(SearchTermType type, String arg) throws ConnectionClosedException {
+    return uidsearch(new BaseSearchKey(type.getKeyType(), arg));
+  }
+
   public Future<SearchResponse> uidsearch(SearchKey... keys) throws ConnectionClosedException {
     return send(new UidCommand(ImapCommandType.SEARCH, new SearchCommand(keys)));
+  }
+
+  /**
+   * @deprecated Use {@link #search(SearchKey...)}
+   */
+  @Deprecated
+  public Future<SearchResponse> search(SearchTermType type, String arg) throws ConnectionClosedException {
+    return search(new BaseSearchKey(type.getKeyType(), arg));
   }
 
   public Future<SearchResponse> search(SearchKey... keys) throws ConnectionClosedException {
@@ -251,7 +269,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
    * Sends a command. If there is currently a command in progress, this command will be queued and executed when the currently running command finishes.
    * It is possible for a command to be queued and then a connection closed before it is actually executed, so it is important to listen to the returned future in order to ensure that the command was completed.
    *
-   * @param command command to send
+   * @param imapCommand command to send
    * @param <T> Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
    */

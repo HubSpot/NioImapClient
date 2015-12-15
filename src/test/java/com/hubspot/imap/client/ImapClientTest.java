@@ -3,13 +3,13 @@ package com.hubspot.imap.client;
 import com.google.seventeen.common.base.Strings;
 import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.TestUtils;
-import com.hubspot.imap.protocol.command.CommandType;
+import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
-import com.hubspot.imap.protocol.command.search.keys.id.UidSearchKey;
+import com.hubspot.imap.protocol.command.search.keys.UidSearchKey;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
@@ -45,7 +45,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -328,8 +327,8 @@ public class ImapClientTest {
     ImapMessage message = fetchResponse.getMessages().iterator().next();
 
     TaggedResponse storeResponse = client.send(new UidCommand(
-        CommandType.STORE,
-        new SilentStoreCommand(StoreAction.ADD_FLAGS, message.getUid(), message.getUid(), StandardMessageFlag.FLAGGED)
+      ImapCommandType.STORE,
+      new SilentStoreCommand(StoreAction.ADD_FLAGS, message.getUid(), message.getUid(), StandardMessageFlag.FLAGGED)
     )).get();
 
     assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);
@@ -341,8 +340,8 @@ public class ImapClientTest {
     assertThat(messageWithFlagged.getFlags()).contains(StandardMessageFlag.FLAGGED);
 
     storeResponse = client.send(new UidCommand(
-        CommandType.STORE,
-        new SilentStoreCommand(StoreAction.REMOVE_FLAGS, message.getUid(), message.getUid(), StandardMessageFlag.FLAGGED)
+      ImapCommandType.STORE,
+      new SilentStoreCommand(StoreAction.REMOVE_FLAGS, message.getUid(), message.getUid(), StandardMessageFlag.FLAGGED)
     )).get();
 
     assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);

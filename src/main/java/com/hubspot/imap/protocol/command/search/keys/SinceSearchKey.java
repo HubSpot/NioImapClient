@@ -1,6 +1,5 @@
-package com.hubspot.imap.protocol.command.search.keys.dates;
+package com.hubspot.imap.protocol.command.search.keys;
 
-import com.hubspot.imap.protocol.command.search.keys.BaseSearchKey;
 import com.hubspot.imap.protocol.command.search.keys.SearchKeyType.StandardSearchKeyTypes;
 import java.util.Date;
 

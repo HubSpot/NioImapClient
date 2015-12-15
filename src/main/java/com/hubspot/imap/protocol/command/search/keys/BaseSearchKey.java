@@ -1,40 +1,24 @@
 package com.hubspot.imap.protocol.command.search.keys;
 
-import com.google.common.base.Joiner;
-import java.util.Arrays;
-import java.util.List;
+import com.hubspot.imap.protocol.command.atoms.BaseImapAtom;
 
-public class BaseSearchKey implements SearchKey {
-  private static final Joiner JOINER = Joiner.on(" ").skipNulls();
+public class BaseSearchKey extends BaseImapAtom implements SearchKey {
   private final SearchKeyType keyType;
-  private final List<String> args;
 
   public BaseSearchKey(SearchKeyType type, String... args) {
+    super(args);
     this.keyType = type;
-    this.args = Arrays.asList(args);
   }
 
   public String keyString() {
-    if (hasArgs()) {
-      return String.format("%s %s", getKeyPrefix(), JOINER.join(getArgs())).trim();
-    } else {
-      return getKeyPrefix();
-    }
+    return imapString();
   }
 
-  public String getKeyPrefix() {
+  public String getPrefix() {
     return keyType.toString();
   }
 
   public SearchKeyType getKeyType() {
     return keyType;
-  }
-
-  public List<String> getArgs() {
-    return args;
-  }
-
-  public boolean hasArgs() {
-    return args.size() > 0;
   }
 }

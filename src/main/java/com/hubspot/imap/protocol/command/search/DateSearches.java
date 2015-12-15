@@ -1,7 +1,7 @@
 package com.hubspot.imap.protocol.command.search;
 
-import com.hubspot.imap.protocol.command.search.keys.dates.BeforeSearchKey;
-import com.hubspot.imap.protocol.command.search.keys.dates.SinceSearchKey;
+import com.hubspot.imap.protocol.command.search.keys.BeforeSearchKey;
+import com.hubspot.imap.protocol.command.search.keys.SinceSearchKey;
 import java.util.Date;
 
 public class DateSearches {

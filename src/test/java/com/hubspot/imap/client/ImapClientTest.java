@@ -1,7 +1,7 @@
 package com.hubspot.imap.client;
 
-import com.google.seventeen.common.base.Strings;
-import com.google.seventeen.common.base.Throwables;
+import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.hubspot.imap.TestUtils;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
@@ -9,6 +9,8 @@ import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
+import com.hubspot.imap.protocol.command.search.DateSearches;
+import com.hubspot.imap.protocol.command.search.SearchCommand;
 import com.hubspot.imap.protocol.command.search.keys.UidSearchKey;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
@@ -29,10 +31,6 @@ import org.apache.james.mime4j.dom.Entity;
 import org.apache.james.mime4j.dom.Multipart;
 import org.apache.james.mime4j.dom.SingleBody;
 import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.ZoneId;
@@ -43,11 +41,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ImapClientTest {
   private ImapClient client;
@@ -388,5 +389,100 @@ public class ImapClientTest {
     } catch (UnfetchedFieldException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Test
+  public void testSearchBefore_returnsAllEmailsBeforeDate() throws Exception {
+    ZonedDateTime end = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
+    client.open(TestUtils.ALL_MAIL, true).get();
+
+    List<ImapMessage> allMessages = fetchAllMessages();
+    List<ImapMessage> allMessagesBeforeStart = allMessages.stream()
+      .filter(msg -> extractMessageDate(msg).isBefore(end))
+      .collect(Collectors.toList());
+
+    SearchResponse searchResponse = client.uidsearch(DateSearches.searchBefore(end)).get();
+    assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
+
+    List<ImapMessage> messagesBeforeStart = fetchMessages(searchResponse.getMessageIds());
+
+    assertThat(toUids(messagesBeforeStart)).containsOnlyElementsOf(toUids(allMessagesBeforeStart));
+  }
+
+  private List<ImapMessage> fetchAllMessages() throws Exception {
+    List<Long> allEmailUids = client.uidsearch(SearchCommand.allEmails()).get().getMessageIds();
+    return fetchMessages(allEmailUids);
+  }
+
+  private List<ImapMessage> fetchMessages(List<Long> uids) {
+    return uids.stream().map(this::fetchMessage).collect(Collectors.toList());
+  }
+
+  private ImapMessage fetchMessage(long uid) {
+    try {
+      FetchResponse response = client.uidfetch(uid, Optional.of(uid), FetchDataItemType.UID, FetchDataItemType.ENVELOPE, FetchDataItemType.INTERNALDATE).get();
+      Set<ImapMessage> messages = response.getMessages();
+
+      assertThat(messages.size()).isEqualTo(1);
+      return messages.iterator().next();
+    } catch (Exception ex) {
+      throw Throwables.propagate(ex);
+    }
+  }
+
+  private static ZonedDateTime extractMessageDate(ImapMessage msg){
+    try {
+      return msg.getInternalDate();
+    } catch (UnfetchedFieldException ex) {
+      throw Throwables.propagate(ex);
+    }
+  }
+
+  private static List<Long> toUids(List<ImapMessage> messages) {
+    return messages.stream().map(ImapClientTest::toUid).collect(Collectors.toList());
+  }
+
+  private static long toUid(ImapMessage msg) {
+    try {
+      return msg.getUid();
+    } catch (UnfetchedFieldException ex) {
+      throw Throwables.propagate(ex);
+    }
+  }
+
+  @Test
+  public void testSearchAfter_returnsAllEmailsAfterDate() throws Exception {
+    ZonedDateTime start = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
+    client.open(TestUtils.ALL_MAIL, true).get();
+
+    List<ImapMessage> allMessages = fetchAllMessages();
+    List<ImapMessage> allMessagesBeforeStart = allMessages.stream()
+      .filter(msg -> extractMessageDate(msg).isAfter(start))
+      .collect(Collectors.toList());
+
+    SearchResponse searchResponse = client.uidsearch(DateSearches.searchAfter(start)).get();
+    assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
+
+    List<ImapMessage> messagesBeforeStart = fetchMessages(searchResponse.getMessageIds());
+    assertThat(toUids(messagesBeforeStart)).containsOnlyElementsOf(toUids(allMessagesBeforeStart));
+  }
+
+  @Test
+  public void testSearchBetween_returnsAllEmailsInRange() throws Exception {
+    ZonedDateTime start = ZonedDateTime.of(2015, 7, 1, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
+    ZonedDateTime end = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
+    client.open(TestUtils.ALL_MAIL, true).get();
+
+    List<ImapMessage> allMessages = fetchAllMessages();
+    List<ImapMessage> allMessagesBeforeStart = allMessages.stream()
+      .filter(msg -> extractMessageDate(msg).isAfter(start) && extractMessageDate(msg).isBefore(end))
+      .collect(Collectors.toList());
+
+    SearchResponse searchResponse = client.uidsearch(DateSearches.searchBetween(start, end)).get();
+    assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
+
+    List<ImapMessage> messagesBeforeStart = fetchMessages(searchResponse.getMessageIds());
+
+    assertThat(toUids(messagesBeforeStart)).containsOnlyElementsOf(toUids(allMessagesBeforeStart));
   }
 }

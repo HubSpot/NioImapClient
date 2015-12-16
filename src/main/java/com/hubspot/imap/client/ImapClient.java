@@ -188,20 +188,21 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new OpenCommand(folderName, readOnly));
   }
 
-  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
-    return send(new FetchCommand(startId, stopId, fetchDataItems));
+  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem fetchDataItem, FetchDataItem... otherFetchDataItems) throws ConnectionClosedException {
+    return send(new FetchCommand(startId, stopId, fetchDataItem, otherFetchDataItems));
   }
 
-  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems)));
+  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+
+    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems)));
   }
 
-  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
-    return send(new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems));
+  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+    return send(new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems));
   }
 
-  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
-    return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchDataItems)));
+  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+    return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
   }
 
   public Future<TaggedResponse> uidstore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) throws ConnectionClosedException {
@@ -218,6 +219,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<SearchResponse> uidsearch(SearchKey... keys) throws ConnectionClosedException {
     return send(new UidCommand(ImapCommandType.SEARCH, new SearchCommand(keys)));
+  }
+
+  public Future<SearchResponse> uidsearch(SearchCommand cmd) throws ConnectionClosedException {
+    return send(new UidCommand(ImapCommandType.SEARCH, cmd));
   }
 
   /**

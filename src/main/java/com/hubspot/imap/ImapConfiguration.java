@@ -48,7 +48,7 @@ public interface ImapConfiguration {
     private int defaultResponseBufferSize = 1000;
 
     private int closeTimeoutSec = 30;
-    private int connectTimeoutMillis = 1000;
+    private int connectTimeoutMillis = 30000;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;

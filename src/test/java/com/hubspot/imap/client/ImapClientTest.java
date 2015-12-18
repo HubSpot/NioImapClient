@@ -392,6 +392,6 @@ public class ImapClientTest {
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
     List<ImapMessage> messagesInRange = TestUtils.fetchMessages(client, searchResponse.getMessageIds());
-    assertThat(TestUtils.msgsToUids(messagesInRange)).containsOnlyElementsOf(TestUtils.msgsToUids(messagesInRange));
+    assertThat(TestUtils.msgsToUids(messagesInRange)).containsOnlyElementsOf(TestUtils.msgsToUids(allMessagesInRange));
   }
 }

@@ -22,6 +22,7 @@ public interface ImapConfiguration {
   int getMaxLineLength();
   int getDefaultResponseBufferSize();
 
+  int getConnectTimeoutMillis();
   int getCloseTimeoutSec();
 
   enum AuthType {
@@ -47,6 +48,7 @@ public interface ImapConfiguration {
     private int defaultResponseBufferSize = 1000;
 
     private int closeTimeoutSec = 30;
+    private int connectTimeoutMillis = 30000;
 
     public HostAndPort getHostAndPort() {
       return this.hostAndPort;
@@ -147,6 +149,16 @@ public interface ImapConfiguration {
       return this;
     }
 
+    @Override
+    public int getConnectTimeoutMillis() {
+      return connectTimeoutMillis;
+    }
+
+    public Builder setConnectTimeoutMillis(int connectTimeoutMillis) {
+      this.connectTimeoutMillis = connectTimeoutMillis;
+      return this;
+    }
+
     public ImapConfiguration build() {
       return this;
     }
@@ -169,13 +181,14 @@ public interface ImapConfiguration {
           getMaxLineLength() == builder.getMaxLineLength() &&
           getDefaultResponseBufferSize() == builder.getDefaultResponseBufferSize() &&
           getCloseTimeoutSec() == builder.getCloseTimeoutSec() &&
+          getConnectTimeoutMillis() == builder.getConnectTimeoutMillis() &&
           Objects.equal(getHostAndPort(), builder.getHostAndPort()) &&
           getAuthType() == builder.getAuthType();
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads(), getMaxLineLength(), getDefaultResponseBufferSize(), getCloseTimeoutSec());
+      return Objects.hashCode(getHostAndPort(), getAuthType(), getUseEpoll(), getNoopKeepAliveIntervalSec(), getSocketTimeoutMs(), getWriteBackOffMs(), getNumEventLoopThreads(), getNumExecutorThreads(), getMaxLineLength(), getDefaultResponseBufferSize(), getCloseTimeoutSec(), getConnectTimeoutMillis());
     }
   }
 }

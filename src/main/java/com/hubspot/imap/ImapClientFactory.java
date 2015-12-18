@@ -63,7 +63,10 @@ public class ImapClientFactory implements AutoCloseable {
 
     bootstrap.group(eventLoopGroup)
         .option(ChannelOption.SO_LINGER, 0)
-        .option(ChannelOption.SO_KEEPALIVE, true)
+        .option(ChannelOption.SO_TIMEOUT, configuration.getSocketTimeoutMs())
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.getConnectTimeoutMillis())
+        .option(ChannelOption.SO_KEEPALIVE, false)
+        .option(ChannelOption.AUTO_CLOSE, true)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
         .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)

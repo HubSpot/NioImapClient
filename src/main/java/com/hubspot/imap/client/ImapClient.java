@@ -1,5 +1,6 @@
 package com.hubspot.imap.client;
 
+import com.google.common.base.Preconditions;
 import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
@@ -46,6 +47,7 @@ import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Closeable;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -191,7 +193,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
-
     return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems)));
   }
 
@@ -201,6 +202,16 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
+  }
+
+  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) throws ConnectionClosedException {
+    Preconditions.checkArgument(fetchItems.size() > 0, "Must have at least one FETCH item.");
+    return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchItems)));
+  }
+
+  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, List<FetchDataItem> fetchDataItems) throws ConnectionClosedException {
+    Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
+    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems)));
   }
 
   public Future<TaggedResponse> uidstore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) throws ConnectionClosedException {

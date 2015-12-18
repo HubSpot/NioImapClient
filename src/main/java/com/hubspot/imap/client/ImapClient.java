@@ -192,12 +192,22 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new FetchCommand(startId, stopId, fetchDataItem, otherFetchDataItems));
   }
 
+  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) throws ConnectionClosedException {
+    Preconditions.checkArgument(fetchItems.size() > 0, "Must have at least one FETCH item.");
+    return send(new FetchCommand(startId, stopId, fetchItems));
+  }
+
   public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
     return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems)));
   }
 
   public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
     return send(new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems));
+  }
+
+  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, List<FetchDataItem> fetchDataItems) throws ConnectionClosedException {
+    Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
+    return send(new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems));
   }
 
   public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {

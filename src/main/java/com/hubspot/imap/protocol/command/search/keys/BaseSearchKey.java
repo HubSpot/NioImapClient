@@ -15,7 +15,7 @@ public class BaseSearchKey extends BaseImapAtom implements SearchKey {
   }
 
   public String getPrefix() {
-    return keyType.toString();
+    return keyType.keyString();
   }
 
   public SearchKeyType getKeyType() {

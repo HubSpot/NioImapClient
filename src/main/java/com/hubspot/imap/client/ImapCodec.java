@@ -1,7 +1,7 @@
 package com.hubspot.imap.client;
 
-import com.hubspot.imap.protocol.command.BaseCommand;
-import com.hubspot.imap.protocol.command.CommandType;
+import com.hubspot.imap.protocol.command.BaseImapCommand;
+import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
+public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
 
   private final ImapClientState clientState;
@@ -37,7 +37,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
   }
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, BaseCommand msg, List<Object> out) throws Exception {
+  protected void encode(ChannelHandlerContext ctx, BaseImapCommand msg, List<Object> out) throws Exception {
     String data = msg.commandString();
     String tag = clientState.getNextTag();
     LOGGER.debug("SEND: {}{}", tag, data);
@@ -89,8 +89,8 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseCommand> {
   }
 
   private void fireMessageNumberEvents(ChannelHandlerContext ctx, TaggedResponse response) {
-    CommandType commandType = clientState.getCurrentCommand().getCommandType();
-    if (commandType != CommandType.EXAMINE && commandType != CommandType.SELECT) { // Don't fire these events during folder open, they have different meaning here
+    ImapCommandType imapCommandType = clientState.getCurrentCommand().getCommandType();
+    if (imapCommandType != ImapCommandType.EXAMINE && imapCommandType != ImapCommandType.SELECT) { // Don't fire these events during folder open, they have different meaning here
       response.getUntagged().stream().filter(r -> r instanceof UntaggedIntResponse).map(i -> ((UntaggedIntResponse) i)).forEach((i) -> {
         if (i.getType() == UntaggedResponseType.EXPUNGE) {
           ctx.fireUserEventTriggered(new ExpungeEvent(i.getValue()));

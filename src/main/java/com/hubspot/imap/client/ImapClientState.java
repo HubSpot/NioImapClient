@@ -4,7 +4,7 @@ import com.hubspot.imap.client.listener.ConnectionListener;
 import com.hubspot.imap.client.listener.FetchEventListener;
 import com.hubspot.imap.client.listener.MessageAddListener;
 import com.hubspot.imap.client.listener.OpenEventListener;
-import com.hubspot.imap.protocol.command.Command;
+import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
 import com.hubspot.imap.protocol.response.events.ExpungeEvent;
 import com.hubspot.imap.protocol.response.events.FetchEvent;
@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final EventExecutorGroup executorGroup;
 
-  private final AtomicReference<Command> currentCommand;
+  private final AtomicReference<ImapCommand> currentCommand;
   private final AtomicLong commandCount;
   private final AtomicLong messageNumber;
 
@@ -126,11 +126,11 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     return String.format("A%03d ", commandCount.getAndIncrement());
   }
 
-  public Command getCurrentCommand() {
+  public ImapCommand getCurrentCommand() {
     return currentCommand.get();
   }
 
-  public void setCurrentCommand(Command command) {
-    currentCommand.set(command);
+  public void setCurrentCommand(ImapCommand imapCommand) {
+    currentCommand.set(imapCommand);
   }
 }

@@ -1,6 +1,6 @@
 package com.hubspot.imap.protocol.command;
 
-public enum CommandType {
+public enum ImapCommandType {
   LOGIN,
   LOGOUT,
   NOOP,

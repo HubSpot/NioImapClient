@@ -6,7 +6,7 @@ import com.hubspot.imap.protocol.message.MessageFlag;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class StoreCommand extends BaseCommand {
+public class StoreCommand extends BaseImapCommand {
 
   public enum StoreAction {
     SET_FLAGS("FLAGS"),
@@ -31,7 +31,7 @@ public class StoreCommand extends BaseCommand {
   private List<MessageFlag> flags;
 
   public StoreCommand(StoreAction action, long startId, long stopId, MessageFlag... args) {
-    super(CommandType.STORE);
+    super(ImapCommandType.STORE);
 
     this.action = action;
     this.startId = startId;
@@ -59,6 +59,6 @@ public class StoreCommand extends BaseCommand {
   }
 
   private String getFlagString() {
-    return "(" + JOINER.join(flags.stream().map(MessageFlag::getString).collect(Collectors.toList())) + ")";
+    return "(" + SPACE_JOINER.join(flags.stream().map(MessageFlag::getString).collect(Collectors.toList())) + ")";
   }
 }

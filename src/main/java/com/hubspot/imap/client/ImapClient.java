@@ -3,9 +3,9 @@ package com.hubspot.imap.client;
 import com.google.seventeen.common.base.Throwables;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
-import com.hubspot.imap.protocol.command.BaseCommand;
-import com.hubspot.imap.protocol.command.Command;
-import com.hubspot.imap.protocol.command.CommandType;
+import com.hubspot.imap.protocol.command.BaseImapCommand;
+import com.hubspot.imap.protocol.command.ImapCommand;
+import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.ListCommand;
 import com.hubspot.imap.protocol.command.OpenCommand;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
@@ -16,7 +16,7 @@ import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem;
 import com.hubspot.imap.protocol.command.search.SearchCommand;
-import com.hubspot.imap.protocol.command.search.SearchTermType;
+import com.hubspot.imap.protocol.command.search.keys.SearchKey;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import com.hubspot.imap.protocol.message.ImapMessage;
@@ -45,7 +45,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -168,7 +167,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   private Future<TaggedResponse> passwordLogin() throws ConnectionClosedException {
-    return send(new BaseCommand(CommandType.LOGIN, userName, authToken));
+    return send(new BaseImapCommand(ImapCommandType.LOGIN, userName, authToken));
   }
 
   private Future<TaggedResponse> oauthLogin() throws ConnectionClosedException {
@@ -176,7 +175,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public Future<TaggedResponse> logout() throws ConnectionClosedException {
-    return send(new BaseCommand(CommandType.LOGOUT));
+    return send(new BaseImapCommand(ImapCommandType.LOGOUT));
   }
 
   public Future<ListResponse> list(String context, String query) throws ConnectionClosedException {
@@ -187,40 +186,49 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new OpenCommand(folderName, readOnly));
   }
 
-  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
-    return send(new FetchCommand(startId, stopId, fetchDataItems));
+  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem fetchDataItem, FetchDataItem... otherFetchDataItems) throws ConnectionClosedException {
+    return send(new FetchCommand(startId, stopId, fetchDataItem, otherFetchDataItems));
   }
 
-  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
-    return send(new UidCommand(CommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems)));
+  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+
+    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems)));
   }
 
-  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
-    return send(new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems));
+  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+    return send(new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems));
   }
 
-  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) throws ConnectionClosedException {
-    return send(new UidCommand(CommandType.FETCH, new FetchCommand(startId, stopId, fetchDataItems)));
+  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+    return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
   }
 
   public Future<TaggedResponse> uidstore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) throws ConnectionClosedException {
-    return send(new UidCommand(CommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
+    return send(new UidCommand(ImapCommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
-  public Future<SearchResponse> uidsearch(SearchTermType type, String arg) throws ConnectionClosedException {
-    return send(new UidCommand(CommandType.SEARCH, new SearchCommand(type, arg)));
+  public Future<SearchResponse> uidsearch(SearchKey... keys) throws ConnectionClosedException {
+    return send(new UidCommand(ImapCommandType.SEARCH, new SearchCommand(keys)));
   }
 
-  public Future<SearchResponse> search(SearchTermType type, String arg) throws ConnectionClosedException {
-    return send(new SearchCommand(type, arg));
+  public Future<SearchResponse> uidsearch(SearchCommand cmd) throws ConnectionClosedException {
+    return send(new UidCommand(ImapCommandType.SEARCH, cmd));
+  }
+
+  public Future<SearchResponse> search(SearchKey... keys) throws ConnectionClosedException {
+    return send(new SearchCommand(keys));
+  }
+
+  public Future<SearchResponse> search(SearchCommand cmd) throws ConnectionClosedException {
+    return send(cmd);
   }
 
   public Future<TaggedResponse> expunge() throws ConnectionClosedException {
-    return send(CommandType.EXPUNGE);
+    return send(ImapCommandType.EXPUNGE);
   }
 
   public Future<NoopResponse> noop() throws ConnectionClosedException {
-    return send(CommandType.NOOP);
+    return send(ImapCommandType.NOOP);
   }
 
   public boolean isLoggedIn() {
@@ -239,55 +247,55 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     loginPromise.get();
   }
 
-  public <T extends TaggedResponse> Future<T> send(CommandType commandType, String... args) throws ConnectionClosedException {
-    BaseCommand baseCommand = new BaseCommand(commandType, args);
-    return send(baseCommand);
+  public <T extends TaggedResponse> Future<T> send(ImapCommandType imapCommandType, String... args) throws ConnectionClosedException {
+    BaseImapCommand baseImapCommand = new BaseImapCommand(imapCommandType, args);
+    return send(baseImapCommand);
   }
 
   /**
    * Sends a command. If there is currently a command in progress, this command will be queued and executed when the currently running command finishes.
    * It is possible for a command to be queued and then a connection closed before it is actually executed, so it is important to listen to the returned future in order to ensure that the command was completed.
    *
-   * @param command Command to send
+   * @param imapCommand command to send
    * @param <T> Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
    */
-  public synchronized <T extends TaggedResponse> Future<T> send(Command command) throws ConnectionClosedException {
+  public synchronized <T extends TaggedResponse> Future<T> send(ImapCommand imapCommand) throws ConnectionClosedException {
     final Promise<T> commandPromise = promiseExecutor.next().newPromise();
     commandPromise.addListener((f) -> {
       writeNext();
     });
 
-    send(command, commandPromise);
+    send(imapCommand, commandPromise);
 
     return commandPromise;
   }
 
-  public synchronized void send(Command command, Promise promise) throws ConnectionClosedException {
+  public synchronized void send(ImapCommand imapCommand, Promise promise) throws ConnectionClosedException {
     if (connectionClosed.get()) {
       throw new ConnectionClosedException("Cannot write to closed connection.");
     }
 
     if ((currentCommandPromise != null && !currentCommandPromise.isDone()) || !isConnected()) {
-      PendingCommand pendingCommand = PendingCommand.newInstance(command, promise);
+      PendingCommand pendingCommand = PendingCommand.newInstance(imapCommand, promise);
       pendingWriteQueue.add(pendingCommand);
     } else {
-      actuallySend(command, promise);
+      actuallySend(imapCommand, promise);
     }
   }
 
-  public void actuallySend(Command command, Promise promise) {
+  public void actuallySend(ImapCommand imapCommand, Promise promise) {
     currentCommandPromise = promise;
 
-    clientState.setCurrentCommand(command);
-    channel.writeAndFlush(command);
+    clientState.setCurrentCommand(imapCommand);
+    channel.writeAndFlush(imapCommand);
   }
 
   public synchronized void writeNext() throws ConnectionClosedException {
     if (pendingWriteQueue.peek() != null) {
       if (channel.isWritable()) {
         PendingCommand pendingCommand = pendingWriteQueue.poll();
-        send(pendingCommand.command, pendingCommand.promise);
+        send(pendingCommand.imapCommand, pendingCommand.promise);
 
         pendingCommand.recycle();
       } else {
@@ -313,13 +321,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       TaggedResponse taggedResponse = ((TaggedResponse) msg);
 
       if (currentCommandPromise.isDone() && !currentCommandPromise.isSuccess()) {
-        LOGGER.debug("Got tagged response to failed command, skipping");
+        LOGGER.debug("Got tagged response to failed imapCommand, skipping");
         return;
       }
       try {
         currentCommandPromise.setSuccess(taggedResponse);
       } catch (IllegalStateException e) {
-        LOGGER.debug("Could not complete current command", e);
+        LOGGER.debug("Could not complete current imapCommand", e);
       }
     }
   }
@@ -334,7 +342,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         });
       }
     } else if (evt instanceof ByeEvent) {
-      if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != CommandType.LOGOUT) {
+      if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT) {
         closeNow();
       }
     }
@@ -371,7 +379,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         }
 
         Promise<TaggedResponse> logoutPromise = promiseExecutor.next().newPromise();
-        actuallySend(new BaseCommand(CommandType.LOGOUT), logoutPromise);
+        actuallySend(new BaseImapCommand(ImapCommandType.LOGOUT), logoutPromise);
         try {
           logoutPromise.get(stepTimeoutSec, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -415,24 +423,24 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
     private final Recycler.Handle handle;
 
-    private Command command;
+    private ImapCommand imapCommand;
     private Promise promise;
 
     public PendingCommand(Handle handle) {
       this.handle = handle;
     }
 
-    static PendingCommand newInstance(Command command, Promise promise) {
+    static PendingCommand newInstance(ImapCommand imapCommand, Promise promise) {
       PendingCommand pendingCommand = RECYCLER.get();
 
-      pendingCommand.command = command;
+      pendingCommand.imapCommand = imapCommand;
       pendingCommand.promise = promise;
 
       return pendingCommand;
     }
 
     private void recycle() {
-      command = null;
+      imapCommand = null;
       promise = null;
       RECYCLER.recycle(this, handle);
     }

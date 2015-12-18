@@ -1,7 +1,11 @@
 package com.hubspot.imap.protocol.command;
 
-public class BlankCommand implements Command {
+public class BlankCommand extends BaseImapCommand {
   public static final BlankCommand INSTANCE = new BlankCommand();
+
+  public BlankCommand() {
+    super(ImapCommandType.BLANK);
+  }
 
   @Override
   public String commandString() {
@@ -9,7 +13,7 @@ public class BlankCommand implements Command {
   }
 
   @Override
-  public CommandType getCommandType() {
-    return CommandType.BLANK;
+  public ImapCommandType getCommandType() {
+    return ImapCommandType.BLANK;
   }
 }

@@ -1,18 +1,15 @@
 package com.hubspot.imap.protocol.command.fetch;
 
-import com.google.seventeen.common.base.Joiner;
-import com.google.seventeen.common.base.Preconditions;
-import com.google.seventeen.common.collect.Lists;
-import com.hubspot.imap.protocol.command.BaseCommand;
-import com.hubspot.imap.protocol.command.CommandType;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.hubspot.imap.protocol.command.BaseImapCommand;
+import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class FetchCommand extends BaseCommand {
-  private static final Joiner JOINER = Joiner.on(" ").skipNulls();
+public class FetchCommand extends BaseImapCommand {
   private static final String STAR = "*";
 
   private final long startId;
@@ -20,13 +17,17 @@ public class FetchCommand extends BaseCommand {
   private final List<FetchDataItem> fetchDataItems;
 
   // The IDs here should be sequence numbers, unless you intend to wrap this command with a UidCommand
-  public FetchCommand(long startId, Optional<Long> stopId, FetchDataItem... fetchDataItems) {
-    super(CommandType.FETCH);
+  public FetchCommand(long startId, Optional<Long> stopId, List<FetchDataItem> fetchDataItems) {
+    super(ImapCommandType.FETCH);
     Preconditions.checkState(startId >= 1, "Start ID must be 1 or greater.");
 
     this.startId = startId;
     this.stopId = stopId;
-    this.fetchDataItems = Lists.newArrayList(fetchDataItems);
+    this.fetchDataItems = fetchDataItems;
+  }
+
+  public FetchCommand(long startId, Optional<Long> stopId, FetchDataItem fetchItem, FetchDataItem... otherFetchItems) {
+    this(startId, stopId, Lists.asList(fetchItem, otherFetchItems));
   }
 
   @Override
@@ -50,7 +51,7 @@ public class FetchCommand extends BaseCommand {
     }
 
     return String.format("(%s)",
-        JOINER.join(fetchDataItems.stream().map(FetchDataItem::toString).collect(Collectors.toList())));
+        SPACE_JOINER.join(fetchDataItems.stream().map(FetchDataItem::toString).collect(Collectors.toList())));
   }
 
   public long getStartId() {

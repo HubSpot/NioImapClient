@@ -1,26 +1,26 @@
 package com.hubspot.imap.protocol.command.fetch;
 
-import com.hubspot.imap.protocol.command.BaseCommand;
-import com.hubspot.imap.protocol.command.Command;
-import com.hubspot.imap.protocol.command.CommandType;
+import com.hubspot.imap.protocol.command.BaseImapCommand;
+import com.hubspot.imap.protocol.command.ImapCommand;
+import com.hubspot.imap.protocol.command.ImapCommandType;
 
 import java.util.List;
 
-public class UidCommand extends BaseCommand {
-  private final BaseCommand wrappedCommand;
+public class UidCommand extends BaseImapCommand {
+  private final BaseImapCommand wrappedCommand;
 
-  public UidCommand(CommandType type, BaseCommand wrappedCommand) {
+  public UidCommand(ImapCommandType type, BaseImapCommand wrappedCommand) {
     super(type);
     this.wrappedCommand = wrappedCommand;
   }
 
   @Override
-  public String getCommandPrefix() {
-    return String.format("UID %s", wrappedCommand.getCommandPrefix());
+  public String getPrefix() {
+    return String.format("UID %s", wrappedCommand.getPrefix());
   }
 
   @Override
-  public CommandType getCommandType() {
+  public ImapCommandType getCommandType() {
     return wrappedCommand.getCommandType();
   }
 
@@ -34,7 +34,7 @@ public class UidCommand extends BaseCommand {
     return wrappedCommand.hasArgs();
   }
 
-  public Command getWrappedCommand() {
+  public ImapCommand getWrappedCommand() {
     return wrappedCommand;
   }
 }

@@ -11,6 +11,7 @@ import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.command.search.DateSearches;
 import com.hubspot.imap.protocol.command.search.SearchCommand;
+import com.hubspot.imap.protocol.command.search.keys.AllSearchKey;
 import com.hubspot.imap.protocol.command.search.keys.UidSearchKey;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
@@ -46,20 +47,32 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ImapClientTest {
-  private ImapClient client;
+  private static final ZonedDateTime JULY_19_2015 = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
+  private static final ZonedDateTime JULY_1_2015 = ZonedDateTime.of(2015, 7, 1, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
 
-  @Before
-  public void getClient() throws Exception {
+  private static ImapClient client;
+  private static OpenResponse allFolderOpenResponse;
+  private static List<ImapMessage> allMessages;
+
+  @BeforeClass
+  public static void prefetch() throws Exception {
     client = TestUtils.getLoggedInClient();
+    allFolderOpenResponse = client.open(TestUtils.ALL_MAIL, false).get();
+    assertThat(allFolderOpenResponse.getCode()).isEqualTo(ResponseCode.OK);
+    allMessages = TestUtils.fetchMessages(client, client.uidsearch(allEmailSearchCommand()).get().getMessageIds());
   }
 
-  @After
-  public void closeClient() throws Exception {
+  public static SearchCommand allEmailSearchCommand() {
+    return new SearchCommand(new AllSearchKey());
+  }
+
+  @AfterClass
+  public static void cleanup() throws Exception {
     if (client != null && client.isLoggedIn()) {
       client.close();
     }
@@ -82,12 +95,12 @@ public class ImapClientTest {
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getFolders().size()).isGreaterThan(0);
     assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
-    assertThat(response.getFolders()).extracting(FolderMetadata::getName).contains("[Gmail]/All Mail");
+    assertThat(response.getFolders()).extracting(FolderMetadata::getName).contains(TestUtils.ALL_MAIL);
   }
 
   @Test
   public void testGivenFolderName_canOpenFolder() throws Exception {
-    Future<OpenResponse> responseFuture = client.open("[Gmail]/All Mail", false);
+    Future<OpenResponse> responseFuture = client.open(TestUtils.ALL_MAIL, false);
     OpenResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
@@ -102,10 +115,6 @@ public class ImapClientTest {
 
   @Test
   public void testFetch_doesReturnMessages() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.FAST);
     FetchResponse response = responseFuture.get();
 
@@ -132,10 +141,6 @@ public class ImapClientTest {
 
   @Test(expected = UnfetchedFieldException.class)
   public void testAccessingUnfetchedField_doesThrowException() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.FLAGS);
     FetchResponse response = responseFuture.get();
 
@@ -146,10 +151,6 @@ public class ImapClientTest {
 
   @Test
   public void testFetchUid_doesGetUid() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.UID);
     FetchResponse response = responseFuture.get();
 
@@ -161,10 +162,6 @@ public class ImapClientTest {
 
   @Test
   public void testFetchEnvelope_doesFetchEnvelope() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(10L), FetchDataItemType.ENVELOPE);
     FetchResponse response = responseFuture.get();
 
@@ -183,10 +180,6 @@ public class ImapClientTest {
 
   @Test
   public void testFetchBody_doesThrowUnknownFetchItemException() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.BODY);
 
     try {
@@ -198,10 +191,6 @@ public class ImapClientTest {
 
   @Test
   public void testFetchBodyHeaders_doesParseHeaders() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(10L), new BodyPeekFetchDataItem("HEADER"));
     FetchResponse response = responseFuture.get();
     assertThat(response.getMessages()).have(new Condition<>(m -> {
@@ -217,10 +206,6 @@ public class ImapClientTest {
 
   @Test
   public void testFetchBody_doesFetchTextBody() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), new BodyPeekFetchDataItem());
     FetchResponse response = responseFuture.get();
     assertThat(response.getMessages()).have(new Condition<>(m -> {
@@ -248,10 +233,6 @@ public class ImapClientTest {
 
   @Test
   public void testUidFetch() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.UID, FetchDataItemType.ENVELOPE);
     FetchResponse response = responseFuture.get();
 
@@ -266,11 +247,7 @@ public class ImapClientTest {
 
   @Test
   public void testStreamingFetch_doesExecuteConsumerForAllMessages() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
-    Set<Long> uids = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
+    Set<Long> uids = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     Future<StreamingFetchResponse> fetchResponseFuture = client.fetch(1, Optional.<Long>empty(), message -> {
       try {
@@ -293,10 +270,6 @@ public class ImapClientTest {
 
   @Test
   public void testGmailFetchExtensions() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
     Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.X_GM_MSGID, FetchDataItemType.X_GM_THRID);
     FetchResponse response = responseFuture.get();
 
@@ -319,11 +292,7 @@ public class ImapClientTest {
 
   @Test
   public void testStore() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
-    Future<FetchResponse> responseFuture = client.fetch(or.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    Future<FetchResponse> responseFuture = client.fetch(allFolderOpenResponse.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
     FetchResponse fetchResponse = responseFuture.get();
     ImapMessage message = fetchResponse.getMessages().iterator().next();
 
@@ -334,7 +303,7 @@ public class ImapClientTest {
 
     assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    responseFuture = client.fetch(or.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    responseFuture = client.fetch(allFolderOpenResponse.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
     fetchResponse = responseFuture.get();
     ImapMessage messageWithFlagged = fetchResponse.getMessages().iterator().next();
 
@@ -347,7 +316,7 @@ public class ImapClientTest {
 
     assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    responseFuture = client.fetch(or.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    responseFuture = client.fetch(allFolderOpenResponse.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
     fetchResponse = responseFuture.get();
     ImapMessage messageNotFlagged = fetchResponse.getMessages().iterator().next();
 
@@ -356,21 +325,17 @@ public class ImapClientTest {
 
   @Test
   public void testSimpleSearch() throws Exception {
-    Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
-    OpenResponse or = openResponseFuture.get();
-    assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
-
-    Future<FetchResponse> responseFuture = client.fetch(or.getExists() - 2, Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    Future<FetchResponse> responseFuture = client.fetch(allFolderOpenResponse.getExists() - 2, Optional.<Long>empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID);
     FetchResponse fetchResponse = responseFuture.get();
     ImapMessage message = fetchResponse.getMessages()
       .stream()
-      .collect(Collectors.minBy(Comparator.comparing(this::extractImapMessageUid)))
+      .collect(Collectors.minBy(Comparator.comparing(TestUtils::msgToUid)))
       .get();
 
-    SearchResponse response = client.search(new UidSearchKey(String.valueOf(message.getUid()) + ":" + or.getUidNext())).get();
+    SearchResponse response = client.search(new UidSearchKey(String.valueOf(message.getUid()) + ":" + allFolderOpenResponse.getUidNext())).get();
     assertThat(response.getMessageIds().size()).isEqualTo(fetchResponse.getMessages().size());
 
-    List<Long> expectedUids = fetchResponse.getMessages().stream().map(this::extractImapMessageUid).collect(Collectors.toList());
+    List<Long> expectedUids = fetchResponse.getMessages().stream().map(TestUtils::msgToUid).collect(Collectors.toList());
 
     Set<ImapMessage> responseMessages = new HashSet<>();
     for (long messasgeId : response.getMessageIds()) {
@@ -378,111 +343,55 @@ public class ImapClientTest {
     }
 
     assertThat(responseMessages.stream()
-                 .map(this::extractImapMessageUid)
+                 .map(TestUtils::msgToUid)
                  .collect(Collectors.toList()))
       .containsOnlyElementsOf(expectedUids);
   }
 
-  private long extractImapMessageUid(ImapMessage message) {
-    try {
-      return message.getUid();
-    } catch (UnfetchedFieldException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   @Test
   public void testSearchBefore_returnsAllEmailsBeforeDate() throws Exception {
-    ZonedDateTime end = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
-    client.open(TestUtils.ALL_MAIL, true).get();
+    ZonedDateTime end = JULY_19_2015;
 
-    List<ImapMessage> allMessages = fetchAllMessages();
-    List<ImapMessage> allMessagesBeforeStart = allMessages.stream()
-      .filter(msg -> extractMessageDate(msg).isBefore(end))
+    List<ImapMessage> allMessagesBeforeEnd = allMessages.stream()
+      .filter(msg -> TestUtils.msgToInternalDate(msg).isBefore(end))
       .collect(Collectors.toList());
 
     SearchResponse searchResponse = client.uidsearch(DateSearches.searchBefore(end)).get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    List<ImapMessage> messagesBeforeStart = fetchMessages(searchResponse.getMessageIds());
+    List<ImapMessage> messagesBeforeEnd = TestUtils.fetchMessages(client, searchResponse.getMessageIds());
 
-    assertThat(toUids(messagesBeforeStart)).containsOnlyElementsOf(toUids(allMessagesBeforeStart));
-  }
-
-  private List<ImapMessage> fetchAllMessages() throws Exception {
-    List<Long> allEmailUids = client.uidsearch(SearchCommand.allEmails()).get().getMessageIds();
-    return fetchMessages(allEmailUids);
-  }
-
-  private List<ImapMessage> fetchMessages(List<Long> uids) {
-    return uids.stream().map(this::fetchMessage).collect(Collectors.toList());
-  }
-
-  private ImapMessage fetchMessage(long uid) {
-    try {
-      FetchResponse response = client.uidfetch(uid, Optional.of(uid), FetchDataItemType.UID, FetchDataItemType.ENVELOPE, FetchDataItemType.INTERNALDATE).get();
-      Set<ImapMessage> messages = response.getMessages();
-
-      assertThat(messages.size()).isEqualTo(1);
-      return messages.iterator().next();
-    } catch (Exception ex) {
-      throw Throwables.propagate(ex);
-    }
-  }
-
-  private static ZonedDateTime extractMessageDate(ImapMessage msg){
-    try {
-      return msg.getInternalDate();
-    } catch (UnfetchedFieldException ex) {
-      throw Throwables.propagate(ex);
-    }
-  }
-
-  private static List<Long> toUids(List<ImapMessage> messages) {
-    return messages.stream().map(ImapClientTest::toUid).collect(Collectors.toList());
-  }
-
-  private static long toUid(ImapMessage msg) {
-    try {
-      return msg.getUid();
-    } catch (UnfetchedFieldException ex) {
-      throw Throwables.propagate(ex);
-    }
+    assertThat(TestUtils.msgsToUids(messagesBeforeEnd)).containsOnlyElementsOf(TestUtils.msgsToUids(allMessagesBeforeEnd));
   }
 
   @Test
   public void testSearchAfter_returnsAllEmailsAfterDate() throws Exception {
-    ZonedDateTime start = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
-    client.open(TestUtils.ALL_MAIL, true).get();
+    ZonedDateTime start = JULY_19_2015;
 
-    List<ImapMessage> allMessages = fetchAllMessages();
-    List<ImapMessage> allMessagesBeforeStart = allMessages.stream()
-      .filter(msg -> extractMessageDate(msg).isAfter(start))
+    List<ImapMessage> allMessagesAfterStart = allMessages.stream()
+      .filter(msg -> TestUtils.msgToInternalDate(msg).isAfter(start))
       .collect(Collectors.toList());
 
     SearchResponse searchResponse = client.uidsearch(DateSearches.searchAfter(start)).get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    List<ImapMessage> messagesBeforeStart = fetchMessages(searchResponse.getMessageIds());
-    assertThat(toUids(messagesBeforeStart)).containsOnlyElementsOf(toUids(allMessagesBeforeStart));
+    List<ImapMessage> messagesAfterStart = TestUtils.fetchMessages(client, searchResponse.getMessageIds());
+    assertThat(TestUtils.msgsToUids(messagesAfterStart)).containsOnlyElementsOf(TestUtils.msgsToUids(allMessagesAfterStart));
   }
 
   @Test
   public void testSearchBetween_returnsAllEmailsInRange() throws Exception {
-    ZonedDateTime start = ZonedDateTime.of(2015, 7, 1, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
-    ZonedDateTime end = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
-    client.open(TestUtils.ALL_MAIL, true).get();
+    ZonedDateTime start = JULY_1_2015;
+    ZonedDateTime end = JULY_19_2015;
 
-    List<ImapMessage> allMessages = fetchAllMessages();
-    List<ImapMessage> allMessagesBeforeStart = allMessages.stream()
-      .filter(msg -> extractMessageDate(msg).isAfter(start) && extractMessageDate(msg).isBefore(end))
+    List<ImapMessage> allMessagesInRange = allMessages.stream()
+      .filter(msg -> TestUtils.msgToInternalDate(msg).isAfter(start) && TestUtils.msgToInternalDate(msg).isBefore(end))
       .collect(Collectors.toList());
 
     SearchResponse searchResponse = client.uidsearch(DateSearches.searchBetween(start, end)).get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    List<ImapMessage> messagesBeforeStart = fetchMessages(searchResponse.getMessageIds());
-
-    assertThat(toUids(messagesBeforeStart)).containsOnlyElementsOf(toUids(allMessagesBeforeStart));
+    List<ImapMessage> messagesInRange = TestUtils.fetchMessages(client, searchResponse.getMessageIds());
+    assertThat(TestUtils.msgsToUids(messagesInRange)).containsOnlyElementsOf(TestUtils.msgsToUids(messagesInRange));
   }
 }

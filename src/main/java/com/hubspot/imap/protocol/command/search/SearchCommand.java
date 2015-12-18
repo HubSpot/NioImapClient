@@ -2,7 +2,6 @@ package com.hubspot.imap.protocol.command.search;
 
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
-import com.hubspot.imap.protocol.command.search.keys.AllSearchKey;
 import com.hubspot.imap.protocol.command.search.keys.SearchKey;
 import java.util.Arrays;
 import java.util.List;
@@ -24,9 +23,5 @@ public class SearchCommand extends BaseImapCommand {
 
   public List<SearchKey> getKeys() {
     return keys;
-  }
-
-  public static SearchCommand allEmails() {
-    return new SearchCommand(new AllSearchKey());
   }
 }

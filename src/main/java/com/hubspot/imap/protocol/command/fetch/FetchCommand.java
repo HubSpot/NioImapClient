@@ -23,7 +23,7 @@ public class FetchCommand extends BaseImapCommand {
 
     this.startId = startId;
     this.stopId = stopId;
-    this.fetchDataItems = Lists.newArrayList(fetchDataItems);
+    this.fetchDataItems = fetchDataItems;
   }
 
   public FetchCommand(long startId, Optional<Long> stopId, FetchDataItem fetchItem, FetchDataItem... otherFetchItems) {

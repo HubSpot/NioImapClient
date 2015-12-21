@@ -295,6 +295,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   public synchronized void send(ImapCommand imapCommand, Promise promise) {
     if (connectionClosed.get()) {
       promise.setFailure(new ConnectionClosedException("Cannot write to closed connection."));
+      return;
     }
 
     if ((currentCommandPromise != null && !currentCommandPromise.isDone()) || !isConnected()) {

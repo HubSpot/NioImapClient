@@ -125,7 +125,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return clientState;
   }
 
-  public Future<TaggedResponse> login() throws ConnectionClosedException {
+  public Future<TaggedResponse> login() {
     Future<TaggedResponse> loginFuture;
     switch (configuration.getAuthType()) {
       case XOAUTH2:
@@ -168,87 +168,87 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  private Future<TaggedResponse> passwordLogin() throws ConnectionClosedException {
+  private Future<TaggedResponse> passwordLogin() {
     return send(new BaseImapCommand(ImapCommandType.LOGIN, userName, authToken));
   }
 
-  private Future<TaggedResponse> oauthLogin() throws ConnectionClosedException {
+  private Future<TaggedResponse> oauthLogin() {
     return send(new XOAuth2Command(userName, authToken));
   }
 
-  public Future<TaggedResponse> logout() throws ConnectionClosedException {
+  public Future<TaggedResponse> logout() {
     return send(new BaseImapCommand(ImapCommandType.LOGOUT));
   }
 
-  public Future<ListResponse> list(String context, String query) throws ConnectionClosedException {
+  public Future<ListResponse> list(String context, String query) {
     return send(new ListCommand(context, query));
   }
 
-  public Future<OpenResponse> open(String folderName, boolean readOnly) throws ConnectionClosedException {
+  public Future<OpenResponse> open(String folderName, boolean readOnly) {
     return send(new OpenCommand(folderName, readOnly));
   }
 
-  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem fetchDataItem, FetchDataItem... otherFetchDataItems) throws ConnectionClosedException {
+  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem fetchDataItem, FetchDataItem... otherFetchDataItems) {
     return send(new FetchCommand(startId, stopId, fetchDataItem, otherFetchDataItems));
   }
 
-  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) throws ConnectionClosedException {
+  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) {
     Preconditions.checkArgument(fetchItems.size() > 0, "Must have at least one FETCH item.");
     return send(new FetchCommand(startId, stopId, fetchItems));
   }
 
-  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) {
     return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems)));
   }
 
-  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) {
     return send(new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems));
   }
 
-  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, List<FetchDataItem> fetchDataItems) throws ConnectionClosedException {
+  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
     return send(new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems));
   }
 
-  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem item, FetchDataItem... otherItems) throws ConnectionClosedException {
+  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem item, FetchDataItem... otherItems) {
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
   }
 
-  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) throws ConnectionClosedException {
+  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) {
     Preconditions.checkArgument(fetchItems.size() > 0, "Must have at least one FETCH item.");
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchItems)));
   }
 
-  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, List<FetchDataItem> fetchDataItems) throws ConnectionClosedException {
+  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
     return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems)));
   }
 
-  public Future<TaggedResponse> uidstore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) throws ConnectionClosedException {
+  public Future<TaggedResponse> uidstore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) {
     return send(new UidCommand(ImapCommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
-  public Future<SearchResponse> uidsearch(SearchKey... keys) throws ConnectionClosedException {
+  public Future<SearchResponse> uidsearch(SearchKey... keys) {
     return send(new UidCommand(ImapCommandType.SEARCH, new SearchCommand(keys)));
   }
 
-  public Future<SearchResponse> uidsearch(SearchCommand cmd) throws ConnectionClosedException {
+  public Future<SearchResponse> uidsearch(SearchCommand cmd) {
     return send(new UidCommand(ImapCommandType.SEARCH, cmd));
   }
 
-  public Future<SearchResponse> search(SearchKey... keys) throws ConnectionClosedException {
+  public Future<SearchResponse> search(SearchKey... keys) {
     return send(new SearchCommand(keys));
   }
 
-  public Future<SearchResponse> search(SearchCommand cmd) throws ConnectionClosedException {
+  public Future<SearchResponse> search(SearchCommand cmd) {
     return send(cmd);
   }
 
-  public Future<TaggedResponse> expunge() throws ConnectionClosedException {
+  public Future<TaggedResponse> expunge() {
     return send(ImapCommandType.EXPUNGE);
   }
 
-  public Future<NoopResponse> noop() throws ConnectionClosedException {
+  public Future<NoopResponse> noop() {
     return send(ImapCommandType.NOOP);
   }
 
@@ -268,7 +268,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     loginPromise.get();
   }
 
-  public <T extends TaggedResponse> Future<T> send(ImapCommandType imapCommandType, String... args) throws ConnectionClosedException {
+  public <T extends TaggedResponse> Future<T> send(ImapCommandType imapCommandType, String... args) {
     BaseImapCommand baseImapCommand = new BaseImapCommand(imapCommandType, args);
     return send(baseImapCommand);
   }
@@ -281,7 +281,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
    * @param <T> Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
    */
-  public synchronized <T extends TaggedResponse> Future<T> send(ImapCommand imapCommand) throws ConnectionClosedException {
+  public synchronized <T extends TaggedResponse> Future<T> send(ImapCommand imapCommand) {
     final Promise<T> commandPromise = promiseExecutor.next().newPromise();
     commandPromise.addListener((f) -> {
       writeNext();
@@ -292,9 +292,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return commandPromise;
   }
 
-  public synchronized void send(ImapCommand imapCommand, Promise promise) throws ConnectionClosedException {
+  public synchronized void send(ImapCommand imapCommand, Promise promise) {
     if (connectionClosed.get()) {
-      throw new ConnectionClosedException("Cannot write to closed connection.");
+      promise.setFailure(new ConnectionClosedException("Cannot write to closed connection."));
+      return;
     }
 
     if ((currentCommandPromise != null && !currentCommandPromise.isDone()) || !isConnected()) {

@@ -10,6 +10,7 @@ import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.utils.GmailUtils;
+import org.assertj.core.description.Description;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -76,7 +77,7 @@ public class TestUtils {
       FetchResponse response = client.uidfetch(uid, Optional.of(uid), FetchDataItemType.UID, FetchDataItemType.ENVELOPE, FetchDataItemType.INTERNALDATE).get();
       Set<ImapMessage> messages = response.getMessages();
 
-      assertThat(messages.size()).isEqualTo(1);
+      assertThat(messages.size()).describedAs("Expected 1 message for uid %d, but received %s.", uid, messages).isEqualTo(1);
       return messages.iterator().next();
     } catch (Exception ex) {
       throw Throwables.propagate(ex);

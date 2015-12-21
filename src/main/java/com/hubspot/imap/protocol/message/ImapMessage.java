@@ -142,6 +142,24 @@ public interface ImapMessage {
     }
 
     @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+
+      sb.append("ImapMessage [Message #").append(messageNumber).append("] ");
+      flags.ifPresent(flgs -> sb.append("FLAGS=").append(flgs).append(" "));
+      uid.ifPresent(val -> sb.append("UID=").append(val).append(" "));
+      internalDate.ifPresent(d -> sb.append("INTERNAL DATE=").append(d).append(" "));
+      size.ifPresent(val -> sb.append("SIZE=").append(val).append(" "));
+      envelope.ifPresent(val -> sb.append("ENVELOPE=").append(envelope).append(" "));
+      gmailMessageId.ifPresent(val -> sb.append("GMAIL MESSAGE ID=").append(val).append(" "));
+      gmailThreadId.ifPresent(val -> sb.append("GMAIL THREAD ID=").append(val).append(" "));
+      gMailLabels.ifPresent(labels -> sb.append("GMAIL LABELS=").append(labels).append(" "));
+      body.ifPresent(b -> sb.append("BODY=").append(b).append(" "));
+
+      return sb.toString();
+    }
+
+    @Override
     public boolean equals(Object o) {
       if (this == o) {
         return true;

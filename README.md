@@ -1,7 +1,7 @@
-NioImapClient
+NioImapClient [![Build Status](https://private.hubteam.com/jenkins/buildStatus/icon?job=NioImapClient)](https://private.hubteam.com/jenkins/job/NioImapClient)
 =============
 
-An better way to IMAP.
+A better way to IMAP.
 
 ### Limitations
 

@@ -1,6 +1,7 @@
 package com.hubspot.imap.protocol.extension.gmail;
 
 import com.hubspot.imap.TestUtils;
+import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
@@ -19,7 +20,7 @@ public class GMailLabelTest {
   @Test
   public void testCanFetchGMailLabels() throws Exception {
     try (ImapClient client = TestUtils.getLoggedInClient()) {
-      Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", false);
+      Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", FolderOpenMode.WRITE);
       OpenResponse or = openResponseFuture.get();
       assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 

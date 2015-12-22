@@ -184,8 +184,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new ListCommand(context, query));
   }
 
-  public Future<OpenResponse> open(String folderName, boolean readOnly) {
-    return send(new OpenCommand(folderName, readOnly));
+  public Future<OpenResponse> open(String folderName, FolderOpenMode openMode) {
+    return send(new OpenCommand(folderName, openMode));
   }
 
   public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem fetchDataItem, FetchDataItem... otherFetchDataItems) {

@@ -1,5 +1,6 @@
 package com.hubspot.imap;
 
+import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import io.netty.util.concurrent.Future;
@@ -31,7 +32,7 @@ public class MessageAddListenerTest {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
-    Future<OpenResponse> openFuture = client.open(TestUtils.ALL_MAIL, true);
+    Future<OpenResponse> openFuture = client.open(TestUtils.ALL_MAIL, FolderOpenMode.READ);
     openFuture.sync();
 
     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
@@ -42,7 +43,7 @@ public class MessageAddListenerTest {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().addOpenEventListener((e) -> countDownLatch.countDown());
-    Future<OpenResponse> openResponseFuture = client.open(TestUtils.ALL_MAIL, true);
+    Future<OpenResponse> openResponseFuture = client.open(TestUtils.ALL_MAIL, FolderOpenMode.READ);
     openResponseFuture.sync();
 
     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();

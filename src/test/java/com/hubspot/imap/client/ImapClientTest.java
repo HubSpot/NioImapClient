@@ -62,7 +62,7 @@ public class ImapClientTest {
   @BeforeClass
   public static void prefetch() throws Exception {
     client = TestUtils.getLoggedInClient();
-    allFolderOpenResponse = client.open(TestUtils.ALL_MAIL, false).get();
+    allFolderOpenResponse = client.open(TestUtils.ALL_MAIL, FolderOpenMode.WRITE).get();
     assertThat(allFolderOpenResponse.getCode()).isEqualTo(ResponseCode.OK);
     allMessages = TestUtils.fetchMessages(client, client.uidsearch(allEmailSearchCommand()).get().getMessageIds());
   }
@@ -100,7 +100,7 @@ public class ImapClientTest {
 
   @Test
   public void testGivenFolderName_canOpenFolder() throws Exception {
-    Future<OpenResponse> responseFuture = client.open(TestUtils.ALL_MAIL, false);
+    Future<OpenResponse> responseFuture = client.open(TestUtils.ALL_MAIL, FolderOpenMode.WRITE);
     OpenResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);

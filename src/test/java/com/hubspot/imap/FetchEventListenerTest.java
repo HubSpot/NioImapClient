@@ -1,6 +1,7 @@
 package com.hubspot.imap;
 
 import com.google.common.collect.Sets;
+import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.message.ImapMessage;
@@ -39,7 +40,7 @@ public class FetchEventListenerTest {
       countDownLatch.countDown();
     });
 
-    client.open("[Gmail]/All Mail", true).sync();
+    client.open("[Gmail]/All Mail", FolderOpenMode.READ).sync();
     FetchResponse response = client.fetch(1, Optional.<Long>empty(), FetchDataItemType.UID).get();
 
     countDownLatch.await();

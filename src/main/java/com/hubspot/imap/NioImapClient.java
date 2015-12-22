@@ -1,6 +1,7 @@
 package com.hubspot.imap;
 
 import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.folder.FolderAttribute;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
@@ -36,7 +37,7 @@ public class NioImapClient {
 
       for (FolderMetadata metadata: response.getFolders()) {
         if (metadata.getAttributes().contains(FolderAttribute.ALL)) {
-          Future<OpenResponse> openFuture = client.open(metadata.getName(), true);
+          Future<OpenResponse> openFuture = client.open(metadata.getName(), FolderOpenMode.READ);
           OpenResponse openResponse = openFuture.get();
           LOGGER.info("Folder opened: {}", openResponse);
 

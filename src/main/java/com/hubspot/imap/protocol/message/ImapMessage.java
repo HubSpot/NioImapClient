@@ -143,18 +143,18 @@ public interface ImapMessage {
 
     @Override
     public String toString() {
-      return "[ImapMessage]Builder{" +
-        "flags=" + flags +
-        ", messageNumber=" + messageNumber +
-        ", uid=" + uid +
-        ", internalDate=" + internalDate +
-        ", size=" + size +
-        ", envelope=" + envelope +
-        ", gmailMessageId=" + gmailMessageId +
-        ", gmailThreadId=" + gmailThreadId +
-        ", gMailLabels=" + gMailLabels +
-        ", body=" + body +
-        '}';
+      return Objects.toStringHelper(this)
+        .add("flags", flags)
+        .add("messageNumber", messageNumber)
+        .add("uid", uid)
+        .add("internalDate", internalDate)
+        .add("size", size)
+        .add("envelope", envelope)
+        .add("gmailMessageId", gmailMessageId)
+        .add("gmailThreadId", gmailThreadId)
+        .add("gMailLabels", gMailLabels)
+        .add("body", body)
+        .toString();
     }
 
     @Override

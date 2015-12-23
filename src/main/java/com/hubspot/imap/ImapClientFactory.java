@@ -1,7 +1,6 @@
 package com.hubspot.imap;
 
 import com.google.common.base.Throwables;
-import com.google.common.net.HostAndPort;
 import com.hubspot.imap.client.ImapClient;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -28,7 +27,6 @@ public class ImapClientFactory implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClientFactory.class);
 
   private final ImapConfiguration configuration;
-  private final HostAndPort hostAndPort;
   private final Bootstrap bootstrap;
   private final EventLoopGroup eventLoopGroup;
   private final EventExecutorGroup promiseExecutorGroup;
@@ -36,7 +34,6 @@ public class ImapClientFactory implements AutoCloseable {
 
   public ImapClientFactory(ImapConfiguration configuration) {
     this.configuration = configuration;
-    this.hostAndPort = configuration.getHostAndPort();
     this.bootstrap = new Bootstrap();
 
     if (configuration.getUseEpoll()) {
@@ -63,7 +60,6 @@ public class ImapClientFactory implements AutoCloseable {
 
     bootstrap.group(eventLoopGroup)
         .option(ChannelOption.SO_LINGER, 0)
-        .option(ChannelOption.SO_TIMEOUT, configuration.getSocketTimeoutMs())
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.getConnectTimeoutMillis())
         .option(ChannelOption.SO_KEEPALIVE, false)
         .option(ChannelOption.AUTO_CLOSE, true)

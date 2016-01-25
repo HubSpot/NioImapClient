@@ -5,11 +5,15 @@ import com.google.seventeen.common.util.concurrent.ListenableFuture;
 import com.google.seventeen.common.util.concurrent.ListeningExecutorService;
 import com.google.seventeen.common.util.concurrent.MoreExecutors;
 import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.profiles.EmailServerTestProfile;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import io.netty.util.concurrent.Future;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +23,11 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConcurrentConnectionTest {
+@RunWith(Parameterized.class)
+public class ConcurrentConnectionTest extends ImapMultiServerTest {
   private static final int NUM_CONNS = 5;
+
+  @Parameter public EmailServerTestProfile testProfile;
 
   @Test
   public void testGivenMultipleConnections_canSendConcurrentNoop() throws Exception {
@@ -30,7 +37,7 @@ public class ConcurrentConnectionTest {
     CopyOnWriteArrayList<ImapClient> clients = new CopyOnWriteArrayList<>();
     for (int i = 0; i < NUM_CONNS; i++) {
       ListenableFuture<Void> future = executorService.submit(() -> {
-        ImapClient client = TestUtils.getLoggedInClient();
+        ImapClient client = testProfile.getLoggedInClient();
         clients.add(client);
 
         int noops = ThreadLocalRandom.current().nextInt(10);

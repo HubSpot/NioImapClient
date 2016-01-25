@@ -1,20 +1,27 @@
 package com.hubspot.imap.client.listener;
 
-import com.hubspot.imap.TestUtils;
+import com.hubspot.imap.ImapMultiServerTest;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.client.listener.ConnectionListener.ConnectionListenerAdapter;
+import com.hubspot.imap.profiles.EmailServerTestProfile;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConnectionListenerTest {
+@RunWith(Parameterized.class)
+public class ConnectionListenerTest extends ImapMultiServerTest {
+  @Parameter public EmailServerTestProfile testProfile;
+
   @Test
   public void testOnConnect_doesCallConnect() throws Exception {
     CountDownLatch latch = new CountDownLatch(1);
-    try (ImapClient client = TestUtils.getLoggedInClient()) {
+    try (ImapClient client = testProfile.getLoggedInClient()) {
       client.getState().addConnectionListener(new ConnectionListenerAdapter() {
         @Override
         public void connected() {
@@ -32,7 +39,7 @@ public class ConnectionListenerTest {
   @Test
   public void testOnClose_doesCallDisconnect() throws Exception {
     CountDownLatch latch = new CountDownLatch(1);
-    try (ImapClient client = TestUtils.getLoggedInClient()) {
+    try (ImapClient client = testProfile.getLoggedInClient()) {
       client.getState().addConnectionListener(new ConnectionListenerAdapter() {
         @Override
         public void connected() {}

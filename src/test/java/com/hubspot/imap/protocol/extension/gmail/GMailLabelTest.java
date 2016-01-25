@@ -3,6 +3,7 @@ package com.hubspot.imap.protocol.extension.gmail;
 import com.hubspot.imap.TestUtils;
 import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.profiles.GmailProfile;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.ResponseCode;
@@ -17,10 +18,11 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GMailLabelTest {
+  private static final GmailProfile GMAIL_PROFILE = GmailProfile.getGmailProfile();
   @Test
   public void testCanFetchGMailLabels() throws Exception {
-    try (ImapClient client = TestUtils.getLoggedInClient()) {
-      Future<OpenResponse> openResponseFuture = client.open("[Gmail]/All Mail", FolderOpenMode.WRITE);
+    try (ImapClient client = GMAIL_PROFILE.getLoggedInClient()) {
+      Future<OpenResponse> openResponseFuture = client.open(GMAIL_PROFILE.getImplDetails().getAllMailFolderName(), FolderOpenMode.WRITE);
       OpenResponse or = openResponseFuture.get();
       assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 

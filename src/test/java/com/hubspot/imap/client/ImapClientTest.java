@@ -2,7 +2,9 @@ package com.hubspot.imap.client;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
+import com.hubspot.imap.ImapMultiServerTest;
 import com.hubspot.imap.TestUtils;
+import com.hubspot.imap.profiles.EmailServerTestProfile;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
@@ -38,8 +40,10 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
@@ -48,23 +52,40 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
-public class ImapClientTest {
+@RunWith(Parameterized.class)
+public class ImapClientTest extends ImapMultiServerTest {
   private static final ZonedDateTime JULY_19_2015 = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
   private static final ZonedDateTime JULY_1_2015 = ZonedDateTime.of(2015, 7, 1, 0, 0, 0, 0, TimeZone.getTimeZone("EST").toZoneId());
 
-  private static ImapClient client;
-  private static OpenResponse allFolderOpenResponse;
-  private static List<ImapMessage> allMessages;
+  private static Map<EmailServerTestProfile, ImapClient> clients = new HashMap<>();
+  private static Map<EmailServerTestProfile, OpenResponse> allFolderOpenResponses = new HashMap<>();
+  private static Map<EmailServerTestProfile, List<ImapMessage>> allMessagesMap = new HashMap<>();
+
+  @Parameter public EmailServerTestProfile testProfile;
+  private ImapClient client;
+  private OpenResponse allFolderOpenResponse;
+  private List<ImapMessage> allMessages;
 
   @BeforeClass
   public static void prefetch() throws Exception {
-    client = TestUtils.getLoggedInClient();
-    allFolderOpenResponse = client.open(TestUtils.ALL_MAIL, FolderOpenMode.WRITE).get();
-    assertThat(allFolderOpenResponse.getCode()).isEqualTo(ResponseCode.OK);
-    allMessages = TestUtils.fetchMessages(client, client.uidsearch(allEmailSearchCommand()).get().getMessageIds());
+    clients = new HashMap<>();
+    for (EmailServerTestProfile profile : parameters()) {
+      ImapClient profileClient = profile.getLoggedInClient();
+      clients.put(profile, profileClient);
+
+      OpenResponse allMailOpenResponse = profileClient.open(profile.getImplDetails().getAllMailFolderName(), FolderOpenMode.WRITE).get();
+      assertThat(allMailOpenResponse.getCode()).isEqualTo(ResponseCode.OK);
+      allFolderOpenResponses.put(profile, allMailOpenResponse);
+
+      allMessagesMap.put(profile, TestUtils.fetchMessages(profileClient, profileClient.uidsearch(allEmailSearchCommand()).get().getMessageIds()));
+    }
   }
 
   public static SearchCommand allEmailSearchCommand() {
@@ -73,9 +94,18 @@ public class ImapClientTest {
 
   @AfterClass
   public static void cleanup() throws Exception {
-    if (client != null && client.isLoggedIn()) {
-      client.close();
-    }
+    clients.forEach((profile, client) -> {
+      if (client != null && client.isLoggedIn()) {
+        client.close();
+      }
+    });
+  }
+
+  @Before
+  public void initialize() {
+    client = clients.get(testProfile);
+    allFolderOpenResponse = allFolderOpenResponses.get(testProfile);
+    allMessages = allMessagesMap.get(testProfile);
   }
 
   @Test
@@ -95,12 +125,12 @@ public class ImapClientTest {
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getFolders().size()).isGreaterThan(0);
     assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
-    assertThat(response.getFolders()).extracting(FolderMetadata::getName).contains(TestUtils.ALL_MAIL);
+    assertThat(response.getFolders()).extracting(FolderMetadata::getName).contains(testProfile.getImplDetails().getAllMailFolderName());
   }
 
   @Test
   public void testGivenFolderName_canOpenFolder() throws Exception {
-    Future<OpenResponse> responseFuture = client.open(TestUtils.ALL_MAIL, FolderOpenMode.WRITE);
+    Future<OpenResponse> responseFuture = client.open(testProfile.getImplDetails().getAllMailFolderName(), FolderOpenMode.WRITE);
     OpenResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);

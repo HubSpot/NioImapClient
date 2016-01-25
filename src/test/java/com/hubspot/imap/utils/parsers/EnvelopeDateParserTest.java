@@ -1,6 +1,6 @@
 package com.hubspot.imap.utils.parsers;
 
-import com.google.seventeen.common.collect.Lists;
+import com.google.common.collect.Lists;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
 import org.junit.Test;
 import org.junit.runner.RunWith;

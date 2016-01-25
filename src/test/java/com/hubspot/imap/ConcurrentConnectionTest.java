@@ -1,9 +1,9 @@
 package com.hubspot.imap;
 
-import com.google.seventeen.common.util.concurrent.Futures;
-import com.google.seventeen.common.util.concurrent.ListenableFuture;
-import com.google.seventeen.common.util.concurrent.ListeningExecutorService;
-import com.google.seventeen.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.profiles.EmailServerTestProfile;
 import com.hubspot.imap.protocol.response.ResponseCode;

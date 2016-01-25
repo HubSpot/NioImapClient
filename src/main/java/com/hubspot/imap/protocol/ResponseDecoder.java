@@ -1,8 +1,8 @@
 package com.hubspot.imap.protocol;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.seventeen.common.base.Throwables;
-import com.google.seventeen.common.primitives.Ints;
+import com.google.common.primitives.Ints;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.protocol.ResponseDecoder.State;

@@ -1,7 +1,7 @@
 package com.hubspot.imap.protocol.extension.gmail;
 
 import com.google.common.base.Objects;
-import com.google.seventeen.common.collect.Maps;
+import com.google.common.collect.Maps;
 
 import java.util.Arrays;
 import java.util.Map;

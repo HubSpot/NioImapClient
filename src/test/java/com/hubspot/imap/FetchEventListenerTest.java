@@ -3,6 +3,7 @@ package com.hubspot.imap;
 import com.google.common.collect.Sets;
 import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.profiles.EmailServerTestProfile;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.response.ResponseCode;
@@ -10,6 +11,9 @@ import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.util.Optional;
 import java.util.Set;
@@ -17,13 +21,15 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FetchEventListenerTest {
+@RunWith(Parameterized.class)
+public class FetchEventListenerTest extends ImapMultiServerTest {
 
+  @Parameter public EmailServerTestProfile testProfile;
   ImapClient client;
 
   @Before
   public void getClient() throws Exception {
-    client = TestUtils.getLoggedInClient();
+    client = testProfile.getLoggedInClient();
   }
 
   @After

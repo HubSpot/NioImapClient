@@ -1,7 +1,7 @@
 package com.hubspot.imap.protocol.message;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
-import com.google.seventeen.common.base.Joiner;
 
 import java.util.List;
 import java.util.Optional;

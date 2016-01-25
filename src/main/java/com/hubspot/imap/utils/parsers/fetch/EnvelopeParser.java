@@ -1,7 +1,7 @@
 package com.hubspot.imap.utils.parsers.fetch;
 
-import com.google.seventeen.common.annotations.VisibleForTesting;
-import com.google.seventeen.common.base.Strings;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapAddress;
 import com.hubspot.imap.protocol.message.ImapAddress.Builder;

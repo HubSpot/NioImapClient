@@ -1,7 +1,7 @@
 package com.hubspot.imap.client;
 
 import com.google.common.base.Preconditions;
-import com.google.seventeen.common.base.Throwables;
+import com.google.common.base.Throwables;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
 import com.hubspot.imap.protocol.command.BaseImapCommand;

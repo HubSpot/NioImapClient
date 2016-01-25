@@ -1,13 +1,11 @@
 package com.hubspot.imap.client;
 
 import com.hubspot.imap.client.listener.ConnectionListener;
-import com.hubspot.imap.client.listener.FetchEventListener;
 import com.hubspot.imap.client.listener.MessageAddListener;
 import com.hubspot.imap.client.listener.OpenEventListener;
 import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
 import com.hubspot.imap.protocol.response.events.ExpungeEvent;
-import com.hubspot.imap.protocol.response.events.FetchEvent;
 import com.hubspot.imap.protocol.response.events.OpenEvent;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import io.netty.channel.Channel;
@@ -15,7 +13,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,7 +26,6 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final AtomicLong messageNumber;
 
   private final List<MessageAddListener> messageAddListeners;
-  private final List<FetchEventListener> fetchEventListeners;
   private final List<OpenEventListener> openEventListeners;
   private final List<ConnectionListener> connectionListeners;
   private final List<ChannelHandler> handlers;
@@ -44,7 +40,6 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     this.messageNumber = new AtomicLong(0);
 
     this.messageAddListeners = new CopyOnWriteArrayList<>();
-    this.fetchEventListeners = new CopyOnWriteArrayList<>();
     this.openEventListeners = new CopyOnWriteArrayList<>();
     this.connectionListeners = new CopyOnWriteArrayList<>();
     this.handlers = new CopyOnWriteArrayList<>();
@@ -72,11 +67,6 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
           executorGroup.submit(() -> listener.messagesAdded(lastMessageCount, currentCount));
         }
       }
-    } else if (evt instanceof FetchEvent) {
-      FetchEvent fetchEvent = ((FetchEvent) evt);
-      for (FetchEventListener listener: fetchEventListeners) {
-        executorGroup.submit(() -> listener.handle(fetchEvent));
-      }
     } else if (evt instanceof OpenEvent) {
       OpenEvent event = ((OpenEvent) evt);
       OpenResponse response = event.getOpenResponse();
@@ -92,10 +82,6 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
   public void onMessageAdd(MessageAddListener listener) {
     this.messageAddListeners.add(listener);
-  }
-
-  public void addFetchEventListener(FetchEventListener listener) {
-    this.fetchEventListeners.add(listener);
   }
 
   public void addOpenEventListener(OpenEventListener listener) {

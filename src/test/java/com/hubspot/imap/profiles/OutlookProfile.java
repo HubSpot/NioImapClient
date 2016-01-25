@@ -13,7 +13,7 @@ public class OutlookProfile implements EmailServerTestProfile {
   private static final ImapClientFactory OUTLOOK_CLIENT_FACTORY = new ImapClientFactory(
     new ImapConfiguration.Builder()
       .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(OutlookUtils.OUTLOOK_HOST_PORT)
+      .setHostAndPort(OutlookUtils.OUTLOOK_365_IMAP_HOST_PORT)
       .setNoopKeepAliveIntervalSec(10)
       .setUseEpoll(true)
       .build()

@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import org.junit.runners.Parameterized.Parameters;
 
-public class ImapMultiServerTest {
+public abstract class ImapMultiServerTest {
   protected static final List<EmailServerTestProfile> TEST_PROFILES = Arrays.asList(
     GmailProfile.getGmailProfile()
 //      OutlookProfile.getOutlookProfile()

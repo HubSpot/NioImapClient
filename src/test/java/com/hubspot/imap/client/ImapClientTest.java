@@ -75,7 +75,6 @@ public class ImapClientTest extends ImapMultiServerTest {
 
   @BeforeClass
   public static void prefetch() throws Exception {
-    clients = new HashMap<>();
     for (EmailServerTestProfile profile : parameters()) {
       ImapClient profileClient = profile.getLoggedInClient();
       clients.put(profile, profileClient);

@@ -117,7 +117,7 @@ public class ImapClientTest extends ImapMultiServerTest {
 
   @Test
   public void testList_doesReturnFolders() throws Exception {
-    Future<ListResponse> listResponseFuture = client.list("", "[Gmail]/%");
+    Future<ListResponse> listResponseFuture = client.list("", "*");
 
     ListResponse response = listResponseFuture.get();
 
@@ -139,17 +139,16 @@ public class ImapClientTest extends ImapMultiServerTest {
     assertThat(response.getUidValidity()).isGreaterThan(0);
     assertThat(response.getRecent()).isEqualTo(0);
     assertThat(response.getUidNext()).isGreaterThan(0);
-    assertThat(response.getHighestModSeq()).isGreaterThan(0);
   }
 
   @Test
   public void testFetch_doesReturnMessages() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.FAST);
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.FAST);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getMessages().size()).isGreaterThan(0);
-    assertThat(response.getMessages().size()).isEqualTo(5);
+    assertThat(response.getMessages().size()).isEqualTo(2);
 
     assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {
@@ -170,7 +169,7 @@ public class ImapClientTest extends ImapMultiServerTest {
 
   @Test(expected = UnfetchedFieldException.class)
   public void testAccessingUnfetchedField_doesThrowException() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.FLAGS);
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.FLAGS);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
@@ -180,7 +179,7 @@ public class ImapClientTest extends ImapMultiServerTest {
 
   @Test
   public void testFetchUid_doesGetUid() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(5L), FetchDataItemType.UID);
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.UID);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
@@ -191,7 +190,7 @@ public class ImapClientTest extends ImapMultiServerTest {
 
   @Test
   public void testFetchEnvelope_doesFetchEnvelope() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(10L), FetchDataItemType.ENVELOPE);
+    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.ENVELOPE);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
@@ -201,7 +200,6 @@ public class ImapClientTest extends ImapMultiServerTest {
     Envelope envelope = response.getMessages().iterator().next().getEnvelope();
     assertThat(envelope.getDate()).isNotNull();
     assertThat(envelope.getFrom().size()).isEqualTo(1);
-    assertThat(envelope.getSender().size()).isEqualTo(1);
     assertThat(envelope.getTo().size()).isGreaterThanOrEqualTo(1);
     assertThat(envelope.getSubject()).isNotEmpty();
     assertThat(envelope.getMessageId()).isNotEmpty();
@@ -295,28 +293,6 @@ public class ImapClientTest extends ImapMultiServerTest {
     }
 
     assertThat(successful).isEqualTo(uids.size());
-  }
-
-  @Test
-  public void testGmailFetchExtensions() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.X_GM_MSGID, FetchDataItemType.X_GM_THRID);
-    FetchResponse response = responseFuture.get();
-
-    assertThat(response.getMessages()).have(new Condition<>(m -> {
-      try {
-        return m.getGmailMessageId() > 0;
-      } catch (UnfetchedFieldException e) {
-        throw Throwables.propagate(e);
-      }
-    }, "gmail message id"));
-
-    assertThat(response.getMessages()).have(new Condition<>(m -> {
-      try {
-        return m.getGmailThreadId() > 0;
-      } catch (UnfetchedFieldException e) {
-        throw Throwables.propagate(e);
-      }
-    }, "gmail thread id"));
   }
 
   @Test

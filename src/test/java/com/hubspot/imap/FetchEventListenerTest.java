@@ -46,7 +46,7 @@ public class FetchEventListenerTest extends ImapMultiServerTest {
       countDownLatch.countDown();
     });
 
-    client.open("[Gmail]/All Mail", FolderOpenMode.READ).sync();
+    client.open(testProfile.getImplDetails().getAllMailFolderName(), FolderOpenMode.READ).sync();
     FetchResponse response = client.fetch(1, Optional.<Long>empty(), FetchDataItemType.UID).get();
 
     countDownLatch.await();

@@ -5,7 +5,7 @@ import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.utils.GmailUtils;
 
-public class GmailProfile implements EmailServerTestProfile {
+public class GmailProfile extends EmailServerTestProfile {
   private static final String USER_NAME = "hsimaptest1@gmail.com";
   private static final String PASSWORD = "***REMOVED***";
   private static final GmailServerImplDetails GMAIL_SERVER_IMPL_DETAILS = new GmailServerImplDetails();
@@ -43,6 +43,11 @@ public class GmailProfile implements EmailServerTestProfile {
   @Override
   public String getPassword() {
     return PASSWORD;
+  }
+
+  @Override
+  public String description() {
+    return String.format("Gmail [%s]", USER_NAME);
   }
 
   private static class GmailServerImplDetails implements EmailServerImplDetails {

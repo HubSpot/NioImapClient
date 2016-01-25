@@ -5,15 +5,15 @@ import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.utils.OutlookUtils;
 
-public class OutlookProfile implements EmailServerTestProfile {
-  private static final String USER_NAME = "";
-  private static final String PASSWORD = "";
+public class OutlookProfile extends EmailServerTestProfile {
+  private static final String USER_NAME = "testing11235@outlook.com";
+  private static final String PASSWORD = "***REMOVED***";
   private static final OutlookServerImplDetails OUTLOOK_SERVER_IMPL_DETAILS = new OutlookServerImplDetails();
 
   private static final ImapClientFactory OUTLOOK_CLIENT_FACTORY = new ImapClientFactory(
     new ImapConfiguration.Builder()
       .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(OutlookUtils.OUTLOOK_365_IMAP_HOST_PORT)
+      .setHostAndPort(OutlookUtils.OUTLOOK_IMAP_HOST_PORT)
       .setNoopKeepAliveIntervalSec(10)
       .setUseEpoll(true)
       .build()
@@ -46,8 +46,13 @@ public class OutlookProfile implements EmailServerTestProfile {
     return PASSWORD;
   }
 
+  @Override
+  public String description() {
+    return String.format("Outlook [%s]", USER_NAME);
+  }
+
   private static class OutlookServerImplDetails implements EmailServerImplDetails {
-    private static final String ALL_MAIL = "[Outlook]/All Mail";
+    private static final String ALL_MAIL = "Inbox";
 
     private OutlookServerImplDetails() {}
 

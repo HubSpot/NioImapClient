@@ -52,7 +52,7 @@ public class Outlook365Profile extends EmailServerTestProfile {
   }
 
   private static class Outlook365ServerImplDetails implements EmailServerImplDetails {
-    private static final String ALL_MAIL = "Inbox";
+    private static final String ALL_MAIL = "INBOX";
 
     private Outlook365ServerImplDetails() {}
 

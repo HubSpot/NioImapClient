@@ -31,8 +31,10 @@ import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import io.netty.util.concurrent.Future;
 import org.apache.james.mime4j.dom.Entity;
+import org.apache.james.mime4j.dom.Message;
 import org.apache.james.mime4j.dom.Multipart;
 import org.apache.james.mime4j.dom.SingleBody;
+import org.apache.james.mime4j.dom.TextBody;
 import org.assertj.core.api.Condition;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -237,22 +239,38 @@ public class ImapClientTest extends ImapMultiServerTest {
     FetchResponse response = responseFuture.get();
     assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {
+        SingleBody textBody = null;
+        String charset = null;
+
         if (m.getBody().isMultipart()) {
           Multipart multipart = (Multipart) m.getBody().getBody();
 
+          boolean hasTextBody = false;
           for (Entity entity: multipart.getBodyParts()) {
             if (entity.getMimeType().equalsIgnoreCase("text/plain")) {
-              ByteArrayOutputStream baos = new ByteArrayOutputStream();
-              ((SingleBody) entity.getBody()).writeTo(baos);
-              return !Strings.isNullOrEmpty(baos.toString(entity.getCharset()));
+              textBody = (SingleBody) entity.getBody();
+              charset = entity.getCharset();
+              hasTextBody = true;
             }
           }
+
+          if (!hasTextBody) {
+            return false;
+          }
+        } else {
+          if (!(m.getBody().getBody() instanceof TextBody)) {
+            return false;
+          }
+          textBody = (TextBody) m.getBody().getBody();
+          charset = m.getBody().getCharset();
         }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        textBody.writeTo(baos);
+        return !Strings.isNullOrEmpty(baos.toString(charset));
       } catch (UnfetchedFieldException|IOException e) {
         throw Throwables.propagate(e);
       }
-
-      return false;
     }, "text body"));
 
     responseFuture.get();

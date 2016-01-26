@@ -9,6 +9,7 @@ public enum FolderAttribute {
   MARKED,
   UNMARKED,
   HASNOCHILDREN,
+  HASCHILDREN,
   DRAFTS,
   IMPORTANT,
   SENT,

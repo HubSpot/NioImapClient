@@ -2,11 +2,9 @@ package com.hubspot.imap.client;
 
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
-import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
 import com.hubspot.imap.protocol.response.events.ExpungeEvent;
-import com.hubspot.imap.protocol.response.events.FetchEvent;
 import com.hubspot.imap.protocol.response.events.OpenEvent;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.protocol.response.tagged.ListResponse.Builder;
@@ -22,10 +20,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
@@ -84,7 +79,6 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
   }
 
   private void fireEvents(ChannelHandlerContext ctx, TaggedResponse response) {
-    fireFetchEvents(ctx, response);
     fireMessageNumberEvents(ctx, response);
   }
 
@@ -99,14 +93,5 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
         }
       });
     }
-  }
-
-  private void fireFetchEvents(ChannelHandlerContext ctx, TaggedResponse response) {
-    Set<ImapMessage> messages = response.getUntagged().stream()
-        .filter(m -> m instanceof ImapMessage).map(m -> ((ImapMessage) m))
-        .collect(Collectors.toSet());
-
-    FetchEvent event = new FetchEvent(messages);
-    ctx.fireUserEventTriggered(event);
   }
 }

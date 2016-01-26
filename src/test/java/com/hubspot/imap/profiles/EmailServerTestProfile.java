@@ -5,22 +5,29 @@ import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import java.util.concurrent.ExecutionException;
 
-public interface EmailServerTestProfile {
-  ImapClientFactory getClientFactory();
-  EmailServerImplDetails getImplDetails();
+public abstract class EmailServerTestProfile {
+  public abstract ImapClientFactory getClientFactory();
+  public abstract EmailServerImplDetails getImplDetails();
 
-  String getUsername();
-  String getPassword();
+  public abstract String getUsername();
+  public abstract String getPassword();
 
-  default ImapClient getClient() throws InterruptedException {
+  public abstract String description();
+
+  public ImapClient getClient() throws InterruptedException {
     return getClientFactory().connect(getUsername(), getPassword());
   }
 
-  default ImapClient getLoggedInClient() throws InterruptedException, ExecutionException, ConnectionClosedException {
+  public ImapClient getLoggedInClient() throws InterruptedException, ExecutionException, ConnectionClosedException {
     ImapClient client = getClient();
     client.login();
     client.awaitLogin();
 
     return client;
+  }
+
+  @Override
+  public String toString() {
+    return description();
   }
 }

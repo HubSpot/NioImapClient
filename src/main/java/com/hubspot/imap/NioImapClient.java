@@ -22,12 +22,11 @@ public class NioImapClient {
   public static void main(String[] args) throws InterruptedException, IOException, ExecutionException {
     ImapConfiguration configuration = new ImapConfiguration.Builder()
         .setAuthType(AuthType.XOAUTH2)
-        .setHostAndPort(ImapServerDetails.GMAIL_HOST_PORT)
+        .setHostAndPort(ImapServerDetails.GMAIL.hostAndPort())
         .build();
 
     try (ImapClientFactory clientFactory = new ImapClientFactory(configuration)){
       ImapClient client = clientFactory.connect(args[0], args[1]);
-
       client.login();
       client.awaitLogin();
       client.noop();

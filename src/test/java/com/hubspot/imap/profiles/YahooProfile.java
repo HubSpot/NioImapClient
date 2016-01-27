@@ -5,35 +5,35 @@ import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.utils.ImapServerDetails;
 
-public class OutlookProfile extends EmailServerTestProfile {
-  private static final String USER_NAME = "testing11235@outlook.com";
+public class YahooProfile extends EmailServerTestProfile {
+  private static final String USER_NAME = "testing11235@yahoo.com";
   private static final String PASSWORD = "***REMOVED***";
-  private static final OutlookServerImplDetails OUTLOOK_SERVER_IMPL_DETAILS = new OutlookServerImplDetails();
+  private static final YahooServerImplDetails YAHOO_SERVER_IMPL_DETAILS = new YahooServerImplDetails();
 
-  private static final ImapClientFactory OUTLOOK_CLIENT_FACTORY = new ImapClientFactory(
+  private static final ImapClientFactory YAHOO_CLIENT_FACTORY = new ImapClientFactory(
     new ImapConfiguration.Builder()
       .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(ImapServerDetails.OUTLOOK.hostAndPort())
+      .setHostAndPort(ImapServerDetails.YAHOO.hostAndPort())
       .setNoopKeepAliveIntervalSec(10)
       .setUseEpoll(true)
       .build()
   );
 
-  private static final OutlookProfile OUTLOOK_PROFILE = new OutlookProfile();
-  public static OutlookProfile getOutlookProfile() {
-    return OUTLOOK_PROFILE;
+  private static final YahooProfile YAHOO_PROFILE = new YahooProfile();
+  public static YahooProfile getYahooProfile() {
+    return YAHOO_PROFILE;
   }
 
-  private OutlookProfile() {}
+  private YahooProfile() {}
 
   @Override
   public ImapClientFactory getClientFactory() {
-    return OUTLOOK_CLIENT_FACTORY;
+    return YAHOO_CLIENT_FACTORY;
   }
 
   @Override
   public EmailServerImplDetails getImplDetails() {
-    return OUTLOOK_SERVER_IMPL_DETAILS;
+    return YAHOO_SERVER_IMPL_DETAILS;
   }
 
   @Override
@@ -48,13 +48,13 @@ public class OutlookProfile extends EmailServerTestProfile {
 
   @Override
   public String description() {
-    return String.format("Outlook [%s]", USER_NAME);
+    return String.format("Yahoo [%s]", USER_NAME);
   }
 
-  private static class OutlookServerImplDetails implements EmailServerImplDetails {
+  private static class YahooServerImplDetails implements EmailServerImplDetails {
     private static final String ALL_MAIL = "Inbox";
 
-    private OutlookServerImplDetails() {}
+    private YahooServerImplDetails() {}
 
     @Override
     public String getAllMailFolderName() {

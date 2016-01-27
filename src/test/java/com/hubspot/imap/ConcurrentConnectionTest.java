@@ -10,6 +10,8 @@ import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import io.netty.util.concurrent.Future;
 import org.assertj.core.api.Condition;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,11 +30,20 @@ public class ConcurrentConnectionTest extends ImapMultiServerTest {
   private static final int NUM_CONNS = 5;
 
   @Parameter public EmailServerTestProfile testProfile;
+  private static ListeningExecutorService executorService;
+
+  @BeforeClass
+  public static void setup() {
+    executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+  }
+
+  @AfterClass
+  public static void cleanup() {
+    executorService.shutdown();
+  }
 
   @Test
   public void testGivenMultipleConnections_canSendConcurrentNoop() throws Exception {
-    ListeningExecutorService executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
-
     List<ListenableFuture<Void>> futures = new ArrayList<>(NUM_CONNS);
     CopyOnWriteArrayList<ImapClient> clients = new CopyOnWriteArrayList<>();
     for (int i = 0; i < NUM_CONNS; i++) {
@@ -40,14 +51,14 @@ public class ConcurrentConnectionTest extends ImapMultiServerTest {
         ImapClient client = testProfile.getLoggedInClient();
         clients.add(client);
 
-        int noops = ThreadLocalRandom.current().nextInt(10);
+        int noops = ThreadLocalRandom.current().nextInt(5);
         for (int x = 0; x < noops; x++) {
           Future<NoopResponse> noopResponseFuture = client.noop();
           NoopResponse response = noopResponseFuture.get();
 
           assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
 
-          int delay = ThreadLocalRandom.current().nextInt(500);
+          int delay = ThreadLocalRandom.current().nextInt(200);
           Thread.sleep(delay);
         }
         return null;

@@ -193,7 +193,7 @@ public class ImapClientTest extends ImapMultiServerTest {
 
   @Test
   public void testFetchEnvelope_doesFetchEnvelope() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.ENVELOPE);
+    Future<FetchResponse> responseFuture = client.fetch(3, Optional.of(4L), FetchDataItemType.ENVELOPE);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);

@@ -3,7 +3,7 @@ package com.hubspot.imap.profiles;
 import com.hubspot.imap.ImapClientFactory;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.ImapConfiguration.AuthType;
-import com.hubspot.imap.utils.GmailUtils;
+import com.hubspot.imap.utils.ImapServerDetails;
 
 public class GmailProfile extends EmailServerTestProfile {
   private static final String USER_NAME = "hsimaptest1@gmail.com";
@@ -12,7 +12,7 @@ public class GmailProfile extends EmailServerTestProfile {
   private static final ImapClientFactory GMAIL_CLIENT_FACTORY = new ImapClientFactory(
     new ImapConfiguration.Builder()
       .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(GmailUtils.GMAIL_HOST_PORT)
+      .setHostAndPort(ImapServerDetails.GMAIL.hostAndPort())
       .setNoopKeepAliveIntervalSec(10)
       .setUseEpoll(true)
       .build()

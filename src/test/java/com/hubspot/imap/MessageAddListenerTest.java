@@ -39,7 +39,7 @@ public class MessageAddListenerTest extends ImapMultiServerTest {
 
     client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
     Future<OpenResponse> openFuture = client.open(testProfile.getImplDetails().getAllMailFolderName(), FolderOpenMode.READ);
-    openFuture.sync();
+    openFuture.await(30, TimeUnit.SECONDS);
 
     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
   }

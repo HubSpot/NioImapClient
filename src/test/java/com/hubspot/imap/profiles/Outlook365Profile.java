@@ -3,7 +3,7 @@ package com.hubspot.imap.profiles;
 import com.hubspot.imap.ImapClientFactory;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.ImapConfiguration.AuthType;
-import com.hubspot.imap.utils.OutlookUtils;
+import com.hubspot.imap.utils.ImapServerDetails;
 
 public class Outlook365Profile extends EmailServerTestProfile {
   private static final String USER_NAME = "eszabowexler@sidekick.engineering";
@@ -13,7 +13,7 @@ public class Outlook365Profile extends EmailServerTestProfile {
   private static final ImapClientFactory OUTLOOK_CLIENT_FACTORY = new ImapClientFactory(
     new ImapConfiguration.Builder()
       .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(OutlookUtils.OUTLOOK_365_IMAP_HOST_PORT)
+      .setHostAndPort(ImapServerDetails.OUTLOOK_365.hostAndPort())
       .setNoopKeepAliveIntervalSec(10)
       .setUseEpoll(true)
       .build()

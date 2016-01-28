@@ -4,6 +4,7 @@ import com.hubspot.imap.profiles.EmailServerTestProfile;
 import com.hubspot.imap.profiles.GmailProfile;
 import com.hubspot.imap.profiles.Outlook365Profile;
 import com.hubspot.imap.profiles.OutlookProfile;
+import com.hubspot.imap.profiles.YahooProfile;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -13,7 +14,8 @@ public abstract class ImapMultiServerTest {
   protected static final List<EmailServerTestProfile> TEST_PROFILES = Arrays.asList(
     GmailProfile.getGmailProfile(),
     OutlookProfile.getOutlookProfile(),
-    Outlook365Profile.getOutlook365Profile()
+    Outlook365Profile.getOutlook365Profile(),
+    YahooProfile.getYahooProfile()
   );
 
   @Parameters(name="{0}")

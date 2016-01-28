@@ -8,7 +8,7 @@ import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
-import com.hubspot.imap.utils.GmailUtils;
+import com.hubspot.imap.utils.ImapServerDetails;
 import io.netty.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +22,11 @@ public class NioImapClient {
   public static void main(String[] args) throws InterruptedException, IOException, ExecutionException {
     ImapConfiguration configuration = new ImapConfiguration.Builder()
         .setAuthType(AuthType.XOAUTH2)
-        .setHostAndPort(GmailUtils.GMAIL_HOST_PORT)
+        .setHostAndPort(ImapServerDetails.GMAIL.hostAndPort())
         .build();
 
     try (ImapClientFactory clientFactory = new ImapClientFactory(configuration)){
       ImapClient client = clientFactory.connect(args[0], args[1]);
-
       client.login();
       client.awaitLogin();
       client.noop();

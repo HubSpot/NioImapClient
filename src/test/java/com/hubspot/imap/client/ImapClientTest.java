@@ -19,6 +19,7 @@ import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapMessage;
+import com.hubspot.imap.protocol.message.MessageFlag;
 import com.hubspot.imap.protocol.message.StandardMessageFlag;
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.ResponseCode;
@@ -192,7 +193,7 @@ public class ImapClientTest extends ImapMultiServerTest {
 
   @Test
   public void testFetchEnvelope_doesFetchEnvelope() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.ENVELOPE);
+    Future<FetchResponse> responseFuture = client.fetch(3, Optional.of(4L), FetchDataItemType.ENVELOPE);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
@@ -343,7 +344,12 @@ public class ImapClientTest extends ImapMultiServerTest {
     fetchResponse = responseFuture.get();
     ImapMessage messageNotFlagged = fetchResponse.getMessages().iterator().next();
 
-    assertThat(messageNotFlagged.getFlags()).isEqualTo(message.getFlags());
+    assertThat(messageNotFlagged.getFlags().stream()
+                 .map(MessageFlag::getString)
+                 .collect(Collectors.toList()))
+      .containsOnlyElementsOf(message.getFlags().stream()
+                                .map(MessageFlag::getString)
+                                .collect(Collectors.toList()));
   }
 
   @Test

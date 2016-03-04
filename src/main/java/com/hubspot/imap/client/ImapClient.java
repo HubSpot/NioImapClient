@@ -12,6 +12,7 @@ import com.hubspot.imap.protocol.command.OpenCommand;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.XOAuth2Command;
+import com.hubspot.imap.protocol.command.fetch.ExplicitFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.FetchCommand;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -212,6 +214,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem item, FetchDataItem... otherItems) {
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
+  }
+
+  public Future<FetchResponse> uidfetch(Set<Long> uids, List<FetchDataItem> items) {
+    return send(new UidCommand(ImapCommandType.FETCH, new ExplicitFetchCommand(uids, items)));
   }
 
   public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) {

@@ -2,9 +2,12 @@ package com.hubspot.imap;
 
 import com.hubspot.imap.profiles.EmailServerTestProfile;
 import com.hubspot.imap.profiles.GmailProfile;
+import com.hubspot.imap.profiles.GmailOAuthProfile;
 import com.hubspot.imap.profiles.Outlook365Profile;
 import com.hubspot.imap.profiles.OutlookProfile;
 import com.hubspot.imap.profiles.YahooProfile;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -20,6 +23,12 @@ public abstract class ImapMultiServerTest {
 
   @Parameters(name="{0}")
   public static Collection<EmailServerTestProfile> parameters() {
-    return TEST_PROFILES;
+    if (GmailOAuthProfile.shouldRun()) {
+      List<EmailServerTestProfile> profiles = new ArrayList<>(TEST_PROFILES);
+      profiles.add(GmailOAuthProfile.getGmailProfile());
+      return profiles;
+    } else {
+      return TEST_PROFILES;
+    }
   }
 }

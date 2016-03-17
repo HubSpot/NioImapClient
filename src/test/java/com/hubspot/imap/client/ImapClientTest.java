@@ -32,7 +32,6 @@ import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import io.netty.util.concurrent.Future;
 import org.apache.james.mime4j.dom.Entity;
-import org.apache.james.mime4j.dom.Message;
 import org.apache.james.mime4j.dom.Multipart;
 import org.apache.james.mime4j.dom.SingleBody;
 import org.apache.james.mime4j.dom.TextBody;

@@ -12,15 +12,12 @@ import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.utils.ImapServerDetails;
 import org.assertj.core.util.Strings;
 
-public class GmailOAuthProfile extends EmailServerTestProfile {
-
-  private static final String USER_NAME = "hsimaptest1@gmail.com";
+public class GmailOAuthProfile extends GmailProfile {
 
   private static final String APP_ID = null;
   private static final String APP_SECRET = null;
   private static final String REFRESH_TOKEN = null;
 
-  private static final GmailServerImplDetails GMAIL_SERVER_IMPL_DETAILS = new GmailServerImplDetails();
   private static final ImapClientFactory GMAIL_CLIENT_FACTORY = new ImapClientFactory(
       new ImapConfiguration.Builder()
           .setAuthType(AuthType.XOAUTH2)
@@ -47,6 +44,8 @@ public class GmailOAuthProfile extends EmailServerTestProfile {
   private final String accessToken;
 
   private GmailOAuthProfile() {
+    super();
+
     GoogleCredential googleCredential = new GoogleCredential.Builder()
         .setClientSecrets(APP_ID, APP_SECRET)
         .setJsonFactory(new JacksonFactory())
@@ -70,16 +69,6 @@ public class GmailOAuthProfile extends EmailServerTestProfile {
   }
 
   @Override
-  public EmailServerImplDetails getImplDetails() {
-    return GMAIL_SERVER_IMPL_DETAILS;
-  }
-
-  @Override
-  public String getUsername() {
-    return USER_NAME;
-  }
-
-  @Override
   public String getPassword() {
     return accessToken;
   }
@@ -87,17 +76,6 @@ public class GmailOAuthProfile extends EmailServerTestProfile {
   @Override
   public String description() {
     return String.format("Gmail OAuth [%s]", USER_NAME);
-  }
-
-  private static class GmailServerImplDetails implements EmailServerImplDetails {
-    private static final String ALL_MAIL = "[Gmail]/All Mail";
-
-    private GmailServerImplDetails() {}
-
-    @Override
-    public String getAllMailFolderName() {
-      return ALL_MAIL;
-    }
   }
 
 }

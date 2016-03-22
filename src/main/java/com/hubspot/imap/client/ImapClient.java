@@ -137,9 +137,17 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
 
     loginFuture.addListener(future -> {
-      Object response = future.get();
+      final Object response = future.get();
       if (response instanceof ContinuationResponse) {
-        loginPromise.setFailure(AuthenticationFailedException.fromContinuation(((ContinuationResponse) response).getMessage()));
+        send(ImapCommandType.BLANK).addListener(blankFuture -> {
+          String continuationMessage = ((ContinuationResponse) response).getMessage();
+          Object blankResponse = blankFuture.get();
+          if (blankResponse instanceof TaggedResponse) {
+            loginPromise.setFailure(AuthenticationFailedException.fromContinuation(((TaggedResponse)blankResponse).getMessage(), continuationMessage));
+          } else {
+            loginPromise.setFailure(AuthenticationFailedException.fromContinuation(continuationMessage));
+          }
+        });
       } else {
         TaggedResponse taggedResponse = ((TaggedResponse) response);
         if (taggedResponse.getCode() == ResponseCode.BAD) {

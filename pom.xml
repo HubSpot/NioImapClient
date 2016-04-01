@@ -43,16 +43,19 @@
       <id>linux</id>
       <activation>
         <os>
-          <family>unix</family>
           <name>Linux</name>
+          <family>unix</family>
         </os>
       </activation>
+      <properties>
+        <netty.epoll.classifier>${os.detected.classifier}</netty.epoll.classifier>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>io.netty</groupId>
           <artifactId>netty-transport-native-epoll</artifactId>
           <version>${netty.version}</version>
-          <classifier>${os.detected.classifier}</classifier>
+          <classifier>${netty.epoll.classifier}</classifier>
         </dependency>
       </dependencies>
     </profile>
@@ -63,16 +66,19 @@
           <family>mac</family>
         </os>
       </activation>
+      <properties>
+        <netty.epoll.classifier/>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>io.netty</groupId>
           <artifactId>netty-transport-native-epoll</artifactId>
           <version>${netty.version}</version>
+          <classifier>${netty.epoll.classifier}</classifier>
         </dependency>
       </dependencies>
     </profile>
   </profiles>
-
 
   <dependencies>
     <dependency>

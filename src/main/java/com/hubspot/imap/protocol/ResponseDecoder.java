@@ -536,6 +536,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       lineParser.parse(in);
     }
 
+    discardSomeReadBytes();
     checkpoint(State.START_RESPONSE);
   }
 

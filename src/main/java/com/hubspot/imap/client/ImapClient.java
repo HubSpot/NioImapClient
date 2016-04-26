@@ -1,7 +1,22 @@
 package com.hubspot.imap.client;
 
+import java.io.Closeable;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
@@ -12,8 +27,8 @@ import com.hubspot.imap.protocol.command.OpenCommand;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.XOAuth2Command;
-import com.hubspot.imap.protocol.command.fetch.ExplicitFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.FetchCommand;
+import com.hubspot.imap.protocol.command.fetch.SetFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem;
@@ -33,6 +48,7 @@ import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import com.hubspot.imap.protocol.response.tagged.SearchResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -45,18 +61,6 @@ import io.netty.util.Recycler.Handle;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.io.Closeable;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
@@ -216,8 +220,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
   }
 
+  public Future<FetchResponse> uidfetch(Set<Long> uids, FetchDataItem first, FetchDataItem... others) {
+    return uidfetch(uids, Lists.asList(first, others));
+  }
+
   public Future<FetchResponse> uidfetch(Set<Long> uids, List<FetchDataItem> items) {
-    return send(new UidCommand(ImapCommandType.FETCH, new ExplicitFetchCommand(uids, items)));
+    return send(new UidCommand(ImapCommandType.FETCH, new SetFetchCommand(uids, items)));
   }
 
   public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) {

@@ -11,7 +11,15 @@ public class AuthenticationFailedException extends Exception {
     super(message);
   }
 
+  public AuthenticationFailedException(String message, String extraData) {
+    super(String.format("%s, Extra Data: '%s'", message, extraData));
+  }
+
   public static AuthenticationFailedException fromContinuation(String message) {
     return new AuthenticationFailedException(new String(B64.decode(message.trim()), StandardCharsets.UTF_8));
+  }
+
+  public static AuthenticationFailedException fromContinuation(String message, String extraData) {
+    return new AuthenticationFailedException(message, new String(B64.decode(extraData.trim()), StandardCharsets.UTF_8));
   }
 }

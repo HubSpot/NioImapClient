@@ -46,15 +46,12 @@ public class GMailLabelTest {
     try (ImapClient client = GMAIL_PROFILE.getLoggedInClient()) {
       GmailProfile.GmailServerImplDetails gmailServerImplDetails = (GmailProfile.GmailServerImplDetails) GMAIL_PROFILE.getImplDetails();
 
-      Future<ListResponse> listResponseFuture = client.list("", "*");
-      listResponseFuture.get();
       Future<OpenResponse> openResponseFuture = client.open(gmailServerImplDetails.getAllMailFolderName(), FolderOpenMode.WRITE);
       OpenResponse or = openResponseFuture.get();
       assertThat(or.getCode()).isEqualTo(ResponseCode.OK);
 
       Future<FetchResponse> fetchResponseFuture = client.fetch(1, Optional.empty(), FetchDataItemType.X_GM_LABELS, FetchDataItemType.FLAGS);
       FetchResponse fetchResponse = fetchResponseFuture.get();
-      System.out.println(fetchResponse.getMessages());
 
       assertThat(fetchResponse.getMessages().size()).isGreaterThan(0);
       assertThat(fetchResponse.getMessages()).haveAtLeastOne(new Condition<>(m -> {

@@ -6,6 +6,7 @@ import com.hubspot.imap.ImapConfiguration.AuthType;
 import com.hubspot.imap.utils.ImapServerDetails;
 
 public class GmailProfile extends EmailServerTestProfile {
+
   static final String USER_NAME = "hsimaptest1@gmail.com";
   private static final String PASSWORD = "***REMOVED***";
   private static final GmailServerImplDetails GMAIL_SERVER_IMPL_DETAILS = new GmailServerImplDetails();
@@ -50,14 +51,19 @@ public class GmailProfile extends EmailServerTestProfile {
     return String.format("Gmail [%s]", USER_NAME);
   }
 
-  private static class GmailServerImplDetails implements EmailServerImplDetails {
+  public static class GmailServerImplDetails implements EmailServerImplDetails {
     private static final String ALL_MAIL = "[Gmail]/All Mail";
+    private static final String DRAFTS= "[Gmail]/Drafts";
 
     private GmailServerImplDetails() {}
 
     @Override
     public String getAllMailFolderName() {
       return ALL_MAIL;
+    }
+
+    public String getDraftsFolderName() {
+      return DRAFTS;
     }
   }
 }

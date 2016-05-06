@@ -50,19 +50,13 @@ public class GmailProfile extends EmailServerTestProfile {
     return String.format("Gmail [%s]", USER_NAME);
   }
 
-  public static class GmailServerImplDetails implements EmailServerImplDetails {
+  private static class GmailServerImplDetails implements EmailServerImplDetails {
     private static final String ALL_MAIL = "[Gmail]/All Mail";
-    private static final String DRAFTS= "[Gmail]/Drafts";
-
     private GmailServerImplDetails() {}
 
     @Override
     public String getAllMailFolderName() {
       return ALL_MAIL;
-    }
-
-    public String getDraftsFolderName() {
-      return DRAFTS;
     }
   }
 }

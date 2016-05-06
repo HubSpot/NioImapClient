@@ -1,6 +1,5 @@
 package com.hubspot.imap.protocol.extension.gmail;
 
-import com.hubspot.imap.TestUtils;
 import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.profiles.GmailProfile;
@@ -14,11 +13,8 @@ import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import io.netty.util.concurrent.Future;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
-import java.util.logging.Level;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

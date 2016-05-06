@@ -12,7 +12,7 @@ public interface GMailLabel {
   enum SystemLabel implements GMailLabel {
     SENT("\\Sent"),
     INBOX("\\Inbox"),
-    DRAFTS("\\Drafts");
+    DRAFTS("\\Draft");
 
     private static final Map<String, SystemLabel> INDEX = Maps.uniqueIndex(Arrays.asList(SystemLabel.values()), SystemLabel::getLabel);
 

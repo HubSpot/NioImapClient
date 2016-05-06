@@ -52,6 +52,7 @@ public class GmailProfile extends EmailServerTestProfile {
 
   private static class GmailServerImplDetails implements EmailServerImplDetails {
     private static final String ALL_MAIL = "[Gmail]/All Mail";
+
     private GmailServerImplDetails() {}
 
     @Override

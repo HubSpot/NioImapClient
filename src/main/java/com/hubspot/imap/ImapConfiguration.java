@@ -11,7 +11,7 @@ public interface ImapConfiguration {
 
   boolean getUseEpoll();
 
-  boolean getUseSslConnect();
+  boolean getUseSsl();
 
   int getNoopKeepAliveIntervalSec();
   int getSocketTimeoutMs();
@@ -38,7 +38,7 @@ public interface ImapConfiguration {
 
     private boolean useEpoll;
 
-    private boolean useSslConnect = true;
+    private boolean useSsl = true;
 
     private int noopKeepAliveIntervalSec;
     private int socketTimeoutMs = 1000;
@@ -90,12 +90,12 @@ public interface ImapConfiguration {
       return this;
     }
 
-    public boolean getUseSslConnect() {
-      return this.useSslConnect;
+    public boolean getUseSsl() {
+      return this.useSsl;
     }
 
-    public Builder setUseSslConnect(boolean useSslConnect) {
-      this.useSslConnect = useSslConnect;
+    public Builder setUseSsl(boolean useSsl) {
+      this.useSsl = useSsl;
       return this;
     }
 
@@ -186,7 +186,7 @@ public interface ImapConfiguration {
       }
       Builder builder = (Builder) o;
       return getUseEpoll() == builder.getUseEpoll() &&
-          getUseSslConnect() == builder.getUseSslConnect() &&
+          getUseSsl() == builder.getUseSsl() &&
           getNoopKeepAliveIntervalSec() == builder.getNoopKeepAliveIntervalSec() &&
           getSocketTimeoutMs() == builder.getSocketTimeoutMs() &&
           getWriteBackOffMs() == builder.getWriteBackOffMs() &&

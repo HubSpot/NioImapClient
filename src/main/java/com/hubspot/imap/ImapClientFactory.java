@@ -47,7 +47,7 @@ public class ImapClientFactory implements AutoCloseable {
     this.idleExecutorGroup = new DefaultEventExecutorGroup(4);
 
     SslContext context = null;
-    if (configuration.getUseSslConnect()) {
+    if (configuration.getUseSsl()) {
       try {
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(((KeyStore) null));
@@ -68,7 +68,7 @@ public class ImapClientFactory implements AutoCloseable {
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
         .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
-        .handler(configuration.getUseSslConnect() ? new ImapChannelInitializer(configuration) : new ImapChannelInitializer(context, configuration));
+        .handler(configuration.getUseSsl() ? new ImapChannelInitializer(configuration) : new ImapChannelInitializer(context, configuration));
 
     if (configuration.getUseEpoll()) {
       bootstrap.channel(EpollSocketChannel.class);

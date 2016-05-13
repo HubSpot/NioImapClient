@@ -22,13 +22,19 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
     this.configuration = configuration;
   }
 
+  public ImapChannelInitializer(ImapConfiguration configuration) {
+    this(null, configuration);
+  }
+
   @Override
   protected void initChannel(SocketChannel socketChannel) throws Exception {
     ChannelPipeline channelPipeline = socketChannel.pipeline();
 
-    channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(),
+    if (sslContext != null) {
+      channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(),
         configuration.getHostAndPort().getHostText(),
         configuration.getHostAndPort().getPortOrDefault(993)));
+    }
 
 
     channelPipeline.addLast(STRING_ENCODER);

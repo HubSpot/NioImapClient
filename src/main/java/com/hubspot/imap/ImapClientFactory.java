@@ -46,16 +46,18 @@ public class ImapClientFactory implements AutoCloseable {
     this.promiseExecutorGroup = new DefaultEventExecutorGroup(configuration.getNumExecutorThreads());
     this.idleExecutorGroup = new DefaultEventExecutorGroup(4);
 
-    SslContext context;
-    try {
-      TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      trustManagerFactory.init(((KeyStore) null));
+    SslContext context = null;
+    if (configuration.getUseSslConnect()) {
+      try {
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(((KeyStore) null));
 
-      context = SslContextBuilder.forClient()
+        context = SslContextBuilder.forClient()
           .trustManager(trustManagerFactory)
           .build();
-    } catch (NoSuchAlgorithmException |SSLException |KeyStoreException e) {
-      throw Throwables.propagate(e);
+      } catch (NoSuchAlgorithmException | SSLException | KeyStoreException e) {
+        throw Throwables.propagate(e);
+      }
     }
 
     bootstrap.group(eventLoopGroup)
@@ -66,7 +68,7 @@ public class ImapClientFactory implements AutoCloseable {
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
         .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
-        .handler(new ImapChannelInitializer(context, configuration));
+        .handler(configuration.getUseSslConnect() ? new ImapChannelInitializer(configuration) : new ImapChannelInitializer(context, configuration));
 
     if (configuration.getUseEpoll()) {
       bootstrap.channel(EpollSocketChannel.class);

@@ -14,5 +14,6 @@ public enum ImapCommandType {
   BLANK,
   STORE,
   SEARCH,
+  CAPABILITY,
   COPY;
 }

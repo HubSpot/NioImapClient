@@ -130,6 +130,14 @@ public class ImapClientTest extends ImapMultiServerTest {
   }
 
   @Test
+  public void testCapability_doesGetResponse() throws Exception {
+    Future<TaggedResponse> capabilityResponseFuture = client.send(ImapCommandType.CAPABILITY);
+    TaggedResponse taggedResponse = capabilityResponseFuture.get();
+
+    assertThat(taggedResponse.getCode()).isEqualTo(ResponseCode.OK);
+  }
+
+  @Test
   public void testList_doesReturnFolders() throws Exception {
     Future<ListResponse> listResponseFuture = client.list("", "*");
 

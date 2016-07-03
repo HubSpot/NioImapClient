@@ -1,17 +1,18 @@
 package com.hubspot.imap.utils.parsers;
 
-import com.hubspot.imap.ImapConfiguration.Builder;
-import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
-import org.junit.Test;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import org.junit.Test;
+
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
+
 public class AtomOrStringParserTest {
-  private static final SoftReferencedAppendableCharSequence SEQUENCE_REF = new SoftReferencedAppendableCharSequence(new Builder().build());
+  private static final SoftReferencedAppendableCharSequence SEQUENCE_REF = new SoftReferencedAppendableCharSequence(1000);
   private static final AtomOrStringParser PARSER = new AtomOrStringParser(SEQUENCE_REF, 1000);
 
   private static final byte[] UNQUOTED = "Unquoted".getBytes(StandardCharsets.UTF_8);

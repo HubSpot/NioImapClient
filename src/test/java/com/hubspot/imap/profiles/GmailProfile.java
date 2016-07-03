@@ -2,7 +2,7 @@ package com.hubspot.imap.profiles;
 
 import com.hubspot.imap.ImapClientFactory;
 import com.hubspot.imap.ImapConfiguration;
-import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.ImapConfigurationIF.AuthType;
 import com.hubspot.imap.utils.ImapServerDetails;
 
 public class GmailProfile extends EmailServerTestProfile {
@@ -10,12 +10,12 @@ public class GmailProfile extends EmailServerTestProfile {
   private static final String PASSWORD = "***REMOVED***";
   private static final GmailServerImplDetails GMAIL_SERVER_IMPL_DETAILS = new GmailServerImplDetails();
   private static final ImapClientFactory GMAIL_CLIENT_FACTORY = new ImapClientFactory(
-    new ImapConfiguration.Builder()
-      .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(ImapServerDetails.GMAIL.hostAndPort())
-      .setNoopKeepAliveIntervalSec(10)
-      .setUseEpoll(true)
-      .build()
+      ImapConfiguration.builder()
+          .authType(AuthType.PASSWORD)
+          .hostAndPort(ImapServerDetails.GMAIL.hostAndPort())
+          .noopKeepAliveIntervalSec(10)
+          .useEpoll(true)
+          .build()
   );
 
   private static final GmailProfile GMAIL_PROFILE = new GmailProfile();

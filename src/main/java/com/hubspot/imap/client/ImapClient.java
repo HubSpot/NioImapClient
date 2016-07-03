@@ -100,8 +100,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public synchronized ChannelFuture connect() {
-    ChannelFuture future = bootstrap.connect(configuration.getHostAndPort().getHostText(),
-        configuration.getHostAndPort().getPort());
+    ChannelFuture future = bootstrap.connect(configuration.hostAndPort().getHostText(),
+        configuration.hostAndPort().getPort());
 
     future.addListener(f -> {
       if (f.isSuccess()) {
@@ -133,7 +133,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<TaggedResponse> login() {
     Future<TaggedResponse> loginFuture;
-    switch (configuration.getAuthType()) {
+    switch (configuration.authType()) {
       case XOAUTH2:
         loginFuture = oauthLogin();
         break;
@@ -174,7 +174,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   private void startKeepAlive() {
-    int keepAliveInterval = configuration.getNoopKeepAliveIntervalSec();
+    int keepAliveInterval = configuration.noopKeepAliveIntervalSec();
     if (keepAliveInterval > 0) {
       if (!connectionClosed.get() && channel.pipeline().get(KEEP_ALIVE_HANDLER) == null) {
         this.channel.pipeline().addFirst(KEEP_ALIVE_HANDLER, new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
@@ -346,7 +346,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         channel.eventLoop().schedule(() -> {
           this.writeNext();
           return null;
-        }, configuration.getWriteBackOffMs(), TimeUnit.MILLISECONDS);
+        }, configuration.writeBackOffMs(), TimeUnit.MILLISECONDS);
       }
     }
   }
@@ -407,7 +407,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   @Override
   public void close() {
     if (isConnected()) {
-      int stepTimeoutSec = configuration.getCloseTimeoutSec() / 3;
+      int stepTimeoutSec = configuration.closeTimeoutSec() / 3;
       try {
         connectionClosed.set(true);
         if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
@@ -446,7 +446,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   public void closeNow() {
     if (channel != null) {
       try {
-        channel.close().get(configuration.getCloseTimeoutSec(), TimeUnit.SECONDS);
+        channel.close().get(configuration.closeTimeoutSec(), TimeUnit.SECONDS);
       } catch (ExecutionException | TimeoutException e) {
         LOGGER.error("Exception closing channel.", e);
         throw Throwables.propagate(e);

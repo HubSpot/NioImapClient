@@ -2,7 +2,7 @@ package com.hubspot.imap.profiles;
 
 import com.hubspot.imap.ImapClientFactory;
 import com.hubspot.imap.ImapConfiguration;
-import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.ImapConfigurationIF.AuthType;
 import com.hubspot.imap.utils.ImapServerDetails;
 
 public class YahooProfile extends EmailServerTestProfile {
@@ -11,20 +11,22 @@ public class YahooProfile extends EmailServerTestProfile {
   private static final YahooServerImplDetails YAHOO_SERVER_IMPL_DETAILS = new YahooServerImplDetails();
 
   private static final ImapClientFactory YAHOO_CLIENT_FACTORY = new ImapClientFactory(
-    new ImapConfiguration.Builder()
-      .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(ImapServerDetails.YAHOO.hostAndPort())
-      .setNoopKeepAliveIntervalSec(10)
-      .setUseEpoll(true)
-      .build()
+      ImapConfiguration.builder()
+          .authType(AuthType.PASSWORD)
+          .hostAndPort(ImapServerDetails.YAHOO.hostAndPort())
+          .noopKeepAliveIntervalSec(10)
+          .useEpoll(true)
+          .build()
   );
 
   private static final YahooProfile YAHOO_PROFILE = new YahooProfile();
+
   public static YahooProfile getYahooProfile() {
     return YAHOO_PROFILE;
   }
 
-  private YahooProfile() {}
+  private YahooProfile() {
+  }
 
   @Override
   public ImapClientFactory getClientFactory() {
@@ -54,7 +56,8 @@ public class YahooProfile extends EmailServerTestProfile {
   private static class YahooServerImplDetails implements EmailServerImplDetails {
     private static final String ALL_MAIL = "Inbox";
 
-    private YahooServerImplDetails() {}
+    private YahooServerImplDetails() {
+    }
 
     @Override
     public String getAllMailFolderName() {

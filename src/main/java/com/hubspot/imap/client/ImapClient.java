@@ -400,7 +400,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     if (currentCommandPromise != null) {
       currentCommandPromise.tryFailure(cause);
     } else {
-      closeNow();
+      ctx.pipeline().fireExceptionCaught(cause);
     }
   }
 

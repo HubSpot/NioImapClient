@@ -2,15 +2,16 @@ package com.hubspot.imap.profiles;
 
 import java.io.IOException;
 
+import org.assertj.core.util.Strings;
+
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.common.base.Throwables;
 import com.hubspot.imap.ImapClientFactory;
 import com.hubspot.imap.ImapConfiguration;
-import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.ImapConfigurationIF.AuthType;
 import com.hubspot.imap.utils.ImapServerDetails;
-import org.assertj.core.util.Strings;
 
 public class GmailOAuthProfile extends GmailProfile {
 
@@ -19,11 +20,11 @@ public class GmailOAuthProfile extends GmailProfile {
   private static final String REFRESH_TOKEN = null;
 
   private static final ImapClientFactory GMAIL_CLIENT_FACTORY = new ImapClientFactory(
-      new ImapConfiguration.Builder()
-          .setAuthType(AuthType.XOAUTH2)
-          .setHostAndPort(ImapServerDetails.GMAIL.hostAndPort())
-          .setNoopKeepAliveIntervalSec(10)
-          .setUseEpoll(true)
+      ImapConfiguration.builder()
+          .authType(AuthType.XOAUTH2)
+          .hostAndPort(ImapServerDetails.GMAIL.hostAndPort())
+          .noopKeepAliveIntervalSec(10)
+          .useEpoll(true)
           .build()
   );
 

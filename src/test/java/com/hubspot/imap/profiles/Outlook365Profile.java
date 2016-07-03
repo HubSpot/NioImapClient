@@ -2,7 +2,7 @@ package com.hubspot.imap.profiles;
 
 import com.hubspot.imap.ImapClientFactory;
 import com.hubspot.imap.ImapConfiguration;
-import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.ImapConfigurationIF.AuthType;
 import com.hubspot.imap.utils.ImapServerDetails;
 
 public class Outlook365Profile extends EmailServerTestProfile {
@@ -11,12 +11,12 @@ public class Outlook365Profile extends EmailServerTestProfile {
   private static final Outlook365ServerImplDetails OUTLOOK_365_SERVER_IMPL_DETAILS = new Outlook365ServerImplDetails();
 
   private static final ImapClientFactory OUTLOOK_CLIENT_FACTORY = new ImapClientFactory(
-    new ImapConfiguration.Builder()
-      .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(ImapServerDetails.OUTLOOK_365.hostAndPort())
-      .setNoopKeepAliveIntervalSec(10)
-      .setUseEpoll(true)
-      .build()
+      ImapConfiguration.builder()
+          .authType(AuthType.PASSWORD)
+          .hostAndPort(ImapServerDetails.OUTLOOK_365.hostAndPort())
+          .noopKeepAliveIntervalSec(10)
+          .useEpoll(true)
+          .build()
   );
 
   private static final Outlook365Profile OUTLOOK_365_PROFILE = new Outlook365Profile();

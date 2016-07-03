@@ -1,6 +1,12 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.ImapConfiguration.AuthType;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.hubspot.imap.ImapConfigurationIF.AuthType;
 import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.folder.FolderAttribute;
@@ -9,23 +15,19 @@ import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import com.hubspot.imap.utils.ImapServerDetails;
-import io.netty.util.concurrent.Future;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
+import io.netty.util.concurrent.Future;
 
 public class NioImapClient {
   private static final Logger LOGGER = LoggerFactory.getLogger(NioImapClient.class);
 
   public static void main(String[] args) throws InterruptedException, IOException, ExecutionException {
-    ImapConfiguration configuration = new ImapConfiguration.Builder()
-        .setAuthType(AuthType.XOAUTH2)
-        .setHostAndPort(ImapServerDetails.GMAIL.hostAndPort())
+    ImapConfiguration configuration = ImapConfiguration.builder()
+        .authType(AuthType.XOAUTH2)
+        .hostAndPort(ImapServerDetails.GMAIL.hostAndPort())
         .build();
 
-    try (ImapClientFactory clientFactory = new ImapClientFactory(configuration)){
+    try (ImapClientFactory clientFactory = new ImapClientFactory(configuration)) {
       ImapClient client = clientFactory.connect(args[0], args[1]);
       client.login();
       client.awaitLogin();
@@ -34,7 +36,7 @@ public class NioImapClient {
       Future<ListResponse> future = client.list("", "[Gmail]/%");
       ListResponse response = future.get();
 
-      for (FolderMetadata metadata: response.getFolders()) {
+      for (FolderMetadata metadata : response.getFolders()) {
         if (metadata.getAttributes().contains(FolderAttribute.ALL)) {
           Future<OpenResponse> openFuture = client.open(metadata.getName(), FolderOpenMode.READ);
           OpenResponse openResponse = openFuture.get();

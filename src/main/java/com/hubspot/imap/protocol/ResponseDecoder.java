@@ -1,5 +1,26 @@
 package com.hubspot.imap.protocol;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.apache.james.mime4j.MimeException;
+import org.apache.james.mime4j.dom.Message;
+import org.apache.james.mime4j.dom.MessageServiceFactory;
+import org.apache.james.mime4j.message.DefaultMessageBuilder;
+import org.apache.james.mime4j.stream.MimeConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
@@ -36,45 +57,26 @@ import com.hubspot.imap.utils.parsers.NestedArrayParser;
 import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.WordParser;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.concurrent.EventExecutorGroup;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
-import org.apache.james.mime4j.MimeException;
-import org.apache.james.mime4j.dom.Message;
-import org.apache.james.mime4j.dom.MessageServiceFactory;
-import org.apache.james.mime4j.message.DefaultMessageBuilder;
-import org.apache.james.mime4j.stream.MimeConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 /**
  * This class handles decoding of IMAP responses. It handles 3 main types of responses
- *
- *  - Tagged - Final command repsonse. Prefixed with a command tag (e.x. A01)
- *  - Continuation - For when the server needs more info from the client. Prefixed with a '+'
- *  - Untagged  - Intermediate response, provides extra data for tagged response. Prefixed with a '*'. (Note: a server can send an anonymous tagged response at any time, even outside the context of a tagged command)
- *
+ * <p>
+ * - Tagged - Final command repsonse. Prefixed with a command tag (e.x. A01)
+ * - Continuation - For when the server needs more info from the client. Prefixed with a '+'
+ * - Untagged  - Intermediate response, provides extra data for tagged response. Prefixed with a '*'. (Note: a server can send an anonymous tagged response at any time, even outside the context of a tagged command)
+ * <p>
  * Tagged and continuation responses are fairly straightforward. Untagged responses are broken down in to 3 sub types:
- *
- *   - Standard - Response type followed by response data
- *   - OK - Starts with 'OK' followed by bracketed response data
- *   - Value - Starts with an int value, followed by response type
- *
+ * <p>
+ * - Standard - Response type followed by response data
+ * - OK - Starts with 'OK' followed by bracketed response data
+ * - Value - Starts with an int value, followed by response type
+ * <p>
  * Unless the current command specifically requests notification of untagged responses (i.e. IDLE), untagged responses are collected and added to the body of the tagged response once the tag is received.
  */
 public class ResponseDecoder extends ReplayingDecoder<State> {
@@ -117,16 +119,18 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private ImapMessage.Builder currentMessage;
 
-  public ResponseDecoder(ImapConfiguration configuration, ImapClientState clientState, EventExecutorGroup executorGroup) {
+  public ResponseDecoder(ImapConfiguration configuration,
+                         ImapClientState clientState,
+                         EventExecutorGroup executorGroup) {
     super(State.SKIP_CONTROL_CHARS);
     this.clientState = clientState;
     this.executorGroup = executorGroup;
 
-    this.charSeq = new SoftReferencedAppendableCharSequence(configuration);
-    this.lineParser = new LineParser(charSeq, configuration.getMaxLineLength());
-    this.wordParser = new WordParser(charSeq, configuration.getMaxLineLength());
-    this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, configuration.getMaxLineLength());
-    this.atomOrStringParser = new AtomOrStringParser(charSeq, configuration.getMaxLineLength());
+    this.charSeq = new SoftReferencedAppendableCharSequence(configuration.defaultResponseBufferSize());
+    this.lineParser = new LineParser(charSeq, configuration.maxLineLength());
+    this.wordParser = new WordParser(charSeq, configuration.maxLineLength());
+    this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, configuration.maxLineLength());
+    this.atomOrStringParser = new AtomOrStringParser(charSeq, configuration.maxLineLength());
     this.literalStringParser = new LiteralStringParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
     this.envelopeParser = new EnvelopeParser();
@@ -134,8 +138,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.messageBuilder = ((DefaultMessageBuilder) MESSAGE_SERVICE_FACTORY.newMessageBuilder());
 
     MimeConfig mimeConfig = new MimeConfig();
-    mimeConfig.setMaxLineLen(configuration.getMaxLineLength());
-    mimeConfig.setMaxHeaderLen(configuration.getMaxLineLength());
+    mimeConfig.setMaxLineLen(configuration.maxLineLength());
+    mimeConfig.setMaxHeaderLen(configuration.maxLineLength());
     messageBuilder.setMimeEntityConfig(mimeConfig);
 
     this.untaggedResponses = new ArrayList<>();
@@ -155,7 +159,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-    for (;;) {
+    for (; ; ) {
       if (LOGGER.isDebugEnabled()) {
         dumpLine("RCV", in);
       }
@@ -468,7 +472,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private UntaggedSearchResponse parseSearch(ByteBuf in) {
     List<Long> ids = new ArrayList<>();
-    for (;;) {
+    for (; ; ) {
       char c = ((char) in.readUnsignedByte());
       in.readerIndex(in.readerIndex() - 1);
       if (c == HttpConstants.CR || c == HttpConstants.LF) {
@@ -526,6 +530,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   /**
    * Reset checks to see if we are at the end of this response line. If not it fast forwards the buffer to the end of this line to prepare for the next response.
+   *
    * @param in
    */
   private void reset(ByteBuf in) {
@@ -549,7 +554,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private static void skipControlCharacters(ByteBuf buffer) {
-    for (;;) {
+    for (; ; ) {
       char c = (char) buffer.readUnsignedByte();
       if (!Character.isISOControl(c) &&
           !Character.isWhitespace(c)) {

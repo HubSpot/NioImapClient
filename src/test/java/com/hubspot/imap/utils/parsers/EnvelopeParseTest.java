@@ -1,16 +1,16 @@
 package com.hubspot.imap.utils.parsers;
 
-import com.hubspot.imap.ImapConfiguration.Builder;
+import static io.netty.buffer.Unpooled.wrappedBuffer;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.nio.charset.StandardCharsets;
+
+import org.junit.Test;
+
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.NestedArrayParser.Recycler;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
-import org.junit.Test;
-
-import java.nio.charset.StandardCharsets;
-
-import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class EnvelopeParseTest {
 
@@ -19,7 +19,7 @@ public class EnvelopeParseTest {
 
   @Test
   public void testCanParseEnvelope() throws Exception {
-    NestedArrayParser.Recycler<String> arrayParserRecycler = new Recycler<>(new AtomOrStringParser(new SoftReferencedAppendableCharSequence(new Builder().build()), 100000));
+    NestedArrayParser.Recycler<String> arrayParserRecycler = new Recycler<>(new AtomOrStringParser(new SoftReferencedAppendableCharSequence(1000), 100000));
     EnvelopeParser envelopeParser = new EnvelopeParser();
 
     NestedArrayParser<String> nestedArrayParser = arrayParserRecycler.get();

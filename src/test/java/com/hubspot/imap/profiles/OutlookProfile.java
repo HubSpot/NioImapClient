@@ -2,7 +2,7 @@ package com.hubspot.imap.profiles;
 
 import com.hubspot.imap.ImapClientFactory;
 import com.hubspot.imap.ImapConfiguration;
-import com.hubspot.imap.ImapConfiguration.AuthType;
+import com.hubspot.imap.ImapConfigurationIF.AuthType;
 import com.hubspot.imap.utils.ImapServerDetails;
 
 public class OutlookProfile extends EmailServerTestProfile {
@@ -11,20 +11,22 @@ public class OutlookProfile extends EmailServerTestProfile {
   private static final OutlookServerImplDetails OUTLOOK_SERVER_IMPL_DETAILS = new OutlookServerImplDetails();
 
   private static final ImapClientFactory OUTLOOK_CLIENT_FACTORY = new ImapClientFactory(
-    new ImapConfiguration.Builder()
-      .setAuthType(AuthType.PASSWORD)
-      .setHostAndPort(ImapServerDetails.OUTLOOK.hostAndPort())
-      .setNoopKeepAliveIntervalSec(10)
-      .setUseEpoll(true)
-      .build()
+      ImapConfiguration.builder()
+          .authType(AuthType.PASSWORD)
+          .hostAndPort(ImapServerDetails.OUTLOOK.hostAndPort())
+          .noopKeepAliveIntervalSec(10)
+          .useEpoll(true)
+          .build()
   );
 
   private static final OutlookProfile OUTLOOK_PROFILE = new OutlookProfile();
+
   public static OutlookProfile getOutlookProfile() {
     return OUTLOOK_PROFILE;
   }
 
-  private OutlookProfile() {}
+  private OutlookProfile() {
+  }
 
   @Override
   public ImapClientFactory getClientFactory() {
@@ -54,7 +56,8 @@ public class OutlookProfile extends EmailServerTestProfile {
   private static class OutlookServerImplDetails implements EmailServerImplDetails {
     private static final String ALL_MAIL = "Inbox";
 
-    private OutlookServerImplDetails() {}
+    private OutlookServerImplDetails() {
+    }
 
     @Override
     public String getAllMailFolderName() {

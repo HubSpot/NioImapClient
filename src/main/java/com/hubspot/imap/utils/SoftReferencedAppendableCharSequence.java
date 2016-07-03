@@ -1,17 +1,16 @@
 package com.hubspot.imap.utils;
 
-import com.hubspot.imap.ImapConfiguration;
-import io.netty.util.internal.AppendableCharSequence;
-
 import java.lang.ref.SoftReference;
+
+import io.netty.util.internal.AppendableCharSequence;
 
 public class SoftReferencedAppendableCharSequence {
   private SoftReference<AppendableCharSequence> reference;
 
-  private final ImapConfiguration configuration;
+  private final int defaultResponseBufferSize;
 
-  public SoftReferencedAppendableCharSequence(ImapConfiguration configuration) {
-    this.configuration = configuration;
+  public SoftReferencedAppendableCharSequence(int defaultResponseBufferSize) {
+    this.defaultResponseBufferSize = defaultResponseBufferSize;
     this.reference = new SoftReference<>(newCharSeq());
   }
 
@@ -27,6 +26,6 @@ public class SoftReferencedAppendableCharSequence {
   }
 
   private AppendableCharSequence newCharSeq() {
-    return new AppendableCharSequence(configuration.getDefaultResponseBufferSize());
+    return new AppendableCharSequence(defaultResponseBufferSize);
   }
 }

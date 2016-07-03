@@ -149,15 +149,15 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
           String continuationMessage = ((ContinuationResponse) response).getMessage();
           Object blankResponse = blankFuture.get();
           if (blankResponse instanceof TaggedResponse) {
-            loginPromise.setFailure(AuthenticationFailedException.fromContinuation(((TaggedResponse)blankResponse).getMessage(), continuationMessage));
+            loginPromise.tryFailure(AuthenticationFailedException.fromContinuation(((TaggedResponse)blankResponse).getMessage(), continuationMessage));
           } else {
-            loginPromise.setFailure(AuthenticationFailedException.fromContinuation(continuationMessage));
+            loginPromise.tryFailure(AuthenticationFailedException.fromContinuation(continuationMessage));
           }
         });
       } else {
         TaggedResponse taggedResponse = ((TaggedResponse) response);
         if (taggedResponse.getCode() == ResponseCode.BAD) {
-          loginPromise.setFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
+          loginPromise.tryFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
         } else {
           loginPromise.setSuccess(taggedResponse);
         }
@@ -316,7 +316,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public synchronized void send(ImapCommand imapCommand, Promise promise) {
     if (connectionClosed.get()) {
-      promise.setFailure(new ConnectionClosedException("Cannot write to closed connection."));
+      promise.tryFailure(new ConnectionClosedException("Cannot write to closed connection."));
       return;
     }
 
@@ -398,9 +398,9 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     LOGGER.error("Error in handler", cause);
     if (currentCommandPromise != null) {
-      currentCommandPromise.setFailure(cause);
+      currentCommandPromise.tryFailure(cause);
     } else {
-      ctx.fireExceptionCaught(cause);
+      closeNow();
     }
   }
 
@@ -413,7 +413,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
           try {
             if (!currentCommandPromise.await(stepTimeoutSec, TimeUnit.SECONDS)) {
-              pendingWriteQueue.iterator().forEachRemaining(c -> c.promise.setFailure(new ConnectionClosedException()));
+              pendingWriteQueue.iterator().forEachRemaining(c -> c.promise.tryFailure(new ConnectionClosedException()));
               currentCommandPromise.cancel(true);
             }
           } catch (InterruptedException e) {

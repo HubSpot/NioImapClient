@@ -70,7 +70,6 @@ public class ImapClientFactory implements AutoCloseable {
     }
 
     bootstrap.group(eventLoopGroup)
-        .option(ChannelOption.SO_LINGER, 0)
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeoutMillis())
         .option(ChannelOption.SO_KEEPALIVE, false)
         .option(ChannelOption.AUTO_CLOSE, true)

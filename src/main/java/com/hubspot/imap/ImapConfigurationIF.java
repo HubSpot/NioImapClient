@@ -42,7 +42,7 @@ public interface ImapConfigurationIF {
 
   @Default
   default int writeBackOffMs() {
-    return 10;
+    return 100;
   }
 
   @Default

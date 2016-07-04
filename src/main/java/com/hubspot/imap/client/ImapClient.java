@@ -336,6 +336,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public synchronized void writeNext() throws ConnectionClosedException {
+    if (connectionClosed.get()) {
+      return;
+    }
+
     if (pendingWriteQueue.peek() != null) {
       if (channel.isWritable()) {
         PendingCommand pendingCommand = pendingWriteQueue.poll();
@@ -430,21 +434,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
           LOGGER.debug("Caught exception while closing client", e);
         }
       } finally {
-        try {
-          channel.close().get(stepTimeoutSec, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException e) {
-          LOGGER.error("Exception closing channel.", e);
-          throw Throwables.propagate(e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          LOGGER.warn("Interrupted closing channel.", e);
-        }
+        closeNow();
       }
     }
   }
 
   public void closeNow() {
-    if (channel != null) {
+    connectionClosed.set(true);
+    if (channel != null && channel.isOpen()) {
       try {
         channel.close().get(configuration.closeTimeoutSec(), TimeUnit.SECONDS);
       } catch (ExecutionException | TimeoutException e) {

@@ -408,35 +408,24 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  @Override
-  public void close() {
+  public Future closeAsync() {
     if (isConnected()) {
-      int stepTimeoutSec = configuration.closeTimeoutSec() / 3;
-      try {
-        connectionClosed.set(true);
-        if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
-          try {
-            if (!currentCommandPromise.await(stepTimeoutSec, TimeUnit.SECONDS)) {
-              pendingWriteQueue.iterator().forEachRemaining(c -> c.promise.tryFailure(new ConnectionClosedException()));
-              currentCommandPromise.cancel(true);
-            }
-          } catch (InterruptedException e) {
-            LOGGER.error("Interrupted completing pending commands on close.", e);
-            throw Throwables.propagate(e);
-          }
-        }
-
-        Promise<TaggedResponse> logoutPromise = promiseExecutor.next().newPromise();
-        actuallySend(new BaseImapCommand(ImapCommandType.LOGOUT), logoutPromise);
-        try {
-          logoutPromise.get(stepTimeoutSec, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-          LOGGER.debug("Caught exception while closing client", e);
-        }
-      } finally {
-        closeNow();
+      connectionClosed.set(true);
+      if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
+        currentCommandPromise.cancel(true);
       }
+
+      return sendLogout();
+    } else {
+      return idleExecutor.next().submit(this::closeNow);
     }
+  }
+
+  private Future sendLogout() {
+    Promise<TaggedResponse> logoutPromise = promiseExecutor.next().newPromise();
+    actuallySend(new BaseImapCommand(ImapCommandType.LOGOUT), logoutPromise);
+
+    return logoutPromise.addListener(future1 -> closeNow());
   }
 
   public void closeNow() {
@@ -451,6 +440,15 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         Thread.currentThread().interrupt();
         LOGGER.warn("Interrupted closing channel.", e);
       }
+    }
+  }
+
+  @Override
+  public void close() {
+    try {
+      closeAsync().get(configuration.closeTimeoutSec(), TimeUnit.SECONDS);
+    } catch (Exception e) {
+      LOGGER.error("Caught exception while closing client!", e);
     }
   }
 

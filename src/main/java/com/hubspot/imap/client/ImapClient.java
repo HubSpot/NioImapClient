@@ -69,7 +69,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private final ImapConfiguration configuration;
   private final Bootstrap bootstrap;
-  private final EventExecutorGroup decoderExecutor;
   private final EventExecutorGroup promiseExecutor;
   private final EventExecutorGroup idleExecutor;
   private final String userName;
@@ -87,7 +86,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public ImapClient(ImapConfiguration configuration,
                     Bootstrap bootstrap,
-                    EventExecutorGroup decoderExecutor,
                     EventExecutorGroup promiseExecutor,
                     EventExecutorGroup idleExecutor,
                     String userName,
@@ -129,9 +127,9 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private void configureChannel(Channel channel) {
     this.channel = channel;
     this.channel.pipeline()
-        .addLast(decoderExecutor, new ResponseDecoder(configuration, clientState, promiseExecutor))
-        .addLast(codec)
-        .addLast(this)
+        .addLast(idleExecutor, new ResponseDecoder(configuration, clientState, promiseExecutor))
+        .addLast(idleExecutor, codec)
+        .addLast(idleExecutor, this)
         .addLast(promiseExecutor, this.clientState);
   }
 
@@ -415,10 +413,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
       if (!connectionClosed.get()) {
-        idleExecutor.next().submit(() -> {
-          noop();
-          return null;
-        });
+        noop();
       }
     } else if (evt instanceof ByeEvent) {
       if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT) {

@@ -1,5 +1,6 @@
 package com.hubspot.imap;
 
+import java.io.Closeable;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.hubspot.imap.client.ImapClient;
 
 import io.netty.bootstrap.Bootstrap;
@@ -29,13 +31,12 @@ import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 
-public class ImapClientFactory implements AutoCloseable {
+public class ImapClientFactory implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClientFactory.class);
 
   private final ImapConfiguration configuration;
   private final Bootstrap bootstrap;
   private final EventLoopGroup eventLoopGroup;
-  private final EventExecutorGroup decoderExecutorGroup;
   private final EventExecutorGroup promiseExecutorGroup;
   private final EventExecutorGroup idleExecutorGroup;
 
@@ -53,9 +54,12 @@ public class ImapClientFactory implements AutoCloseable {
       channelClass = NioSocketChannel.class;
     }
 
-    this.promiseExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads());
-    this.idleExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads());
-    this.decoderExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads());
+    ThreadFactoryBuilder baseThreadFactoryBuilder = new ThreadFactoryBuilder()
+        .setDaemon(true)
+        .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught exception on thread {}", t.getName(), e));
+
+    this.promiseExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads(), baseThreadFactoryBuilder.setNameFormat("imap-promise-executor-%d").build());
+    this.idleExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads(), baseThreadFactoryBuilder.setNameFormat("imap-idle-executor-%d").build());
 
     SslContext context = null;
     if (configuration.useSsl()) {
@@ -86,7 +90,7 @@ public class ImapClientFactory implements AutoCloseable {
   }
 
   public ImapClient create(String userName, String oathToken) {
-    return new ImapClient(configuration, bootstrap, decoderExecutorGroup, promiseExecutorGroup, idleExecutorGroup, userName, oathToken);
+    return new ImapClient(configuration, bootstrap, promiseExecutorGroup, idleExecutorGroup, userName, oathToken);
   }
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {

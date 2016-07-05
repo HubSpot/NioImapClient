@@ -37,7 +37,7 @@ public interface ImapConfigurationIF {
 
   @Default
   default int socketTimeoutMs() {
-    return 1000;
+    return 90000;
   }
 
   @Default

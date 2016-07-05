@@ -56,6 +56,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.Recycler;
 import io.netty.util.Recycler.Handle;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -127,6 +128,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private void configureChannel(Channel channel) {
     this.channel = channel;
     this.channel.pipeline()
+        .addLast(new ReadTimeoutHandler(configuration.socketTimeoutMs(), TimeUnit.MILLISECONDS))
         .addLast(idleExecutor, new ResponseDecoder(configuration, clientState, promiseExecutor))
         .addLast(idleExecutor, codec)
         .addLast(idleExecutor, this)
@@ -426,10 +428,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-    LOGGER.error("Error in handler", cause);
     if (currentCommandPromise != null) {
+      LOGGER.debug("Error while executing {}", clientState.getCurrentCommand().getCommandType(), cause);
       currentCommandPromise.tryFailure(cause);
     } else {
+      LOGGER.error("Error in handler", cause);
       ctx.pipeline().fireExceptionCaught(cause);
     }
   }

@@ -77,7 +77,6 @@ public class ImapClientFactory implements Closeable {
 
     bootstrap.group(eventLoopGroup)
         .option(ChannelOption.SO_LINGER, configuration.soLinger())
-        .option(ChannelOption.SO_TIMEOUT, configuration.socketTimeoutMs())
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeoutMillis())
         .option(ChannelOption.SO_KEEPALIVE, false)
         .option(ChannelOption.AUTO_CLOSE, true)

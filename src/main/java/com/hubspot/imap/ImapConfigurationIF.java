@@ -37,7 +37,7 @@ public interface ImapConfigurationIF {
 
   @Default
   default int socketTimeoutMs() {
-    return 1000;
+    return 90000;
   }
 
   @Default
@@ -67,12 +67,17 @@ public interface ImapConfigurationIF {
 
   @Default
   default int connectTimeoutMillis() {
-    return 30000;
+    return 5000;
   }
 
   @Default
   default int closeTimeoutSec() {
-    return 30;
+    return 5;
+  }
+
+  @Default
+  default int soLinger() {
+    return 5;
   }
 
   enum AuthType {

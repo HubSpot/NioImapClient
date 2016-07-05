@@ -69,6 +69,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private final ImapConfiguration configuration;
   private final Bootstrap bootstrap;
+  private final EventExecutorGroup decoderExecutor;
   private final EventExecutorGroup promiseExecutor;
   private final EventExecutorGroup idleExecutor;
   private final String userName;
@@ -84,7 +85,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private volatile Promise currentCommandPromise;
 
-  public ImapClient(ImapConfiguration configuration, Bootstrap bootstrap, EventExecutorGroup promiseExecutor, EventExecutorGroup idleExecutor, String userName, String authToken) {
+  public ImapClient(ImapConfiguration configuration,
+                    Bootstrap bootstrap,
+                    EventExecutorGroup decoderExecutor,
+                    EventExecutorGroup promiseExecutor,
+                    EventExecutorGroup idleExecutor,
+                    String userName,
+                    String authToken) {
     this.configuration = configuration;
     this.bootstrap = bootstrap;
     this.promiseExecutor = promiseExecutor;
@@ -121,10 +128,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private void configureChannel(Channel channel) {
     this.channel = channel;
-    this.channel.pipeline().addLast(new ResponseDecoder(configuration, clientState, promiseExecutor));
-    this.channel.pipeline().addLast(codec);
-    this.channel.pipeline().addLast(this);
-    this.channel.pipeline().addLast(promiseExecutor, this.clientState);
+    this.channel.pipeline()
+        .addLast(decoderExecutor, new ResponseDecoder(configuration, clientState, promiseExecutor))
+        .addLast(codec)
+        .addLast(this)
+        .addLast(promiseExecutor, this.clientState);
   }
 
   public ImapClientState getState() {
@@ -149,7 +157,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
           String continuationMessage = ((ContinuationResponse) response).getMessage();
           Object blankResponse = blankFuture.get();
           if (blankResponse instanceof TaggedResponse) {
-            loginPromise.tryFailure(AuthenticationFailedException.fromContinuation(((TaggedResponse)blankResponse).getMessage(), continuationMessage));
+            loginPromise.tryFailure(AuthenticationFailedException.fromContinuation(((TaggedResponse) blankResponse).getMessage(), continuationMessage));
           } else {
             loginPromise.tryFailure(AuthenticationFailedException.fromContinuation(continuationMessage));
           }
@@ -202,7 +210,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new OpenCommand(folderName, openMode));
   }
 
-  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, FetchDataItem fetchDataItem, FetchDataItem... otherFetchDataItems) {
+  public Future<FetchResponse> fetch(long startId,
+                                     Optional<Long> stopId,
+                                     FetchDataItem fetchDataItem,
+                                     FetchDataItem... otherFetchDataItems) {
     return send(new FetchCommand(startId, stopId, fetchDataItem, otherFetchDataItems));
   }
 
@@ -211,20 +222,34 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new FetchCommand(startId, stopId, fetchItems));
   }
 
-  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) {
+  public Future<StreamingFetchResponse> uidfetch(long startId,
+                                                 Optional<Long> stopId,
+                                                 Consumer<ImapMessage> messageConsumer,
+                                                 FetchDataItem item,
+                                                 FetchDataItem... otherItems) {
     return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems)));
   }
 
-  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, FetchDataItem item, FetchDataItem... otherItems) {
+  public Future<StreamingFetchResponse> fetch(long startId,
+                                              Optional<Long> stopId,
+                                              Consumer<ImapMessage> messageConsumer,
+                                              FetchDataItem item,
+                                              FetchDataItem... otherItems) {
     return send(new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems));
   }
 
-  public Future<StreamingFetchResponse> fetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, List<FetchDataItem> fetchDataItems) {
+  public Future<StreamingFetchResponse> fetch(long startId,
+                                              Optional<Long> stopId,
+                                              Consumer<ImapMessage> messageConsumer,
+                                              List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
     return send(new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems));
   }
 
-  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, FetchDataItem item, FetchDataItem... otherItems) {
+  public Future<FetchResponse> uidfetch(long startId,
+                                        Optional<Long> stopId,
+                                        FetchDataItem item,
+                                        FetchDataItem... otherItems) {
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
   }
 
@@ -241,12 +266,18 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchItems)));
   }
 
-  public Future<StreamingFetchResponse> uidfetch(long startId, Optional<Long> stopId, Consumer<ImapMessage> messageConsumer, List<FetchDataItem> fetchDataItems) {
+  public Future<StreamingFetchResponse> uidfetch(long startId,
+                                                 Optional<Long> stopId,
+                                                 Consumer<ImapMessage> messageConsumer,
+                                                 List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
     return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems)));
   }
 
-  public Future<TaggedResponse> uidstore(StoreAction action, long startId, Optional<Long> stopId, MessageFlag... flags) {
+  public Future<TaggedResponse> uidstore(StoreAction action,
+                                         long startId,
+                                         Optional<Long> stopId,
+                                         MessageFlag... flags) {
     return send(new UidCommand(ImapCommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
@@ -300,7 +331,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
    * It is possible for a command to be queued and then a connection closed before it is actually executed, so it is important to listen to the returned future in order to ensure that the command was completed.
    *
    * @param imapCommand command to send
-   * @param <T> Response type
+   * @param <T>         Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
    */
   public synchronized <T extends TaggedResponse> Future<T> send(ImapCommand imapCommand) {

@@ -35,6 +35,7 @@ public class ImapClientFactory implements AutoCloseable {
   private final ImapConfiguration configuration;
   private final Bootstrap bootstrap;
   private final EventLoopGroup eventLoopGroup;
+  private final EventExecutorGroup decoderExecutorGroup;
   private final EventExecutorGroup promiseExecutorGroup;
   private final EventExecutorGroup idleExecutorGroup;
 
@@ -54,6 +55,7 @@ public class ImapClientFactory implements AutoCloseable {
 
     this.promiseExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads());
     this.idleExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads());
+    this.decoderExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads());
 
     SslContext context = null;
     if (configuration.useSsl()) {
@@ -70,7 +72,8 @@ public class ImapClientFactory implements AutoCloseable {
     }
 
     bootstrap.group(eventLoopGroup)
-        .option(ChannelOption.SO_LINGER, 0)
+        .option(ChannelOption.SO_LINGER, configuration.soLinger())
+        .option(ChannelOption.SO_TIMEOUT, configuration.socketTimeoutMs())
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeoutMillis())
         .option(ChannelOption.SO_KEEPALIVE, false)
         .option(ChannelOption.AUTO_CLOSE, true)
@@ -83,7 +86,7 @@ public class ImapClientFactory implements AutoCloseable {
   }
 
   public ImapClient create(String userName, String oathToken) {
-    return new ImapClient(configuration, bootstrap, promiseExecutorGroup, idleExecutorGroup, userName, oathToken);
+    return new ImapClient(configuration, bootstrap, decoderExecutorGroup, promiseExecutorGroup, idleExecutorGroup, userName, oathToken);
   }
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {

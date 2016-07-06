@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
@@ -88,12 +89,16 @@ public class ImapClientFactory implements Closeable {
     bootstrap.channel(channelClass);
   }
 
-  public ImapClient create(String userName, String oathToken) {
-    return new ImapClient(configuration, bootstrap, promiseExecutorGroup, idleExecutorGroup, userName, oathToken);
+  public ImapClient create(String clientName, String userName, String oathToken) {
+    return new ImapClient(configuration, bootstrap, promiseExecutorGroup, idleExecutorGroup, clientName, userName, oathToken);
   }
 
   public ImapClient connect(String userName, String oauthToken) throws InterruptedException {
-    ImapClient client = create(userName, oauthToken);
+    return connect(UUID.randomUUID().toString(), userName, oauthToken);
+  }
+
+  public ImapClient connect(String clientName, String userName, String oauthToken) throws InterruptedException {
+    ImapClient client = create(clientName, userName, oauthToken);
     client.connect();
     return client;
   }

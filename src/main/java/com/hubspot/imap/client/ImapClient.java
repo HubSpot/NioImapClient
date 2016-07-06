@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
@@ -48,6 +47,7 @@ import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import com.hubspot.imap.protocol.response.tagged.SearchResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
+import com.hubspot.imap.utils.LogUtils;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -64,10 +64,10 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, Closeable {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ImapClient.class);
 
   private static final String KEEP_ALIVE_HANDLER = "imap noop keep alive";
 
+  private final Logger logger;
   private final ImapConfiguration configuration;
   private final Bootstrap bootstrap;
   private final EventExecutorGroup promiseExecutor;
@@ -89,15 +89,17 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
                     Bootstrap bootstrap,
                     EventExecutorGroup promiseExecutor,
                     EventExecutorGroup idleExecutor,
+                    String clientName,
                     String userName,
                     String authToken) {
+    this.logger = LogUtils.loggerWithName(ImapClient.class, clientName);
     this.configuration = configuration;
     this.bootstrap = bootstrap;
     this.promiseExecutor = promiseExecutor;
     this.idleExecutor = idleExecutor;
     this.userName = userName;
     this.authToken = authToken;
-    this.clientState = new ImapClientState(promiseExecutor);
+    this.clientState = new ImapClientState(clientName, promiseExecutor);
     this.codec = new ImapCodec(clientState);
     this.pendingWriteQueue = new ConcurrentLinkedQueue<>();
     this.connectionClosed = new AtomicBoolean(false);
@@ -400,13 +402,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       TaggedResponse taggedResponse = ((TaggedResponse) msg);
 
       if (currentCommandPromise.isDone() && !currentCommandPromise.isSuccess()) {
-        LOGGER.debug("Got tagged response to failed imapCommand, skipping");
+        logger.debug("Got tagged response to failed imapCommand, skipping");
         return;
       }
       try {
         currentCommandPromise.setSuccess(taggedResponse);
       } catch (IllegalStateException e) {
-        LOGGER.debug("Could not complete current imapCommand", e);
+        logger.debug("Could not complete current imapCommand", e);
       }
     }
   }
@@ -429,10 +431,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     if (currentCommandPromise != null) {
-      LOGGER.debug("Error while executing {}", clientState.getCurrentCommand().getCommandType(), cause);
+      logger.debug("Error while executing {}", clientState.getCurrentCommand().getCommandType(), cause);
       currentCommandPromise.tryFailure(cause);
     } else {
-      LOGGER.error("Error in handler", cause);
+      logger.error("Error in handler", cause);
       ctx.pipeline().fireExceptionCaught(cause);
     }
   }
@@ -463,11 +465,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       try {
         channel.close().get(configuration.closeTimeoutSec(), TimeUnit.SECONDS);
       } catch (ExecutionException | TimeoutException e) {
-        LOGGER.error("Exception closing channel.", e);
+        logger.error("Exception closing channel.", e);
         throw Throwables.propagate(e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        LOGGER.warn("Interrupted closing channel.", e);
+        logger.warn("Interrupted closing channel.", e);
       }
     }
   }
@@ -477,7 +479,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     try {
       closeAsync().get(configuration.closeTimeoutSec(), TimeUnit.SECONDS);
     } catch (Exception e) {
-      LOGGER.error("Caught exception while closing client!", e);
+      logger.error("Caught exception while closing client!", e);
     }
   }
 

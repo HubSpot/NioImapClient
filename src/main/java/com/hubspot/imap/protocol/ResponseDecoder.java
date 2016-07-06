@@ -19,7 +19,6 @@ import org.apache.james.mime4j.dom.MessageServiceFactory;
 import org.apache.james.mime4j.message.DefaultMessageBuilder;
 import org.apache.james.mime4j.stream.MimeConfig;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Throwables;
@@ -49,6 +48,7 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.protocol.response.untagged.UntaggedSearchResponse;
 import com.hubspot.imap.utils.CommandUtils;
+import com.hubspot.imap.utils.LogUtils;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.AtomOrStringParser;
 import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
@@ -81,8 +81,6 @@ import io.netty.util.concurrent.EventExecutorGroup;
  * Unless the current command specifically requests notification of untagged responses (i.e. IDLE), untagged responses are collected and added to the body of the tagged response once the tag is received.
  */
 public class ResponseDecoder extends ReplayingDecoder<State> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ResponseDecoder.class);
-
   private static final MessageServiceFactory MESSAGE_SERVICE_FACTORY;
 
   static {
@@ -100,6 +98,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private static final char LPAREN = '(';
   private static final char RPAREN = ')';
 
+  private final Logger logger;
   private final ImapClientState clientState;
   private final EventExecutorGroup executorGroup;
 
@@ -124,6 +123,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
                          ImapClientState clientState,
                          EventExecutorGroup executorGroup) {
     super(State.SKIP_CONTROL_CHARS);
+    this.logger = LogUtils.loggerWithName(ResponseDecoder.class, clientState.getClientName());
     this.clientState = clientState;
     this.executorGroup = executorGroup;
 
@@ -162,7 +162,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
     for (; ; ) {
-      if (LOGGER.isDebugEnabled()) {
+      if (logger.isDebugEnabled()) {
         dumpLine("RCV", in);
       }
 
@@ -552,7 +552,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void dumpLine(String prefix, ByteBuf in) {
     int index = in.readerIndex();
     String line = lineParser.parse(in);
-    LOGGER.debug("{}: {}", prefix, line);
+    logger.debug("[{}] {}: {}", clientState.getClientName(), prefix, line);
 
     in.readerIndex(index);
   }

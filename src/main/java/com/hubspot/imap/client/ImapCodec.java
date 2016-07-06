@@ -1,5 +1,9 @@
 package com.hubspot.imap.client;
 
+import java.util.List;
+
+import org.slf4j.Logger;
+
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
@@ -16,18 +20,17 @@ import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.CommandUtils;
+import com.hubspot.imap.utils.LogUtils;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.List;
 
 public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ImapCodec.class);
-
+  private final Logger logger;
   private final ImapClientState clientState;
 
   public ImapCodec(ImapClientState clientState) {
+    this.logger = LogUtils.loggerWithName(ImapCodec.class, clientState.getClientName());
     this.clientState = clientState;
   }
 
@@ -35,7 +38,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
   protected void encode(ChannelHandlerContext ctx, BaseImapCommand msg, List<Object> out) throws Exception {
     String data = msg.commandString();
     String tag = clientState.getNextTag();
-    LOGGER.debug("SEND: {}{}", tag, data);
+    logger.debug("SEND: {}{}", tag, data);
     out.add(tag + data + "\r\n");
   }
 

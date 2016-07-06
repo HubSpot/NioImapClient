@@ -1,5 +1,10 @@
 package com.hubspot.imap.client;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.hubspot.imap.client.listener.ConnectionListener;
 import com.hubspot.imap.client.listener.MessageAddListener;
 import com.hubspot.imap.client.listener.OpenEventListener;
@@ -8,17 +13,15 @@ import com.hubspot.imap.protocol.response.events.ExistsEvent;
 import com.hubspot.imap.protocol.response.events.ExpungeEvent;
 import com.hubspot.imap.protocol.response.events.OpenEvent;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ImapClientState extends ChannelInboundHandlerAdapter {
+  private final String clientName;
   private final EventExecutorGroup executorGroup;
 
   private final AtomicReference<ImapCommand> currentCommand;
@@ -32,7 +35,8 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
   private Channel channel;
 
-  public ImapClientState(EventExecutorGroup executorGroup) {
+  public ImapClientState(String clientName, EventExecutorGroup executorGroup) {
+    this.clientName = clientName;
     this.executorGroup = executorGroup;
 
     this.currentCommand = new AtomicReference<>();
@@ -118,5 +122,9 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
   public void setCurrentCommand(ImapCommand imapCommand) {
     currentCommand.set(imapCommand);
+  }
+
+  public String getClientName() {
+    return clientName;
   }
 }

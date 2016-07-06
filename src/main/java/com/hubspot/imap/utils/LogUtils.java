@@ -6,6 +6,6 @@ import org.slf4j.LoggerFactory;
 public class LogUtils {
 
   public static Logger loggerWithName(Class klass, String name) {
-    return LoggerFactory.getLogger(String.format("%s[%s]", klass.getName(), name));
+    return LoggerFactory.getLogger(String.format("%s.%s", klass.getName(), name));
   }
 }

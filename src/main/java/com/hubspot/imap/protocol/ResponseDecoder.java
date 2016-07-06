@@ -21,6 +21,7 @@ import org.apache.james.mime4j.stream.MimeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
@@ -157,6 +158,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     RESET;
   }
 
+  @Timed
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
     for (; ; ) {
@@ -225,6 +227,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
   }
 
+  @Timed
   private void parseFetch(ByteBuf in) throws UnknownFetchItemTypeException, IOException, ResponseParseException {
     skipControlCharacters(in);
 
@@ -427,7 +430,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         .build();
   }
 
-  private Message parseBody(ByteBuf in) throws UnknownFetchItemTypeException, IOException, ResponseParseException {
+  @Timed
+  Message parseBody(ByteBuf in) throws UnknownFetchItemTypeException, IOException, ResponseParseException {
     char c = ((char) in.readUnsignedByte());
 
     //String bodySection = ""; At some point we will need to actually store the body section that is being parsed below

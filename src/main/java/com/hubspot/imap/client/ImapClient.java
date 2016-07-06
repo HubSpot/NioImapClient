@@ -438,7 +438,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public Future closeAsync() {
-    if (isConnected()) {
+    if (isConnected() && !connectionClosed.get()) {
       connectionClosed.set(true);
       if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
         currentCommandPromise.cancel(true);

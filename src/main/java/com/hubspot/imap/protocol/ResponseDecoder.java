@@ -552,7 +552,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void dumpLine(String prefix, ByteBuf in) {
     int index = in.readerIndex();
     String line = lineParser.parse(in);
-    logger.debug("[{}] {}: {}", clientState.getClientName(), prefix, line);
+    logger.debug("{}: {}", prefix, line);
 
     in.readerIndex(index);
   }

@@ -1,24 +1,24 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.profiles.EmailServerTestProfile;
-import com.hubspot.imap.profiles.GmailProfile;
-import com.hubspot.imap.profiles.GmailOAuthProfile;
-import com.hubspot.imap.profiles.Outlook365Profile;
-import com.hubspot.imap.profiles.OutlookProfile;
-import com.hubspot.imap.profiles.YahooProfile;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
 import org.junit.runners.Parameterized.Parameters;
+
+import com.hubspot.imap.profiles.EmailServerTestProfile;
+import com.hubspot.imap.profiles.GmailOAuthProfile;
+import com.hubspot.imap.profiles.GmailProfile;
+import com.hubspot.imap.profiles.Outlook365Profile;
+import com.hubspot.imap.profiles.OutlookProfile;
 
 public abstract class ImapMultiServerTest {
   protected static final List<EmailServerTestProfile> TEST_PROFILES = Arrays.asList(
     GmailProfile.getGmailProfile(),
     OutlookProfile.getOutlookProfile(),
-    Outlook365Profile.getOutlook365Profile(),
-    YahooProfile.getYahooProfile()
+    Outlook365Profile.getOutlook365Profile()
+    //YahooProfile.getYahooProfile()
   );
 
   @Parameters(name="{0}")

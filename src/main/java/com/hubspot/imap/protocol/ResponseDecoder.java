@@ -161,69 +161,67 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   @Timed
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-    for (; ; ) {
-      if (logger.isDebugEnabled()) {
-        dumpLine("RCV", in);
-      }
+    if (logger.isDebugEnabled()) {
+      dumpLine("RCV", in);
+    }
 
-      switch (state()) {
-        case SKIP_CONTROL_CHARS:
-          try {
-            skipControlCharacters(in);
-            checkpoint(State.START_RESPONSE);
-          } finally {
-            checkpoint();
-          }
-        case START_RESPONSE:
-          char c = ((char) in.readUnsignedByte());
-          if (c == UNTAGGED_PREFIX) {
-            checkpoint(State.UNTAGGED);
-          } else if (c == CONTINUATION_PREFIX) {
-            checkpoint(State.CONTINUATION);
-          } else {
-            in.readerIndex(in.readerIndex() - 1); // We want the whole tag (A1) not just the int
-            checkpoint(State.TAGGED);
-          }
-          break;
-        case UNTAGGED:
+    switch (state()) {
+      case SKIP_CONTROL_CHARS:
+        try {
           skipControlCharacters(in);
-          String word = wordParser.parse(in);
-          if (NumberUtils.isDigits(word)) {
-            UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in));
-            handleUntaggedValue(type, word, ctx);
+          checkpoint(State.START_RESPONSE);
+        } finally {
+          checkpoint();
+        }
+      case START_RESPONSE:
+        char c = ((char) in.readUnsignedByte());
+        if (c == UNTAGGED_PREFIX) {
+          checkpoint(State.UNTAGGED);
+        } else if (c == CONTINUATION_PREFIX) {
+          checkpoint(State.CONTINUATION);
+        } else {
+          in.readerIndex(in.readerIndex() - 1); // We want the whole tag (A1) not just the int
+          checkpoint(State.TAGGED);
+        }
+        break;
+      case UNTAGGED:
+        skipControlCharacters(in);
+        String word = wordParser.parse(in);
+        if (NumberUtils.isDigits(word)) {
+          UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in));
+          handleUntaggedValue(type, word, ctx);
+        } else {
+          if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
+            checkpoint(State.UNTAGGED_OK);
           } else {
-            if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
-              checkpoint(State.UNTAGGED_OK);
-            } else {
-              UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
-              handleUntagged(type, in, ctx);
-            }
+            UntaggedResponseType type = UntaggedResponseType.getResponseType(word);
+            handleUntagged(type, in, ctx);
           }
-          break;
-        case UNTAGGED_OK:
-          handleUntagged(in, ctx);
-          break;
-        case CONTINUATION:
-          handleContinuation(in, out);
-          break;
-        case TAGGED:
-          handleTagged(in, out);
-          break;
-        case FETCH:
-          try {
-            parseFetch(in);
-          } catch (Exception e) {
-            if (state() != State.RESET) {
-              lineParser.parse(in);
-              checkpoint(State.RESET);
-              throw e;
-            }
+        }
+        break;
+      case UNTAGGED_OK:
+        handleUntagged(in, ctx);
+        break;
+      case CONTINUATION:
+        handleContinuation(in, out);
+        break;
+      case TAGGED:
+        handleTagged(in, out);
+        break;
+      case FETCH:
+        try {
+          parseFetch(in);
+        } catch (Exception e) {
+          if (state() != State.RESET) {
+            lineParser.parse(in);
+            checkpoint(State.RESET);
+            throw e;
           }
-          break;
-        case RESET:
-          reset(in);
-          break;
-      }
+        }
+        break;
+      case RESET:
+        reset(in);
+        break;
     }
   }
 

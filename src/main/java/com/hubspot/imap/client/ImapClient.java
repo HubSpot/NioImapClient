@@ -131,9 +131,9 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     this.channel = channel;
     this.channel.pipeline()
         .addLast(new ReadTimeoutHandler(configuration.socketTimeoutMs(), TimeUnit.MILLISECONDS))
-        .addLast(idleExecutor, new ResponseDecoder(configuration, clientState, promiseExecutor))
-        .addLast(idleExecutor, codec)
-        .addLast(idleExecutor, this)
+        .addLast(new ResponseDecoder(configuration, clientState, promiseExecutor))
+        .addLast(codec)
+        .addLast(promiseExecutor, this)
         .addLast(promiseExecutor, this.clientState);
   }
 

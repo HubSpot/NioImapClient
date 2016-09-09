@@ -24,6 +24,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
@@ -161,8 +162,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   @Timed
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-    if (logger.isDebugEnabled()) {
-      dumpLine("RCV", in);
+    if (ctx.channel().attr(ImapChannelAttrs.CONFIGURATION).get().tracingEnabled()) {
+      trace("RCV", in);
     }
 
     switch (state()) {
@@ -547,10 +548,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     checkpoint(State.START_RESPONSE);
   }
 
-  private void dumpLine(String prefix, ByteBuf in) {
+  private void trace(String prefix, ByteBuf in) {
     int index = in.readerIndex();
     String line = lineParser.parse(in);
-    logger.debug("{}: {}", prefix, line);
+    logger.info("{}: {}", prefix, line);
 
     in.readerIndex(index);
   }

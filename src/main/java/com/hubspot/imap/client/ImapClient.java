@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.ImapConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
@@ -135,6 +136,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         .addLast(codec)
         .addLast(promiseExecutor, this)
         .addLast(promiseExecutor, this.clientState);
+
+    this.channel.attr(ImapChannelAttrs.CONFIGURATION).set(configuration);
   }
 
   public ImapClientState getState() {

@@ -80,6 +80,11 @@ public interface ImapConfigurationIF {
     return 5;
   }
 
+  @Default
+  default boolean tracingEnabled() {
+    return false;
+  }
+
   enum AuthType {
     PASSWORD,
     XOAUTH2;

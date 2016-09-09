@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 
+import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
@@ -38,7 +39,9 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
   protected void encode(ChannelHandlerContext ctx, BaseImapCommand msg, List<Object> out) throws Exception {
     String data = msg.commandString();
     String tag = clientState.getNextTag();
-    logger.debug("SEND: {}{}", tag, data);
+
+    trace(ctx, tag, data);
+
     out.add(tag + data + "\r\n");
   }
 
@@ -95,6 +98,12 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
           ctx.fireUserEventTriggered(new ExistsEvent(i.getValue()));
         }
       });
+    }
+  }
+
+  private void trace(ChannelHandlerContext ctx, String tag, String data) {
+    if (ctx.channel().attr(ImapChannelAttrs.CONFIGURATION).get().tracingEnabled()) {
+      logger.info("SEND: {}{}", tag, data);
     }
   }
 }

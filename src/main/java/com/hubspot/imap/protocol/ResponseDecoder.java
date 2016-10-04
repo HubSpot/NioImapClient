@@ -473,6 +473,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     checkpoint(State.FETCH_BODY);
   }
 
+  @Timed
   Optional<Message> parseBodyContent(ByteBuf in) throws ResponseParseException {
     Optional<String> body = bufferedBodyParser.parse(in);
     if (!body.isPresent()) {

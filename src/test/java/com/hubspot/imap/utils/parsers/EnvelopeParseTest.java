@@ -11,6 +11,7 @@ import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.NestedArrayParser.Recycler;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
+import com.hubspot.imap.utils.parsers.string.AtomOrStringParser;
 
 public class EnvelopeParseTest {
 

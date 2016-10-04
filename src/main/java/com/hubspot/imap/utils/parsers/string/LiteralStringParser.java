@@ -1,19 +1,26 @@
-package com.hubspot.imap.utils.parsers;
+package com.hubspot.imap.utils.parsers.string;
 
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
+import com.hubspot.imap.utils.parsers.ByteBufParser;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class LiteralStringParser implements ByteBufParser<String> {
-
   private final SoftReferencedAppendableCharSequence sequenceRef;
   private final AtomOrStringParser stringParser;
-  private final SizeParser sizeParser;
+  private final LiteralStringSizeParser sizeParser;
+
+  private int expectedSize;
+  private int size;
 
   public LiteralStringParser(SoftReferencedAppendableCharSequence sequenceRef) {
     this.sequenceRef = sequenceRef;
     this.stringParser = new AtomOrStringParser(sequenceRef, 10000);
-    this.sizeParser = new SizeParser(sequenceRef);
+    this.sizeParser = new LiteralStringSizeParser(sequenceRef);
+
+    this.expectedSize = -1;
+    this.size = 0;
   }
 
   @Override
@@ -21,9 +28,8 @@ public class LiteralStringParser implements ByteBufParser<String> {
     AppendableCharSequence seq = sequenceRef.get();
 
     seq.reset();
-    int size = 0;
-
-    int expectedSize = -1;
+    size = 0;
+    expectedSize = -1;
     for (;;) {
       char c = ((char) in.readUnsignedByte());
       if (c == '{' && expectedSize < 0) {
@@ -37,8 +43,8 @@ public class LiteralStringParser implements ByteBufParser<String> {
         size++;
 
         while (size < expectedSize) {
-          char ch = ((char) in.readUnsignedByte());
-          seq.append(ch);
+          c = ((char) in.readUnsignedByte());
+          seq.append(c);
           size++;
         }
 
@@ -52,32 +58,4 @@ public class LiteralStringParser implements ByteBufParser<String> {
     }
   }
 
-  private static class SizeParser implements ByteBufParser<Integer> {
-
-    SoftReferencedAppendableCharSequence sequenceRef;
-
-    public SizeParser(SoftReferencedAppendableCharSequence sequenceRef) {
-      this.sequenceRef = sequenceRef;
-    }
-
-    @Override
-    public Integer parse(ByteBuf in) {
-      AppendableCharSequence seq = sequenceRef.get();
-
-      seq.reset();
-      boolean foundStart = false;
-
-      for (;;) {
-        char c = ((char) in.readUnsignedByte());
-
-        if (c == '{') {
-          foundStart = true;
-        } else if (c == '}') {
-          return Integer.parseInt(seq.toString());
-        } else if (foundStart) {
-          seq.append(c);
-        }
-      }
-    }
-  }
 }

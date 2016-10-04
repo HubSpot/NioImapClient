@@ -51,14 +51,15 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedSearchResponse;
 import com.hubspot.imap.utils.CommandUtils;
 import com.hubspot.imap.utils.LogUtils;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
-import com.hubspot.imap.utils.parsers.AtomOrStringParser;
 import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
-import com.hubspot.imap.utils.parsers.LineParser;
-import com.hubspot.imap.utils.parsers.LiteralStringParser;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
 import com.hubspot.imap.utils.parsers.NumberParser;
-import com.hubspot.imap.utils.parsers.WordParser;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
+import com.hubspot.imap.utils.parsers.string.AtomOrStringParser;
+import com.hubspot.imap.utils.parsers.string.BufferedBodyParser;
+import com.hubspot.imap.utils.parsers.string.LineParser;
+import com.hubspot.imap.utils.parsers.string.LiteralStringParser;
+import com.hubspot.imap.utils.parsers.string.WordParser;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -110,6 +111,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final FetchResponseTypeParser fetchResponseTypeParser;
   private final AtomOrStringParser atomOrStringParser;
   private final LiteralStringParser literalStringParser;
+  private final BufferedBodyParser bufferedBodyParser;
   private final NumberParser numberParser;
   private final EnvelopeParser envelopeParser;
   private final NestedArrayParser.Recycler<String> nestedArrayParserRecycler;
@@ -134,6 +136,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, configuration.maxLineLength());
     this.atomOrStringParser = new AtomOrStringParser(charSeq, configuration.maxLineLength());
     this.literalStringParser = new LiteralStringParser(charSeq);
+    this.bufferedBodyParser = new BufferedBodyParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
     this.envelopeParser = new EnvelopeParser();
     this.nestedArrayParserRecycler = new NestedArrayParser.Recycler<>(literalStringParser);
@@ -156,6 +159,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     CONTINUATION,
     TAGGED,
     FETCH,
+    FETCH_BODY,
     RESET;
   }
 
@@ -220,6 +224,24 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
           }
         }
         break;
+      case FETCH_BODY:
+        Optional<Message> message;
+        try {
+          message = parseBodyContent(in);
+        } catch (ResponseParseException e) {
+          logger.error("Failed to parse body fetch content.", e);
+          checkpoint(State.FETCH);
+          break;
+        }
+
+        if (!message.isPresent()) {
+          break;
+        }
+
+        currentMessage.setBody(message.get());
+        checkpoint(State.FETCH);
+
+        break;
       case RESET:
         reset(in);
         break;
@@ -272,8 +294,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         currentMessage.setEnvelope(parseEnvelope(in));
         break;
       case BODY:
-        currentMessage.setBody(parseBody(in));
-        break;
+        startBodyParse(in);
+        return;
       case X_GM_MSGID:
         currentMessage.setGmailMessageId(numberParser.parse(in));
         break;
@@ -430,7 +452,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   @Timed
-  Message parseBody(ByteBuf in) throws UnknownFetchItemTypeException, IOException, ResponseParseException {
+  void startBodyParse(ByteBuf in) throws UnknownFetchItemTypeException, IOException {
+    skipControlCharacters(in);
+
     char c = ((char) in.readUnsignedByte());
 
     //String bodySection = ""; At some point we will need to actually store the body section that is being parsed below
@@ -445,10 +469,18 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         c = ((char) in.readUnsignedByte());
       }
     }
-    String body = literalStringParser.parse(in);
 
-    try (InputStream inputStream = new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8))) {
-      return messageBuilder.parseMessage(inputStream);
+    checkpoint(State.FETCH_BODY);
+  }
+
+  Optional<Message> parseBodyContent(ByteBuf in) throws ResponseParseException {
+    Optional<String> body = bufferedBodyParser.parse(in);
+    if (!body.isPresent()) {
+      return Optional.empty();
+    }
+
+    try (InputStream inputStream = new ByteArrayInputStream(body.get().getBytes(StandardCharsets.UTF_8))) {
+      return Optional.of(messageBuilder.parseMessage(inputStream));
     } catch (IOException e) {
       throw new ResponseParseException(e);
     }
@@ -551,7 +583,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void trace(String prefix, ByteBuf in) {
     int index = in.readerIndex();
     String line = lineParser.parse(in);
-    logger.info("{}: {}", prefix, line);
+    logger.info("{}({}): {}", prefix, state().name(), line);
 
     in.readerIndex(index);
   }

@@ -1,6 +1,7 @@
-package com.hubspot.imap.utils.parsers;
+package com.hubspot.imap.utils.parsers.string;
 
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
+
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.HttpConstants;
 

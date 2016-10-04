@@ -1,4 +1,4 @@
-package com.hubspot.imap.utils.parsers;
+package com.hubspot.imap.utils.parsers.string;
 
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import io.netty.buffer.ByteBuf;

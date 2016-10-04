@@ -10,6 +10,7 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
+import com.hubspot.imap.utils.parsers.string.AtomOrStringParser;
 
 public class AtomOrStringParserTest {
   private static final SoftReferencedAppendableCharSequence SEQUENCE_REF = new SoftReferencedAppendableCharSequence(1000);

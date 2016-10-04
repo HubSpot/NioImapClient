@@ -1,14 +1,13 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.protocol.ResponseDecoder;
+import java.nio.charset.Charset;
+
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslContext;
-
-import java.nio.charset.Charset;
 
 @Sharable
 public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {

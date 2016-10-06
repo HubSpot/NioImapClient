@@ -39,7 +39,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
         in.readerIndex(in.readerIndex() - 1);
         expectedSize = sizeParser.parse(in);
 
-        in.readerIndex(in.readerIndex() + 2); // Skip CRLF
+        in.readBytes(2); // Skip CRLF
       } else if (expectedSize >= 0) {
         if (buf == null) {
           buf = PooledByteBufAllocator.DEFAULT.buffer(expectedSize);

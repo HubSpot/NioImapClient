@@ -55,6 +55,7 @@ import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
 import com.hubspot.imap.utils.parsers.NumberParser;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
+import com.hubspot.imap.utils.parsers.string.AllBytesParser;
 import com.hubspot.imap.utils.parsers.string.AtomOrStringParser;
 import com.hubspot.imap.utils.parsers.string.BufferedBodyParser;
 import com.hubspot.imap.utils.parsers.string.LineParser;
@@ -115,6 +116,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private final NumberParser numberParser;
   private final EnvelopeParser envelopeParser;
   private final NestedArrayParser.Recycler<String> nestedArrayParserRecycler;
+  private final AllBytesParser allBytesParser;
   private final DefaultMessageBuilder messageBuilder;
 
   private List<Object> untaggedResponses;
@@ -149,6 +151,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
+
+    this.allBytesParser = configuration.tracingEnabled() ? new AllBytesParser(charSeq) : null;
   }
 
   enum State {
@@ -583,7 +587,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private void trace(String prefix, ByteBuf in) {
     int index = in.readerIndex();
-    String line = lineParser.parse(in);
+    skipControlCharacters(in);
+    String line = allBytesParser.parse(in);
     logger.info("{}({}): {}", prefix, state().name(), line);
 
     in.readerIndex(index);

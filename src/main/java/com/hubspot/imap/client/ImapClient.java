@@ -169,7 +169,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         });
       } else {
         TaggedResponse taggedResponse = ((TaggedResponse) response);
-        if (taggedResponse.getCode() == ResponseCode.BAD) {
+        if (taggedResponse.getCode() == ResponseCode.BAD || taggedResponse.getCode() == ResponseCode.NO) {
           loginPromise.tryFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
         } else {
           loginPromise.setSuccess(taggedResponse);

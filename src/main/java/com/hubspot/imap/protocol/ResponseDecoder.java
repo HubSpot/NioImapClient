@@ -486,7 +486,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
     try (InputStream inputStream = new ByteArrayInputStream(body.get().getBytes(StandardCharsets.UTF_8))) {
       return Optional.of(messageBuilder.parseMessage(inputStream));
-    } catch (IOException e) {
+    } catch (IOException|NullPointerException e) {
       throw new ResponseParseException(e);
     }
   }

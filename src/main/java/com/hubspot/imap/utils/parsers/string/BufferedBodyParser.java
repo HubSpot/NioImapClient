@@ -18,6 +18,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
   private final AtomOrStringParser stringParser;
   private final LiteralStringSizeParser sizeParser;
 
+  private State state;
   private int expectedSize;
   private int size;
   private int pos;
@@ -29,52 +30,60 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
 
     this.expectedSize = -1;
     this.size = 0;
+    this.state = State.START;
   }
 
   @Override
   public Optional<String> parse(ByteBuf in) {
     for (;;) {
-      char c = ((char) in.readUnsignedByte());
-      if (c == '{' && expectedSize < 0) {
-        in.readerIndex(in.readerIndex() - 1);
-        expectedSize = sizeParser.parse(in);
-
-        in.readBytes(2); // Skip CRLF
-      } else if (expectedSize >= 0) {
-        if (buf == null) {
-          buf = PooledByteBufAllocator.DEFAULT.buffer(expectedSize);
-        }
-
-        pos = in.readerIndex() - 1;
-
-        buf.writeByte(c);
-        inc();
-
-        try {
-          while (size < expectedSize) {
-            buf.writeByte((char) in.readUnsignedByte());
-            inc();
-          }
-        } catch (Signal e) {
-          if (e.toString().equalsIgnoreCase(REPLAY)) {
-            in.readerIndex(pos);
+      switch (state) {
+        case START:
+          char c = ((char) in.readUnsignedByte());
+          if (c == '{') {
+            in.readerIndex(in.readerIndex() - 1);
+            expectedSize = sizeParser.parse(in);
+            state = State.SKIP_CRLF;
             return Optional.empty();
+          } else if (Character.isWhitespace(c)) {
+            continue;
+          } else {
+            in.readerIndex(in.readerIndex() - 1);
+            state = State.PARSE_STRING;
+            continue;
+          }
+        case SKIP_CRLF:
+          in.readBytes(2);
+          state = State.PARSE_SIZE;
+          continue;
+        case PARSE_STRING:
+          return Optional.of(stringParser.parse(in));
+        case PARSE_SIZE:
+          if (buf == null) {
+            buf = PooledByteBufAllocator.DEFAULT.buffer(expectedSize);
           }
 
-          throw e;
-        }
+          pos = in.readerIndex();
+          try {
+            while (size < expectedSize) {
+              buf.writeByte((char) in.readUnsignedByte());
+              inc();
+            }
+          } catch (Signal e) {
+            if (e.toString().equalsIgnoreCase(REPLAY)) {
+              in.readerIndex(pos);
+              return Optional.empty();
+            }
 
-        String result = buf.toString(StandardCharsets.UTF_8);
-        reset();
+            throw e;
+          }
 
-        return Optional.of(result);
-      } else if (Character.isWhitespace(c)) {
-        continue;
-      } else {
-        in.readerIndex(in.readerIndex() - 1);
-        return Optional.of(stringParser.parse(in));
+          String result = buf.toString(StandardCharsets.UTF_8);
+          reset();
+
+          return Optional.of(result);
       }
     }
+
   }
 
   private void reset() {
@@ -85,10 +94,20 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
 
     size = 0;
     expectedSize = -1;
+    pos = 0;
+    state = State.START;
   }
 
   private void inc() {
     size++;
     pos++;
+  }
+
+  private enum State {
+    START,
+    SKIP_CRLF,
+    PARSE_SIZE,
+    PARSE_STRING
+    ;
   }
 }

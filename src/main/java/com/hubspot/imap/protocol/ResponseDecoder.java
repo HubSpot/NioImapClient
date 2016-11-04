@@ -50,6 +50,7 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.protocol.response.untagged.UntaggedSearchResponse;
 import com.hubspot.imap.utils.CommandUtils;
 import com.hubspot.imap.utils.LogUtils;
+import com.hubspot.imap.utils.NilMarker;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.FetchResponseTypeParser;
 import com.hubspot.imap.utils.parsers.NestedArrayParser;
@@ -309,6 +310,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case X_GM_LABELS:
         currentMessage.setGMailLabels(
             nestedArrayParserRecycler.get().parse(in).stream()
+                .filter(o -> !(o instanceof NilMarker))
                 .map(o -> ((String) o))
                 .map(GMailLabel::get)
                 .collect(Collectors.toSet())

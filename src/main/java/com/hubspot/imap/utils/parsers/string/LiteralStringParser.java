@@ -14,9 +14,9 @@ public class LiteralStringParser implements ByteBufParser<String> {
   private int expectedSize;
   private int size;
 
-  public LiteralStringParser(SoftReferencedAppendableCharSequence sequenceRef) {
+  public LiteralStringParser(SoftReferencedAppendableCharSequence sequenceRef, int maxLineLength) {
     this.sequenceRef = sequenceRef;
-    this.stringParser = new AtomOrStringParser(sequenceRef, 10000);
+    this.stringParser = new AtomOrStringParser(sequenceRef, maxLineLength);
     this.sizeParser = new LiteralStringSizeParser(sequenceRef);
 
     this.expectedSize = -1;

@@ -138,7 +138,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.wordParser = new WordParser(charSeq, configuration.maxLineLength());
     this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, configuration.maxLineLength());
     this.atomOrStringParser = new AtomOrStringParser(charSeq, configuration.maxLineLength());
-    this.literalStringParser = new LiteralStringParser(charSeq);
+    this.literalStringParser = new LiteralStringParser(charSeq, configuration.maxLineLength());
     this.bufferedBodyParser = new BufferedBodyParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
     this.envelopeParser = new EnvelopeParser();

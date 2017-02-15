@@ -120,12 +120,12 @@
     <dependency>
       <groupId>org.apache.james</groupId>
       <artifactId>apache-mime4j-core</artifactId>
-      <version>0.7.2</version>
+      <version>0.8.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.james</groupId>
       <artifactId>apache-mime4j-dom</artifactId>
-      <version>0.7.2</version>
+      <version>0.8.0</version>
     </dependency>
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>

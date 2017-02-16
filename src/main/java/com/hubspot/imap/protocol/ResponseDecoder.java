@@ -145,11 +145,13 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     this.nestedArrayParserRecycler = new NestedArrayParser.Recycler<>(literalStringParser);
     this.messageBuilder = ((DefaultMessageBuilder) MESSAGE_SERVICE_FACTORY.newMessageBuilder());
 
-    MimeConfig.Builder configBuilder = MimeConfig.custom()
+    MimeConfig mimeConfig = MimeConfig.custom()
         .setMaxLineLen(configuration.maxLineLength())
-        .setMaxHeaderLen(configuration.maxLineLength());
+        .setMaxHeaderLen(configuration.maxLineLength())
+        .setMaxHeaderCount(configuration.maxHeaderCount())
+        .build();
 
-    messageBuilder.setMimeEntityConfig(configBuilder.build());
+    messageBuilder.setMimeEntityConfig(mimeConfig);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();

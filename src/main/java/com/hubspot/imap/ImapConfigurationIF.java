@@ -85,6 +85,11 @@ public interface ImapConfigurationIF {
     return false;
   }
 
+  @Default
+  default int maxHeaderCount() {
+    return 10000;
+  }
+
   enum AuthType {
     PASSWORD,
     XOAUTH2;

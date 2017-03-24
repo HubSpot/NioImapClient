@@ -316,15 +316,17 @@ public class ImapClientTest extends ImapMultiServerTest {
   public void testStreamingFetch_doesExecuteConsumerForAllMessages() throws Exception {
     Set<Long> uids = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-    Future<StreamingFetchResponse> fetchResponseFuture = client.fetch(1, Optional.<Long>empty(), message -> {
+    Future<StreamingFetchResponse<Void>> fetchResponseFuture = client.fetch(1, Optional.empty(), message -> {
       try {
         uids.add(message.getUid());
       } catch (UnfetchedFieldException e) {
         throw Throwables.propagate(e);
       }
+
+      return (Void) null;
     }, FetchDataItemType.UID);
 
-    StreamingFetchResponse fetchResponse = fetchResponseFuture.get();
+    StreamingFetchResponse<Void> fetchResponse = fetchResponseFuture.get();
 
     int successful = 0;
     for (Future consumerFuture : fetchResponse.getMessageConsumerFutures()) {

@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import com.hubspot.imap.client.listener.ConnectionListener;
-import com.hubspot.imap.client.listener.MessageAddListener;
-import com.hubspot.imap.client.listener.OpenEventListener;
+import com.hubspot.imap.client.listener.MessageAddConsumer;
 import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
 import com.hubspot.imap.protocol.response.events.ExpungeEvent;
@@ -28,8 +29,8 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final AtomicLong commandCount;
   private final AtomicLong messageNumber;
 
-  private final List<MessageAddListener> messageAddListeners;
-  private final List<OpenEventListener> openEventListeners;
+  private final List<MessageAddConsumer> messageAddListeners;
+  private final List<Consumer<OpenEvent>> openEventListeners;
   private final List<ConnectionListener> connectionListeners;
   private final List<ChannelHandler> handlers;
 
@@ -67,8 +68,8 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       long lastMessageCount = messageNumber.getAndSet(exists.getValue());
       long currentCount = messageNumber.get();
       if (currentCount > lastMessageCount) {
-        for (MessageAddListener listener: messageAddListeners) {
-          executorGroup.submit(() -> listener.messagesAdded(lastMessageCount, currentCount));
+        for (BiConsumer<Long, Long> listener: messageAddListeners) {
+          executorGroup.submit(() -> listener.accept(lastMessageCount, currentCount));
         }
       }
     } else if (evt instanceof OpenEvent) {
@@ -76,20 +77,20 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       OpenResponse response = event.getOpenResponse();
       messageNumber.set(response.getExists());
 
-      for (OpenEventListener listener: openEventListeners) {
-        executorGroup.submit(() -> listener.handle(event));
+      for (Consumer<OpenEvent> listener: openEventListeners) {
+        executorGroup.submit(() -> listener.accept(event));
       }
     }
 
     super.userEventTriggered(ctx, evt);
   }
 
-  public void onMessageAdd(MessageAddListener listener) {
-    this.messageAddListeners.add(listener);
+  public void onMessageAdd(MessageAddConsumer consumer) {
+    this.messageAddListeners.add(consumer);
   }
 
-  public void addOpenEventListener(OpenEventListener listener) {
-    this.openEventListeners.add(listener);
+  public void addOpenEventListener(Consumer<OpenEvent> consumer) {
+    this.openEventListeners.add(consumer);
   }
 
   public void addHandler(ChannelHandler handler) {

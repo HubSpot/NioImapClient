@@ -5,12 +5,12 @@ import java.util.stream.Collectors;
 
 import io.netty.util.concurrent.Future;
 
-public interface StreamingFetchResponse extends TaggedResponse {
+public interface StreamingFetchResponse<T> extends TaggedResponse {
 
-  List<Future<?>> getMessageConsumerFutures();
+  List<Future<T>> getMessageConsumerFutures();
 
-  class Builder extends TaggedResponse.Builder implements StreamingFetchResponse {
-    private List<Future<?>> messageConsumerFutures;
+  class Builder<T> extends TaggedResponse.Builder implements StreamingFetchResponse {
+    private List<Future<T>> messageConsumerFutures;
 
     public StreamingFetchResponse fromResponse(TaggedResponse response) {
       this.messageConsumerFutures = filterFutures(response);
@@ -23,15 +23,15 @@ public interface StreamingFetchResponse extends TaggedResponse {
     }
 
     @SuppressWarnings("unchecked")
-    private static List<Future<?>> filterFutures(TaggedResponse response) {
+    private static <T> List<Future<T>> filterFutures(TaggedResponse response) {
       return response.getUntagged().stream()
           .filter(m -> m instanceof Future)
-          .map(m -> ((Future<?>) m))
+          .map(m -> ((Future<T>) m))
           .collect(Collectors.toList());
     }
 
     @Override
-    public List<Future<?>> getMessageConsumerFutures() {
+    public List<Future<T>> getMessageConsumerFutures() {
       return messageConsumerFutures;
     }
   }

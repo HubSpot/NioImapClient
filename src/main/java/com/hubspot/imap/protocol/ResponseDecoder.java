@@ -339,10 +339,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         fetchCommand = ((StreamingFetchCommand) clientState.getCurrentCommand());
       }
 
-      Future<Void> future = executorGroup.submit(() -> {
-        fetchCommand.handle(message);
-        return null;
-      });
+      Future<?> future = executorGroup.submit(() -> fetchCommand.handle(message));
 
       untaggedResponses.add(future);
     } else {

@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 
@@ -228,28 +228,28 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new FetchCommand(startId, stopId, fetchItems));
   }
 
-  public Future<StreamingFetchResponse> uidfetch(long startId,
-                                                 Optional<Long> stopId,
-                                                 Consumer<ImapMessage> messageConsumer,
-                                                 FetchDataItem item,
-                                                 FetchDataItem... otherItems) {
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems)));
+  public <R> Future<StreamingFetchResponse<R>> uidfetch(long startId,
+                                                        Optional<Long> stopId,
+                                                        Function<ImapMessage, R> messageFunction,
+                                                        FetchDataItem item,
+                                                        FetchDataItem... otherItems) {
+    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems)));
   }
 
-  public Future<StreamingFetchResponse> fetch(long startId,
-                                              Optional<Long> stopId,
-                                              Consumer<ImapMessage> messageConsumer,
-                                              FetchDataItem item,
-                                              FetchDataItem... otherItems) {
-    return send(new StreamingFetchCommand(startId, stopId, messageConsumer, item, otherItems));
+  public <R> Future<StreamingFetchResponse<R>> fetch(long startId,
+                                                     Optional<Long> stopId,
+                                                     Function<ImapMessage, R> messageFunction,
+                                                     FetchDataItem item,
+                                                     FetchDataItem... otherItems) {
+    return send(new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems));
   }
 
-  public Future<StreamingFetchResponse> fetch(long startId,
-                                              Optional<Long> stopId,
-                                              Consumer<ImapMessage> messageConsumer,
-                                              List<FetchDataItem> fetchDataItems) {
+  public <R> Future<StreamingFetchResponse<R>> fetch(long startId,
+                                                     Optional<Long> stopId,
+                                                     Function<ImapMessage, R> messageFunction,
+                                                     List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems));
+    return send(new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems));
   }
 
   public Future<FetchResponse> uidfetch(long startId,
@@ -272,12 +272,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchItems)));
   }
 
-  public Future<StreamingFetchResponse> uidfetch(long startId,
-                                                 Optional<Long> stopId,
-                                                 Consumer<ImapMessage> messageConsumer,
-                                                 List<FetchDataItem> fetchDataItems) {
+  public <R> Future<StreamingFetchResponse<R>> uidfetch(long startId,
+                                                        Optional<Long> stopId,
+                                                        Function<ImapMessage, R> messageFunction,
+                                                        List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand(startId, stopId, messageConsumer, fetchDataItems)));
+    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems)));
   }
 
   public Future<TaggedResponse> uidstore(StoreAction action,

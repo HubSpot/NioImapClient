@@ -7,7 +7,7 @@ import com.hubspot.imap.utils.ImapServerDetails;
 
 public class GmailProfile extends EmailServerTestProfile {
   static final String USER_NAME = "hsimaptest1@gmail.com";
-  private static final String PASSWORD = "***REMOVED***";
+  private static final String PASSWORD = "";
   private static final GmailServerImplDetails GMAIL_SERVER_IMPL_DETAILS = new GmailServerImplDetails();
   private static final ImapClientFactory GMAIL_CLIENT_FACTORY = new ImapClientFactory(
       ImapConfiguration.builder()

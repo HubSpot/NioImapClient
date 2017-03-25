@@ -7,7 +7,7 @@ import com.hubspot.imap.utils.ImapServerDetails;
 
 public class YahooProfile extends EmailServerTestProfile {
   private static final String USER_NAME = "testing11235@yahoo.com";
-  private static final String PASSWORD = "***REMOVED***";
+  private static final String PASSWORD = "";
   private static final YahooServerImplDetails YAHOO_SERVER_IMPL_DETAILS = new YahooServerImplDetails();
 
   private static final ImapClientFactory YAHOO_CLIENT_FACTORY = new ImapClientFactory(

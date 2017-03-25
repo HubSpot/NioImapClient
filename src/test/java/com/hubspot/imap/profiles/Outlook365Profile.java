@@ -7,7 +7,7 @@ import com.hubspot.imap.utils.ImapServerDetails;
 
 public class Outlook365Profile extends EmailServerTestProfile {
   private static final String USER_NAME = "eszabowexler@sidekick.engineering";
-  private static final String PASSWORD = "***REMOVED***";
+  private static final String PASSWORD = "";
   private static final Outlook365ServerImplDetails OUTLOOK_365_SERVER_IMPL_DETAILS = new Outlook365ServerImplDetails();
 
   private static final ImapClientFactory OUTLOOK_CLIENT_FACTORY = new ImapClientFactory(

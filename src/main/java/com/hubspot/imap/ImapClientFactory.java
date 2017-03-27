@@ -90,21 +90,21 @@ public class ImapClientFactory implements Closeable {
     bootstrap.channel(channelClass);
   }
 
-  public ImapClient create(String clientName, String userName, String oathToken, Optional<ImapConfiguration> newConfig) {
+  public ImapClient create(String clientName, String userName, String authToken, Optional<ImapConfiguration> newConfig) {
     ImapConfiguration finalConfig = newConfig.orElse(configuration);
-    return new ImapClient(finalConfig, bootstrap, promiseExecutorGroup, idleExecutorGroup, clientName, userName, oathToken);
+    return new ImapClient(finalConfig, bootstrap, promiseExecutorGroup, idleExecutorGroup, clientName, userName, authToken);
   }
 
-  public ImapClient connect(String userName, String oauthToken) throws InterruptedException {
-    return connect(UUID.randomUUID().toString(), userName, oauthToken, Optional.empty());
+  public ImapClient connect(String userName, String authToken) throws InterruptedException {
+    return connect(UUID.randomUUID().toString(), userName, authToken, Optional.empty());
   }
 
-  public ImapClient connect(String clientName, String userName, String oauthToken) throws InterruptedException {
-    return connect(clientName, userName, oauthToken, Optional.empty());
+  public ImapClient connect(String clientName, String userName, String authToken) throws InterruptedException {
+    return connect(clientName, userName, authToken, Optional.empty());
   }
 
-  public ImapClient connect(String clientName, String userName, String oauthToken, Optional<ImapConfiguration> configuration) throws InterruptedException {
-    ImapClient client = create(clientName, userName, oauthToken, configuration);
+  public ImapClient connect(String clientName, String userName, String authToken, Optional<ImapConfiguration> configuration) throws InterruptedException {
+    ImapClient client = create(clientName, userName, authToken, configuration);
     client.connect();
     return client;
   }

@@ -1,27 +1,28 @@
 package com.hubspot.imap.client.listener;
 
-import com.hubspot.imap.ImapMultiServerTest;
-import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.client.listener.ConnectionListener.ConnectionListenerAdapter;
-import com.hubspot.imap.profiles.EmailServerTestProfile;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.hubspot.imap.ImapMultiServerTest;
+import com.hubspot.imap.TestServerConfig;
+import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.client.listener.ConnectionListener.ConnectionListenerAdapter;
 
 @RunWith(Parameterized.class)
 public class ConnectionListenerTest extends ImapMultiServerTest {
-  @Parameter public EmailServerTestProfile testProfile;
+  @Parameter public TestServerConfig testServerConfig;
 
   @Test
   public void testOnConnect_doesCallConnect() throws Exception {
     CountDownLatch latch = new CountDownLatch(1);
-    try (ImapClient client = testProfile.getLoggedInClient()) {
+    try (ImapClient client = getLoggedInClient(testServerConfig)) {
       client.getState().addConnectionListener(new ConnectionListenerAdapter() {
         @Override
         public void connected() {
@@ -39,7 +40,7 @@ public class ConnectionListenerTest extends ImapMultiServerTest {
   @Test
   public void testOnClose_doesCallDisconnect() throws Exception {
     CountDownLatch latch = new CountDownLatch(1);
-    try (ImapClient client = testProfile.getLoggedInClient()) {
+    try (ImapClient client = getLoggedInClient(testServerConfig)) {
       client.getState().addConnectionListener(new ConnectionListenerAdapter() {
         @Override
         public void connected() {}

@@ -37,8 +37,8 @@ import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.hubspot.imap.ImapMultiServerTest;
+import com.hubspot.imap.TestServerConfig;
 import com.hubspot.imap.TestUtils;
-import com.hubspot.imap.profiles.EmailServerTestProfile;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
@@ -74,29 +74,29 @@ public class ImapClientTest extends ImapMultiServerTest {
   private static final ZonedDateTime JULY_1_2015 = ZonedDateTime.of(2015, 7, 1, 0, 0, 0, 0,
       TimeZone.getTimeZone("EST").toZoneId());
 
-  private static Map<EmailServerTestProfile, ImapClient> clients = new HashMap<>();
-  private static Map<EmailServerTestProfile, OpenResponse> allFolderOpenResponses = new HashMap<>();
-  private static Map<EmailServerTestProfile, List<ImapMessage>> allMessagesMap = new HashMap<>();
+  private static Map<TestServerConfig, ImapClient> clients = new HashMap<>();
+  private static Map<TestServerConfig, OpenResponse> allFolderOpenResponses = new HashMap<>();
+  private static Map<TestServerConfig, List<ImapMessage>> allMessagesMap = new HashMap<>();
 
   private static final long FETCH_TIMEOUT_SECS = 30;
 
-  @Parameter public EmailServerTestProfile testProfile;
+  @Parameter public TestServerConfig testServerConfig;
   private ImapClient client;
   private OpenResponse allFolderOpenResponse;
   private List<ImapMessage> allMessages;
 
   @BeforeClass
   public static void prefetch() throws Exception {
-    for (EmailServerTestProfile profile : parameters()) {
-      ImapClient profileClient = profile.getLoggedInClient();
-      clients.put(profile, profileClient);
+    for (TestServerConfig config : parameters()) {
+      ImapClient profileClient = getLoggedInClient(config);
+      clients.put(config, profileClient);
 
-      OpenResponse allMailOpenResponse = profileClient.open(profile.getImplDetails().getAllMailFolderName(), FolderOpenMode.WRITE)
+      OpenResponse allMailOpenResponse = profileClient.open(config.primaryFolder(), FolderOpenMode.WRITE)
                                                       .get();
       assertThat(allMailOpenResponse.getCode()).isEqualTo(ResponseCode.OK);
-      allFolderOpenResponses.put(profile, allMailOpenResponse);
+      allFolderOpenResponses.put(config, allMailOpenResponse);
 
-      allMessagesMap.put(profile,
+      allMessagesMap.put(config,
           TestUtils.fetchMessages(profileClient, profileClient.uidsearch(allEmailSearchCommand()).get().getMessageIds()));
     }
   }
@@ -116,9 +116,9 @@ public class ImapClientTest extends ImapMultiServerTest {
 
   @Before
   public void initialize() {
-    client = clients.get(testProfile);
-    allFolderOpenResponse = allFolderOpenResponses.get(testProfile);
-    allMessages = allMessagesMap.get(testProfile);
+    client = clients.get(testServerConfig);
+    allFolderOpenResponse = allFolderOpenResponses.get(testServerConfig);
+    allMessages = allMessagesMap.get(testServerConfig);
   }
 
   @Test
@@ -147,12 +147,12 @@ public class ImapClientTest extends ImapMultiServerTest {
     assertThat(response.getFolders().size()).isGreaterThan(0);
     assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
     assertThat(response.getFolders()).extracting(FolderMetadata::getName)
-                                     .contains(testProfile.getImplDetails().getAllMailFolderName());
+                                     .contains(testServerConfig.primaryFolder());
   }
 
   @Test
   public void testGivenFolderName_canOpenFolder() throws Exception {
-    Future<OpenResponse> responseFuture = client.open(testProfile.getImplDetails().getAllMailFolderName(), FolderOpenMode.WRITE);
+    Future<OpenResponse> responseFuture = client.open(testServerConfig.primaryFolder(), FolderOpenMode.WRITE);
     OpenResponse response = responseFuture.get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);

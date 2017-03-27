@@ -1,0 +1,8 @@
+- host: imap.gmail.com
+  port: 993
+  user: hsimaptest1@gmail.com
+  password: "{{ password }}"
+  primaryFolder: "[Gmail]/All Mail"
+  imapConfiguration:
+    authType: PASSWORD
+    hostAndPort: "imap.gmail.com:993"

@@ -1,23 +1,35 @@
 package com.hubspot.imap.protocol.extension.gmail;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Optional;
+
+import org.assertj.core.api.Condition;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+
 import com.google.common.base.Throwables;
-import com.hubspot.imap.profiles.GmailProfile;
+import com.hubspot.imap.ImapMultiServerTest;
+import com.hubspot.imap.TestServerConfig;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
+
 import io.netty.util.concurrent.Future;
-import org.assertj.core.api.Condition;
-import java.util.Optional;
-import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.Test;
 
-
-public class GMailFetchExtensionTest {
-  private static final GmailProfile GMAIL_PROFILE = GmailProfile.getGmailProfile();
+@RunWith(Parameterized.class)
+public class GMailFetchExtensionTest extends ImapMultiServerTest {
+  @Parameter public TestServerConfig testServerConfig;
 
   @Test
   public void testGmailFetchExtensions() throws Exception {
-    Future<FetchResponse> responseFuture = GmailProfile.getGmailProfile().getLoggedInClient().fetch(1, Optional.of(2L), FetchDataItemType.X_GM_MSGID, FetchDataItemType.X_GM_THRID);
+    if (!testServerConfig.imapConfiguration().hostAndPort().getHostText().contains("gmail")) {
+      return;
+    }
+
+    Future<FetchResponse> responseFuture = getLoggedInClient(testServerConfig).fetch(1, Optional.of(2L), FetchDataItemType.X_GM_MSGID, FetchDataItemType.X_GM_THRID);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getMessages()).have(new Condition<>(m -> {

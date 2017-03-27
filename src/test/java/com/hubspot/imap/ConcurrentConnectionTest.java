@@ -1,14 +1,13 @@
 package com.hubspot.imap;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.profiles.EmailServerTestProfile;
-import com.hubspot.imap.protocol.response.ResponseCode;
-import com.hubspot.imap.protocol.response.tagged.NoopResponse;
-import io.netty.util.concurrent.Future;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.assertj.core.api.Condition;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -17,19 +16,21 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.protocol.response.ResponseCode;
+import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.netty.util.concurrent.Future;
 
 @RunWith(Parameterized.class)
 public class ConcurrentConnectionTest extends ImapMultiServerTest {
   private static final int NUM_CONNS = 5;
 
-  @Parameter public EmailServerTestProfile testProfile;
+  @Parameter public TestServerConfig testServerConfig;
   private static ListeningExecutorService executorService;
 
   @BeforeClass
@@ -48,7 +49,7 @@ public class ConcurrentConnectionTest extends ImapMultiServerTest {
     CopyOnWriteArrayList<ImapClient> clients = new CopyOnWriteArrayList<>();
     for (int i = 0; i < NUM_CONNS; i++) {
       ListenableFuture<Void> future = executorService.submit(() -> {
-        ImapClient client = testProfile.getLoggedInClient();
+        ImapClient client = getLoggedInClient(testServerConfig);
         clients.add(client);
 
         int noops = ThreadLocalRandom.current().nextInt(5);

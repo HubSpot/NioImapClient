@@ -1,34 +1,45 @@
 package com.hubspot.imap;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.runners.Parameterized.Parameters;
 
-import com.hubspot.imap.profiles.EmailServerTestProfile;
-import com.hubspot.imap.profiles.GmailOAuthProfile;
-import com.hubspot.imap.profiles.GmailProfile;
-import com.hubspot.imap.profiles.Outlook365Profile;
-import com.hubspot.imap.profiles.OutlookProfile;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 
 public abstract class ImapMultiServerTest {
-  protected static final List<EmailServerTestProfile> TEST_PROFILES = Arrays.asList(
-    GmailProfile.getGmailProfile(),
-    OutlookProfile.getOutlookProfile(),
-    Outlook365Profile.getOutlook365Profile()
-    //YahooProfile.getYahooProfile()
-  );
+  private static List<TestServerConfig> getTestConfigs() throws IOException {
+    InputStream inputStream = Thread.currentThread().getContextClassLoader()
+        .getResourceAsStream("profiles.yaml");
+
+    ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+    return objectMapper.readValue(inputStream, new TypeReference<List<TestServerConfig>>() {});
+  }
 
   @Parameters(name="{0}")
-  public static Collection<EmailServerTestProfile> parameters() {
-    if (GmailOAuthProfile.shouldRun()) {
-      List<EmailServerTestProfile> profiles = new ArrayList<>(TEST_PROFILES);
-      profiles.add(GmailOAuthProfile.getGmailProfile());
-      return profiles;
-    } else {
-      return TEST_PROFILES;
-    }
+  public static Collection<TestServerConfig> parameters() throws IOException {
+    return getTestConfigs();
+  }
+
+
+  protected static ImapClient getClientForConfig(TestServerConfig config) throws InterruptedException {
+    ImapClientFactory clientFactory = new ImapClientFactory(config.imapConfiguration());
+    return clientFactory.connect("test", config.user(), config.password());
+  }
+
+  protected static ImapClient getLoggedInClient(TestServerConfig config) throws InterruptedException, ExecutionException, ConnectionClosedException {
+    ImapClient client = getClientForConfig(config);
+    client.login();
+    client.awaitLogin();
+
+    return client;
   }
 }

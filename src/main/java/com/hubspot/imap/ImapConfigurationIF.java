@@ -4,6 +4,8 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.net.HostAndPort;
 
 import io.netty.channel.epoll.EpollMode;
@@ -13,6 +15,8 @@ import io.netty.channel.epoll.EpollMode;
     typeAbstract = {"*IF"},
     typeImmutable = "*"
 )
+@JsonDeserialize(as = ImapConfiguration.class)
+@JsonSerialize(as = ImapConfiguration.class)
 public interface ImapConfigurationIF {
   HostAndPort hostAndPort();
 
@@ -33,7 +37,10 @@ public interface ImapConfigurationIF {
     return true;
   }
 
-  int noopKeepAliveIntervalSec();
+  @Default
+  default int noopKeepAliveIntervalSec() {
+    return -1;
+  }
 
   @Default
   default int socketTimeoutMs() {

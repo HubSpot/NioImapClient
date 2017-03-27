@@ -1,24 +1,25 @@
 package com.hubspot.imap;
 
-import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.profiles.EmailServerTestProfile;
-import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.concurrent.ExecutionException;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import java.util.concurrent.ExecutionException;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 
 @RunWith(Parameterized.class)
 public class ImapClientAuthenticationTest extends ImapMultiServerTest {
-  @Parameter public EmailServerTestProfile testProfile;
+  @Parameter public TestServerConfig testServerConfig;
 
   @Test
   public void testGivenInvalidCredentials_doesThrowAuthenticationException() throws Exception {
-    try (ImapClient client = testProfile.getClientFactory().connect(testProfile.getUsername(), "")) {
+    ImapClientFactory clientFactory = new ImapClientFactory(testServerConfig.imapConfiguration());
+    try (ImapClient client = clientFactory.connect(testServerConfig.user(), "")) {
       client.login();
       client.awaitLogin();
     } catch (ExecutionException e) {

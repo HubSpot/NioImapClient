@@ -324,7 +324,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public void awaitLogin() throws InterruptedException, ExecutionException {
-    loginPromise.get();
+    loginPromise.await();
   }
 
   public <T extends TaggedResponse> Future<T> send(ImapCommandType imapCommandType, String... args) {

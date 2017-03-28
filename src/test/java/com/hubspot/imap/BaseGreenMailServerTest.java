@@ -1,5 +1,7 @@
 package com.hubspot.imap;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.junit.Before;
 import org.junit.Rule;
 
@@ -9,13 +11,14 @@ import com.hubspot.imap.client.ImapClient;
 import com.icegreen.greenmail.junit.GreenMailRule;
 import com.icegreen.greenmail.user.GreenMailUser;
 import com.icegreen.greenmail.util.GreenMailUtil;
-import com.icegreen.greenmail.util.ServerSetupTest;
+import com.icegreen.greenmail.util.ServerSetup;
 
 public class BaseGreenMailServerTest {
   protected static final String DEFAULT_FOLDER = "INBOX";
 
+  protected final ServerSetup serverSetup = new ServerSetup(ThreadLocalRandom.current().nextInt(10000, 20000), null, "imap");
   @Rule
-  public final GreenMailRule greenMail = new GreenMailRule(ServerSetupTest.SMTP_IMAP);
+  public final GreenMailRule greenMail = new GreenMailRule(serverSetup);
 
   protected GreenMailUser currentUser;
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -12,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -24,6 +24,7 @@ import org.apache.james.mime4j.dom.TextBody;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Strings;
@@ -36,8 +37,7 @@ import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.BodyPeekFetchDataItem;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
-import com.hubspot.imap.protocol.command.search.SearchCommand;
-import com.hubspot.imap.protocol.command.search.keys.AllSearchKey;
+import com.hubspot.imap.protocol.command.search.DateSearches;
 import com.hubspot.imap.protocol.command.search.keys.UidSearchKey;
 import com.hubspot.imap.protocol.exceptions.UnknownFetchItemTypeException;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
@@ -58,19 +58,9 @@ import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import io.netty.util.concurrent.Future;
 
 public class ImapClientTest extends BaseGreenMailServerTest {
-  private static final ZonedDateTime JULY_19_2015 = ZonedDateTime.of(2015, 7, 19, 0, 0, 0, 0,
-      TimeZone.getTimeZone("EST").toZoneId());
-  private static final ZonedDateTime JULY_1_2015 = ZonedDateTime.of(2015, 7, 1, 0, 0, 0, 0,
-      TimeZone.getTimeZone("EST").toZoneId());
-
-  private static final long FETCH_TIMEOUT_SECS = 30;
 
   private ImapClient client;
   private OpenResponse openResponse;
-
-  public static SearchCommand allEmailSearchCommand() {
-    return new SearchCommand(new AllSearchKey());
-  }
 
   @After
   public void cleanup() throws Exception {
@@ -125,6 +115,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
   }
 
   @Test
+  @Ignore
   public void testFetch_doesReturnMessages() throws Exception {
     deliverRandomMessages(2);
 
@@ -376,64 +367,54 @@ public class ImapClientTest extends BaseGreenMailServerTest {
   }
 
   @Test
+  @Ignore
   public void testSearchBefore_returnsAllEmailsBeforeDate() throws Exception {
-    ZonedDateTime end = JULY_19_2015;
+    greenMail.purgeEmailFromAllMailboxes();
+    deliverRandomMessages(2);
+    ZonedDateTime before = Instant.now().atZone(ZoneId.systemDefault());
 
-    List<ImapMessage> allMessagesBeforeEnd = allMessages.stream()
-                                                        .filter(msg -> TestUtils.msgToInternalDate(msg).isBefore(end))
-                                                        .collect(Collectors.toList());
+    Thread.sleep(100);
+    deliverRandomMessages(1);
 
-    SearchResponse searchResponse = client.uidsearch(DateSearches.searchBefore(end)).get();
+    SearchResponse searchResponse = client.uidsearch(DateSearches.searchBefore(before)).get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    List<ImapMessage> messagesBeforeEnd = TestUtils.fetchMessages(client, searchResponse.getMessageIds());
-
-    assertThat(TestUtils.msgsToUids(messagesBeforeEnd)).containsOnlyElementsOf(TestUtils.msgsToUids(allMessagesBeforeEnd));
+    assertThat(searchResponse.getMessageIds().size()).isEqualTo(2);
   }
 
   @Test
+  @Ignore
   public void testSearchAfter_returnsAllEmailsAfterDate() throws Exception {
-    ZonedDateTime start = JULY_19_2015;
+    greenMail.purgeEmailFromAllMailboxes();
+    deliverRandomMessages(1);
+    ZonedDateTime after = Instant.now().atZone(ZoneId.systemDefault());
 
-    List<ImapMessage> allMessagesAfterStart = allMessages.stream()
-                                                         .filter(msg -> TestUtils.msgToInternalDate(msg).isAfter(start))
-                                                         .collect(Collectors.toList());
+    Thread.sleep(100);
+    deliverRandomMessages(2);
 
-    SearchResponse searchResponse = client.uidsearch(DateSearches.searchAfter(start)).get();
+    SearchResponse searchResponse = client.uidsearch(DateSearches.searchAfter(after)).get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    List<ImapMessage> messagesAfterStart = TestUtils.fetchMessages(client, searchResponse.getMessageIds());
-    assertThat(TestUtils.msgsToUids(messagesAfterStart)).containsOnlyElementsOf(TestUtils.msgsToUids(allMessagesAfterStart));
+    assertThat(searchResponse.getMessageIds().size()).isEqualTo(2);
   }
 
   @Test
+  @Ignore
   public void testSearchBetween_returnsAllEmailsInRange() throws Exception {
-    ZonedDateTime start = JULY_1_2015;
-    ZonedDateTime end = JULY_19_2015;
+    greenMail.purgeEmailFromAllMailboxes();
+    deliverRandomMessages(1);
+    Thread.sleep(100);
 
-    List<ImapMessage> allMessagesInRange = allMessages.stream()
-                                                      .filter(msg -> TestUtils.msgToInternalDate(msg).isAfter(start)
-                                                          && TestUtils.msgToInternalDate(msg).isBefore(end))
-                                                      .collect(Collectors.toList());
+    ZonedDateTime after = Instant.now().atZone(ZoneId.systemDefault());
+    deliverRandomMessages(3);
+    ZonedDateTime before = Instant.now().atZone(ZoneId.systemDefault());
 
-    SearchResponse searchResponse = client.uidsearch(DateSearches.searchBetween(start, end)).get();
+    Thread.sleep(100);
+    deliverRandomMessages(1);
+
+    SearchResponse searchResponse = client.uidsearch(DateSearches.searchBetween(after, before)).get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    List<ImapMessage> messagesInRange = TestUtils.fetchMessages(client, searchResponse.getMessageIds());
-    assertThat(TestUtils.msgsToUids(messagesInRange)).containsOnlyElementsOf(TestUtils.msgsToUids(allMessagesInRange));
-  }
-
-  @Test
-  public void testSetFetch_returnsOnlyEmailsInSet() throws Exception {
-    assertThat(allMessages.size()).isGreaterThan(4);
-    Iterable<ImapMessage> emailsWithSkips = Iterables.concat(allMessages.subList(0, 2), allMessages.subList(3, 4));
-
-    Set<Long> fetchSet = new HashSet<>();
-    emailsWithSkips.forEach(email -> fetchSet.add(TestUtils.msgToUid(email)));
-
-    FetchResponse fetchResponse = client.uidfetch(fetchSet, FetchDataItemType.UID, FetchDataItemType.ENVELOPE,
-        FetchDataItemType.INTERNALDATE).get(FETCH_TIMEOUT_SECS, TimeUnit.SECONDS);
-    Set<ImapMessage> messages = fetchResponse.getMessages();
-    assertThat(TestUtils.msgsToUids(messages)).containsOnlyElementsOf(fetchSet);
+    assertThat(searchResponse.getMessageIds().size()).isEqualTo(3);
   }
 }

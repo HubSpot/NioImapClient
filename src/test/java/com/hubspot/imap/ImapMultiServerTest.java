@@ -3,6 +3,7 @@ package com.hubspot.imap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -26,7 +27,11 @@ public abstract class ImapMultiServerTest {
 
   @Parameters(name="{0}")
   public static Collection<TestServerConfig> parameters() throws IOException {
-    return getTestConfigs();
+    try {
+      return getTestConfigs();
+    } catch (Exception e) {
+      return Collections.emptyList();
+    }
   }
 
 

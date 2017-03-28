@@ -5,7 +5,7 @@ High performance IMAP client in Java based on [Netty](https://netty.io/)
 
 ## Beta
 
-This client is well tested and heavily used at HubSpot, but it is still under active development and its public API is not garaunteed to be stable.
+This client is well tested and heavily used at HubSpot, but it is still under active development and its public API is not guaranteed to be stable.
 
 ### Features
 

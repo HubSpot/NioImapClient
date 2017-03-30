@@ -11,21 +11,33 @@
   <artifactId>NioImapClient</artifactId>
   <version>0.1-SNAPSHOT</version>
 
+  <scm>
+    <connection>scm:git:git@github.com:HubSpot/NioImapClient.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/HubSpot/NioImapClient.git</developerConnection>
+    <url>git@github.com:HubSpot/NioImapClient.git</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <developers>
+    <developer>
+      <name>Ze'ev Klapow</name>
+      <email>zeev@hubspot.com</email>
+      <organization>HubSpot</organization>
+      <organizationUrl>hubspot.com</organizationUrl>
+    </developer>
+  </developers>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
   <properties>
-    <hubspot.nexus.serverId>hubspot-development</hubspot.nexus.serverId>
-    <hubspot.nexus.hostname>http://maven.hubteam.com</hubspot.nexus.hostname>
     <netty.version>4.0.29.Final</netty.version>
   </properties>
-
-  <repositories>
-    <repository>
-      <snapshots>
-        <updatePolicy>always</updatePolicy>
-      </snapshots>
-      <id>${hubspot.nexus.serverId}</id>
-      <url>${hubspot.nexus.hostname}/nexus/content/repositories/development</url>
-    </repository>
-  </repositories>
 
   <profiles>
     <profile>

@@ -24,6 +24,8 @@ import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.ListCommand;
 import com.hubspot.imap.protocol.command.OpenCommand;
+import com.hubspot.imap.protocol.command.option.ReturnOption;
+import com.hubspot.imap.protocol.command.option.SelectOption;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.XOAuth2Command;
@@ -208,6 +210,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<ListResponse> list(String context, String query) {
     return send(new ListCommand(context, query));
+  }
+
+  public Future<ListResponse> extendedListWithReturnOption(String context, String query, ReturnOption returnOption){
+    return send(new ListCommand(context, query, returnOption));
+  }
+
+  public Future<ListResponse> extendedListWithSelectOption(String context, String query, SelectOption selectOption){
+    return send(new ListCommand(context, query, selectOption));
   }
 
   public Future<OpenResponse> open(String folderName, FolderOpenMode openMode) {

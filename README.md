@@ -1,4 +1,4 @@
-NioImapClient
+NioImapClient [![Build Status](https://travis-ci.org/HubSpot/NioImapClient.svg?branch=master)](https://travis-ci.org/HubSpot/NioImapClient)
 =============
 
 High performance IMAP client in Java based on [Netty](https://netty.io/)

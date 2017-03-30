@@ -1,5 +1,6 @@
 package com.hubspot.imap;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.junit.Before;
@@ -42,9 +43,8 @@ public class BaseGreenMailServerTest {
     return new ImapClientFactory(getImapConfig());
   }
 
-  protected ImapClient getLoggedInClient() throws InterruptedException {
-    ImapClient client = getClientFactory().connect(currentUser.getEmail(), currentUser.getPassword());
-    Thread.sleep(100);
+  protected ImapClient getLoggedInClient() throws InterruptedException, ExecutionException {
+    ImapClient client = getClientFactory().connect(currentUser.getEmail(), currentUser.getPassword()).get();
     client.login().await();
 
     return client;

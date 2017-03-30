@@ -108,24 +108,24 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     loginPromise = promiseExecutor.next().newPromise();
   }
 
-  public synchronized ChannelFuture connect() {
+  public synchronized Future<ImapClient> connect() {
     ChannelFuture future = bootstrap.connect(configuration.hostAndPort().getHostText(),
         configuration.hostAndPort().getPort());
 
+    Promise<ImapClient> result = promiseExecutor.next().newPromise();
     future.addListener(f -> {
       if (f.isSuccess()) {
         configureChannel(((ChannelFuture) f).channel());
 
         if (pendingWriteQueue.peek() != null) {
-          idleExecutor.submit(() -> {
-            writeNext();
-            return null;
-          });
+          writeNext();
         }
+
+        result.trySuccess(this);
       }
     });
 
-    return future;
+    return result;
   }
 
   private void configureChannel(Channel channel) {
@@ -178,13 +178,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       }
     });
 
-    loginPromise.addListener(future -> {
+    return loginPromise.addListener(future -> {
       if (future.isSuccess()) {
         startKeepAlive();
       }
     });
-
-    return loginPromise;
   }
 
   private void startKeepAlive() {
@@ -316,7 +314,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public boolean isConnected() {
-    return channel != null && channel.isActive();
+    return channel != null && channel.isActive() && channel.isWritable();
   }
 
   public boolean isClosed() {
@@ -324,7 +322,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public void awaitLogin() throws InterruptedException, ExecutionException {
-    loginPromise.get();
+    loginPromise.await();
   }
 
   public <T extends TaggedResponse> Future<T> send(ImapCommandType imapCommandType, String... args) {

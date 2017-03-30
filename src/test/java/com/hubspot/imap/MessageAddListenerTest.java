@@ -8,25 +8,23 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 
 import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 
 import io.netty.util.concurrent.Future;
 
-@RunWith(Parameterized.class)
-public class MessageAddListenerTest extends ImapMultiServerTest {
+public class MessageAddListenerTest extends BaseGreenMailServerTest {
 
-  @Parameter public TestServerConfig testServerConfig;
   private ImapClient client;
 
   @Before
-  public void getClient() throws Exception {
-    client = getLoggedInClient(testServerConfig);
+  public void setUp() throws Exception {
+    super.setUp();
+    deliverRandomMessage();
+    client = getLoggedInClient();
   }
 
   @After
@@ -39,9 +37,12 @@ public class MessageAddListenerTest extends ImapMultiServerTest {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
-    Future<OpenResponse> openFuture = client.open(testServerConfig.primaryFolder(), FolderOpenMode.READ);
+    client.list("", "%");
+    Future<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
     openFuture.await(30, TimeUnit.SECONDS);
 
+    assertThat(openFuture.isSuccess()).isTrue();
+    assertThat(openFuture.get().getCode()).isEqualTo(ResponseCode.OK);
     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
   }
 
@@ -50,10 +51,12 @@ public class MessageAddListenerTest extends ImapMultiServerTest {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().addOpenEventListener((e) -> countDownLatch.countDown());
-    Future<OpenResponse> openResponseFuture = client.open(testServerConfig.primaryFolder(), FolderOpenMode.READ);
-    openResponseFuture.sync();
+    Future<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
+    openFuture.await(30, TimeUnit.SECONDS);
 
+    assertThat(openFuture.isSuccess()).isTrue();
+    assertThat(openFuture.get().getCode()).isEqualTo(ResponseCode.OK);
     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
-    assertThat(client.getState().getMessageNumber()).isEqualTo(openResponseFuture.get().getExists());
+    assertThat(client.getState().getMessageNumber()).isEqualTo(openFuture.get().getExists());
   }
 }

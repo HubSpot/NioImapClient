@@ -8,7 +8,6 @@ public enum ImapCommandType {
   IDLE,
   AUTHENTICATE,
   LIST,
-  EXTENDED_LIST,
   EXAMINE,
   SELECT,
   FETCH,
@@ -16,6 +15,5 @@ public enum ImapCommandType {
   STORE,
   SEARCH,
   CAPABILITY,
-  COPY,
-  ;
+  COPY;
 }

@@ -6,3 +6,12 @@
 #  imapConfiguration:
 #    authType: PASSWORD
 #    hostAndPort: "imap.gmail.com:993"
+
+#- host: imap.fastmail.com
+#  port: 993
+#  user: hsimaptest@fastmail.com
+#  password: "{{ password }}"
+#  primaryFolder: "/INBOX"
+#  imapConfiguration:
+#    authType: PASSWORD
+#    hostAndPort: "imap.fastmail.com:993"

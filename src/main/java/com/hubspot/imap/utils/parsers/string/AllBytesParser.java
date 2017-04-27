@@ -8,7 +8,10 @@ import io.netty.util.Signal;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class AllBytesParser extends BaseStringParser {
-  static final String REPLAY = ReplayingDecoder.class.getName().concat(".REPLAY");
+  private static final Signal REPLAYING_SIGNAL;
+  static {
+    REPLAYING_SIGNAL = Signal.valueOf(ReplayingDecoder.class, "REPLAY");
+  }
 
   public AllBytesParser(SoftReferencedAppendableCharSequence sequenceReference) {
     super(sequenceReference);
@@ -30,12 +33,9 @@ public class AllBytesParser extends BaseStringParser {
     try {
       super.parse(buffer);
     } catch (Signal e) {
-      if (e.toString().equalsIgnoreCase(REPLAY)) {
-        buffer.readerIndex(readerIndex + size);
-        return sequence.toString();
-      }
-
-      throw e;
+      e.expect(REPLAYING_SIGNAL);
+      buffer.readerIndex(readerIndex + size);
+      return sequence.toString();
     }
 
     return sequence.toString();

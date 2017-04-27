@@ -13,7 +13,10 @@ import io.netty.util.Signal;
 
 public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
 
-  static final String REPLAY = ReplayingDecoder.class.getName().concat(".REPLAY");
+  private static final Signal REPLAYING_SIGNAL;
+  static {
+    REPLAYING_SIGNAL = Signal.valueOf(ReplayingDecoder.class, "REPLAY");
+  }
 
   private final AtomOrStringParser stringParser;
   private final LiteralStringSizeParser sizeParser;
@@ -69,12 +72,9 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
               inc();
             }
           } catch (Signal e) {
-            if (e.toString().equalsIgnoreCase(REPLAY)) {
-              in.readerIndex(pos);
-              return Optional.empty();
-            }
-
-            throw e;
+            e.expect(REPLAYING_SIGNAL);
+            in.readerIndex(pos);
+            return Optional.empty();
           }
 
           String result = buf.toString(StandardCharsets.UTF_8);

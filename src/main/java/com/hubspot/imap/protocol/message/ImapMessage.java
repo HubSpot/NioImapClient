@@ -25,7 +25,7 @@ public interface ImapMessage {
   Message getBody() throws UnfetchedFieldException;
 
   class Builder implements ImapMessage {
-    private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
+    private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z");
 
     private Optional<Set<MessageFlag>> flags = Optional.empty();
     private long messageNumber;
@@ -83,7 +83,7 @@ public interface ImapMessage {
     }
 
     public Builder setInternalDate(String internalDate) {
-      this.internalDate = Optional.of(ZonedDateTime.parse(internalDate, INTERNALDATE_FORMATTER));
+      this.internalDate = Optional.of(ZonedDateTime.parse(internalDate.trim(), INTERNALDATE_FORMATTER));
       return this;
     }
 

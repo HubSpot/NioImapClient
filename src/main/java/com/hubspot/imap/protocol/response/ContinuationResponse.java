@@ -1,5 +1,6 @@
 package com.hubspot.imap.protocol.response;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 public interface ContinuationResponse {
@@ -23,7 +24,7 @@ public interface ContinuationResponse {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("message", message)
           .toString();
     }

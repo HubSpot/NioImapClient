@@ -1,10 +1,10 @@
 package com.hubspot.imap.protocol.response.tagged;
 
-import com.google.common.base.Objects;
-import com.hubspot.imap.protocol.response.ResponseCode;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.base.MoreObjects;
+import com.hubspot.imap.protocol.response.ResponseCode;
 
 public interface TaggedResponse {
   String getTag();
@@ -71,7 +71,7 @@ public interface TaggedResponse {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("tag", tag)
           .add("message", message)
           .add("untagged", untagged)

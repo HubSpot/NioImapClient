@@ -1,10 +1,11 @@
 package com.hubspot.imap.protocol.message;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
-
 import java.util.List;
 import java.util.Optional;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 
 public interface ImapAddress {
   String getPersonal();
@@ -70,7 +71,7 @@ public interface ImapAddress {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("personal", personal)
           .add("address", address)
           .toString();

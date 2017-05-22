@@ -1,15 +1,17 @@
 package com.hubspot.imap.protocol.message;
 
-import com.google.common.base.Objects;
-import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
-import org.apache.james.mime4j.dom.Message;
-
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.apache.james.mime4j.dom.Message;
+
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
+import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
 
 public interface ImapMessage {
 
@@ -143,7 +145,7 @@ public interface ImapMessage {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
         .add("flags", flags)
         .add("messageNumber", messageNumber)
         .add("uid", uid)

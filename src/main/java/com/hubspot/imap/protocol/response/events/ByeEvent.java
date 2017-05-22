@@ -1,6 +1,6 @@
 package com.hubspot.imap.protocol.response.events;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
 
 public class ByeEvent {
@@ -16,7 +16,7 @@ public class ByeEvent {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("response", response)
         .toString();
   }

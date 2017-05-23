@@ -1,6 +1,6 @@
 package com.hubspot.imap.protocol.response.events;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 public abstract class IntEvent {
   private long value;
@@ -15,7 +15,7 @@ public abstract class IntEvent {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("value", value)
         .toString();
   }

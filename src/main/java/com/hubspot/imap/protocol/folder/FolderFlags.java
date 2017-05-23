@@ -1,11 +1,12 @@
 package com.hubspot.imap.protocol.folder;
 
-import com.google.common.base.Objects;
-
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 
 public class FolderFlags {
   public enum Flag {
@@ -82,7 +83,7 @@ public class FolderFlags {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("flags", flags)
         .add("permanent", permanent)
         .toString();

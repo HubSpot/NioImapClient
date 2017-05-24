@@ -96,15 +96,15 @@ public class ImapClientFactory implements Closeable {
     return new ImapClient(finalConfig, bootstrap, promiseExecutorGroup, idleExecutorGroup, clientName, userName, authToken);
   }
 
-  public Future<ImapClient> connect(String userName, String authToken) throws InterruptedException {
+  public Future<ImapClient> connect(String userName, String authToken) {
     return connect(UUID.randomUUID().toString(), userName, authToken, Optional.empty());
   }
 
-  public Future<ImapClient> connect(String clientName, String userName, String authToken) throws InterruptedException {
+  public Future<ImapClient> connect(String clientName, String userName, String authToken) {
     return connect(clientName, userName, authToken, Optional.empty());
   }
 
-  public Future<ImapClient> connect(String clientName, String userName, String authToken, Optional<ImapConfiguration> configuration) throws InterruptedException {
+  public Future<ImapClient> connect(String clientName, String userName, String authToken, Optional<ImapConfiguration> configuration) {
     ImapClient client = create(clientName, userName, authToken, configuration);
 
     return client.connect();

@@ -584,6 +584,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
 
     discardSomeReadBytes();
+    responseBuilder = new TaggedResponse.Builder();
     checkpoint(State.START_RESPONSE);
   }
 

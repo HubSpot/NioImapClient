@@ -73,8 +73,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private final Bootstrap bootstrap;
   private final EventExecutorGroup promiseExecutor;
   private final EventExecutorGroup idleExecutor;
-  private final String userName;
-  private final String authToken;
   private final ImapClientState clientState;
   private final ImapCodec codec;
   private final ConcurrentLinkedQueue<PendingCommand> pendingWriteQueue;
@@ -90,16 +88,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
                     Bootstrap bootstrap,
                     EventExecutorGroup promiseExecutor,
                     EventExecutorGroup idleExecutor,
-                    String clientName,
-                    String userName,
-                    String authToken) {
+                    String clientName) {
     this.logger = LogUtils.loggerWithName(ImapClient.class, clientName);
     this.configuration = configuration;
     this.bootstrap = bootstrap;
     this.promiseExecutor = promiseExecutor;
     this.idleExecutor = idleExecutor;
-    this.userName = userName;
-    this.authToken = authToken;
     this.clientState = new ImapClientState(clientName, promiseExecutor);
     this.codec = new ImapCodec(clientState);
     this.pendingWriteQueue = new ConcurrentLinkedQueue<>();
@@ -144,14 +138,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return clientState;
   }
 
-  public Future<TaggedResponse> login() {
+  public Future<TaggedResponse> login(String userName, String authToken) {
     Future<TaggedResponse> loginFuture;
     switch (configuration.authType()) {
       case XOAUTH2:
-        loginFuture = oauthLogin();
+        loginFuture = oauthLogin(userName, authToken);
         break;
       default:
-        loginFuture = passwordLogin();
+        loginFuture = passwordLogin(userName, authToken);
         break;
     }
 
@@ -194,11 +188,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  private Future<TaggedResponse> passwordLogin() {
+  private Future<TaggedResponse> passwordLogin(String userName, String authToken) {
     return send(new BaseImapCommand(ImapCommandType.LOGIN, userName, authToken));
   }
 
-  private Future<TaggedResponse> oauthLogin() {
+  private Future<TaggedResponse> oauthLogin(String userName, String authToken) {
     return send(new XOAuth2Command(userName, authToken));
   }
 
@@ -319,10 +313,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public boolean isClosed() {
     return connectionClosed.get();
-  }
-
-  public void awaitLogin() throws InterruptedException, ExecutionException {
-    loginPromise.await();
   }
 
   public <T extends TaggedResponse> Future<T> send(ImapCommandType imapCommandType, String... args) {

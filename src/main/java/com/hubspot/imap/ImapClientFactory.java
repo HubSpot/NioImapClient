@@ -91,21 +91,21 @@ public class ImapClientFactory implements Closeable {
     bootstrap.channel(channelClass);
   }
 
-  private ImapClient create(String clientName, String userName, String authToken, Optional<ImapConfiguration> newConfig) {
+  private ImapClient create(String clientName, Optional<ImapConfiguration> newConfig) {
     ImapConfiguration finalConfig = newConfig.orElse(configuration);
-    return new ImapClient(finalConfig, bootstrap, promiseExecutorGroup, idleExecutorGroup, clientName, userName, authToken);
+    return new ImapClient(finalConfig, bootstrap, promiseExecutorGroup, idleExecutorGroup, clientName);
   }
 
-  public Future<ImapClient> connect(String userName, String authToken) {
-    return connect(UUID.randomUUID().toString(), userName, authToken, Optional.empty());
+  public Future<ImapClient> connect() {
+    return connect(UUID.randomUUID().toString());
   }
 
-  public Future<ImapClient> connect(String clientName, String userName, String authToken) {
-    return connect(clientName, userName, authToken, Optional.empty());
+  public Future<ImapClient> connect(String clientName) {
+    return connect(clientName, Optional.empty());
   }
 
-  public Future<ImapClient> connect(String clientName, String userName, String authToken, Optional<ImapConfiguration> configuration) {
-    ImapClient client = create(clientName, userName, authToken, configuration);
+  public Future<ImapClient> connect(String clientName, Optional<ImapConfiguration> configuration) {
+    ImapClient client = create(clientName, configuration);
 
     return client.connect();
   }

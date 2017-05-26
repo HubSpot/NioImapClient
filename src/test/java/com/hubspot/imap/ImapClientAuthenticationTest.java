@@ -20,9 +20,8 @@ public class ImapClientAuthenticationTest extends BaseGreenMailServerTest {
 
   @Test
   public void testGivenInvalidCredentials_doesThrowAuthenticationException() throws Exception {
-    try (ImapClient client = getClientFactory().connect(currentUser.getLogin(), "").get()) {
-      client.login();
-      client.awaitLogin();
+    try (ImapClient client = getClientFactory().connect().get()) {
+      client.login(currentUser.getLogin(), "").await();
     } catch (ExecutionException e) {
       assertThat(e).hasCauseInstanceOf(AuthenticationFailedException.class);
     }

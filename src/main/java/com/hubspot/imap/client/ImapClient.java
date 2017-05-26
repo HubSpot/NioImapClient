@@ -80,8 +80,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private Channel channel;
 
-  private final Promise<TaggedResponse> loginPromise;
-
   private volatile Promise currentCommandPromise;
 
   public ImapClient(ImapConfiguration configuration,
@@ -98,8 +96,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     this.codec = new ImapCodec(clientState);
     this.pendingWriteQueue = new ConcurrentLinkedQueue<>();
     this.connectionClosed = new AtomicBoolean(false);
-
-    loginPromise = promiseExecutor.next().newPromise();
   }
 
   public synchronized Future<ImapClient> connect() {
@@ -139,6 +135,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public Future<TaggedResponse> login(String userName, String authToken) {
+    Promise<TaggedResponse> loginPromise = promiseExecutor.next().newPromise();
+
     Future<TaggedResponse> loginFuture;
     switch (configuration.authType()) {
       case XOAUTH2:
@@ -301,10 +299,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public Future<NoopResponse> noop() {
     return send(ImapCommandType.NOOP);
-  }
-
-  public boolean isLoggedIn() {
-    return loginPromise.isSuccess() && channel.isActive();
   }
 
   public boolean isConnected() {

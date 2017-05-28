@@ -9,7 +9,7 @@
   </parent>
 
   <artifactId>NioImapClient</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>0.3-SNAPSHOT</version>
 
   <scm>
     <connection>scm:git:git@github.com:HubSpot/NioImapClient.git</connection>

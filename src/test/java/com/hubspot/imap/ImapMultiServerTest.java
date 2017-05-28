@@ -36,13 +36,12 @@ public abstract class ImapMultiServerTest {
 
   protected static ImapClient getClientForConfig(TestServerConfig config) throws InterruptedException, ExecutionException {
     ImapClientFactory clientFactory = new ImapClientFactory(config.imapConfiguration());
-    return clientFactory.connect("test", config.user(), config.password()).get();
+    return clientFactory.connect("test").get();
   }
 
   protected static ImapClient getLoggedInClient(TestServerConfig config) throws InterruptedException, ExecutionException, ConnectionClosedException {
     ImapClient client = getClientForConfig(config);
-    client.login();
-    client.awaitLogin();
+    client.login(config.user(), config.password()).await();
 
     return client;
   }

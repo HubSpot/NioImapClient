@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -77,25 +78,21 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test
   public void testLogin_doesAuthenticateConnection() throws Exception {
-    Future<NoopResponse> noopResponseFuture = client.noop();
-    NoopResponse taggedResponse = noopResponseFuture.get();
+    NoopResponse taggedResponse = client.noop().get();
 
     assertThat(taggedResponse.getCode()).isEqualTo(ResponseCode.OK);
   }
 
   @Test
   public void testCapability_doesGetResponse() throws Exception {
-    Future<TaggedResponse> capabilityResponseFuture = client.send(ImapCommandType.CAPABILITY);
-    TaggedResponse taggedResponse = capabilityResponseFuture.get();
+    TaggedResponse taggedResponse = client.send(ImapCommandType.CAPABILITY).get();
 
     assertThat(taggedResponse.getCode()).isEqualTo(ResponseCode.OK);
   }
 
   @Test
   public void testList_doesReturnFolders() throws Exception {
-    Future<ListResponse> listResponseFuture = client.list("", "*");
-
-    ListResponse response = listResponseFuture.get();
+    ListResponse response = client.list("", "*").get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getFolders().size()).isGreaterThan(0);
@@ -119,8 +116,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
   public void testFetch_doesReturnMessages() throws Exception {
     deliverRandomMessages(2);
 
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.FAST);
-    FetchResponse response = responseFuture.get();
+    FetchResponse response = client.fetch(1, Optional.of(2L), FetchDataItemType.FAST).get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getMessages().size()).isGreaterThan(0);
@@ -145,8 +141,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test(expected = UnfetchedFieldException.class)
   public void testAccessingUnfetchedField_doesThrowException() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.FLAGS);
-    FetchResponse response = responseFuture.get();
+    FetchResponse response = client.fetch(1, Optional.of(2L), FetchDataItemType.FLAGS).get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getMessages().size()).isGreaterThan(0);
@@ -155,8 +150,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test
   public void testFetchUid_doesGetUid() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.UID);
-    FetchResponse response = responseFuture.get();
+    FetchResponse response = client.fetch(1, Optional.of(2L), FetchDataItemType.UID).get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
 
@@ -168,8 +162,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
   public void testFetchEnvelope_doesFetchEnvelope() throws Exception {
     deliverRandomMessages(3);
 
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(3L), FetchDataItemType.ENVELOPE);
-    FetchResponse response = responseFuture.get();
+    FetchResponse response = client.fetch(1, Optional.of(3L), FetchDataItemType.ENVELOPE).get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
 
@@ -185,10 +178,8 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test
   public void testFetchBody_doesThrowUnknownFetchItemException() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), FetchDataItemType.BODY);
-
     try {
-      responseFuture.get();
+      client.fetch(1, Optional.of(2L), FetchDataItemType.BODY).get();
     } catch (ExecutionException e) {
       assertThat(e.getCause()).hasCauseInstanceOf(UnknownFetchItemTypeException.class);
     }
@@ -196,8 +187,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test
   public void testFetchBodyHeaders_doesParseHeaders() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(10L), new BodyPeekFetchDataItem("HEADER"));
-    FetchResponse response = responseFuture.get();
+    FetchResponse response = client.fetch(1, Optional.of(10L), new BodyPeekFetchDataItem("HEADER")).get();
     assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {
         return !Strings.isNullOrEmpty(m.getBody().getHeader().getField("Message-ID").getBody());
@@ -206,13 +196,11 @@ public class ImapClientTest extends BaseGreenMailServerTest {
       }
     }, "message id"));
 
-    responseFuture.get();
   }
 
   @Test
   public void testFetchBody_doesFetchTextBody() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.of(2L), new BodyPeekFetchDataItem());
-    FetchResponse response = responseFuture.get();
+    FetchResponse response = client.fetch(1, Optional.of(2L), new BodyPeekFetchDataItem()).get();
     assertThat(response.getMessages()).have(new Condition<>(m -> {
       try {
         SingleBody textBody = null;
@@ -248,19 +236,16 @@ public class ImapClientTest extends BaseGreenMailServerTest {
         throw Throwables.propagate(e);
       }
     }, "text body"));
-
-    responseFuture.get();
   }
 
   @Test
   public void testUidFetch() throws Exception {
     deliverRandomMessages(5);
-    Future<FetchResponse> responseFuture = client.fetch(1, Optional.empty(), FetchDataItemType.UID, FetchDataItemType.ENVELOPE);
-    FetchResponse response = responseFuture.get();
+    FetchResponse response = client.fetch(1, Optional.empty(), FetchDataItemType.UID, FetchDataItemType.ENVELOPE).get();
 
     ImapMessage message = response.getMessages().iterator().next();
 
-    Future<FetchResponse> uidfetchFuture = client.uidfetch(message.getUid(), Optional.of(message.getUid()), FetchDataItemType.UID,
+    CompletableFuture<FetchResponse> uidfetchFuture = client.uidfetch(message.getUid(), Optional.of(message.getUid()), FetchDataItemType.UID,
         FetchDataItemType.ENVELOPE);
     FetchResponse uidresponse = uidfetchFuture.get();
 
@@ -272,7 +257,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
   public void testStreamingFetch_doesExecuteConsumerForAllMessages() throws Exception {
     Set<Long> uids = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-    Future<StreamingFetchResponse<Void>> fetchResponseFuture = client.fetch(1, Optional.empty(), message -> {
+    CompletableFuture<StreamingFetchResponse<Void>> fetchResponseFuture = client.fetch(1, Optional.empty(), message -> {
       try {
         uids.add(message.getUid());
       } catch (UnfetchedFieldException e) {
@@ -295,7 +280,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test
   public void testStore() throws Exception {
-    Future<FetchResponse> responseFuture = client.fetch(openResponse.getExists(), Optional.<Long>empty(),
+    CompletableFuture<FetchResponse> responseFuture = client.fetch(openResponse.getExists(), Optional.<Long>empty(),
         FetchDataItemType.FLAGS, FetchDataItemType.UID);
     FetchResponse fetchResponse = responseFuture.get();
     ImapMessage message = fetchResponse.getMessages().iterator().next();
@@ -340,7 +325,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
     // Reopen folder to get correct EXISTS
     openResponse = client.open(DEFAULT_FOLDER, FolderOpenMode.WRITE).get();
-    Future<FetchResponse> responseFuture = client.fetch(openResponse.getExists() - 2, Optional.empty(),
+    CompletableFuture<FetchResponse> responseFuture = client.fetch(openResponse.getExists() - 2, Optional.empty(),
         FetchDataItemType.FLAGS, FetchDataItemType.UID);
     FetchResponse fetchResponse = responseFuture.get();
     ImapMessage message = fetchResponse.getMessages()

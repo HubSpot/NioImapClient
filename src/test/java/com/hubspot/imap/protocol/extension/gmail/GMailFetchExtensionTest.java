@@ -3,6 +3,7 @@ package com.hubspot.imap.protocol.extension.gmail;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -17,11 +18,10 @@ import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItem
 import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 
-import io.netty.util.concurrent.Future;
-
 @RunWith(Parameterized.class)
 public class GMailFetchExtensionTest extends ImapMultiServerTest {
-  @Parameter public TestServerConfig testServerConfig;
+  @Parameter
+  public TestServerConfig testServerConfig;
 
   @Test
   public void testGmailFetchExtensions() throws Exception {
@@ -29,7 +29,7 @@ public class GMailFetchExtensionTest extends ImapMultiServerTest {
       return;
     }
 
-    Future<FetchResponse> responseFuture = getLoggedInClient(testServerConfig).fetch(1, Optional.of(2L), FetchDataItemType.X_GM_MSGID, FetchDataItemType.X_GM_THRID);
+    CompletableFuture<FetchResponse> responseFuture = getLoggedInClient(testServerConfig).fetch(1, Optional.of(2L), FetchDataItemType.X_GM_MSGID, FetchDataItemType.X_GM_THRID);
     FetchResponse response = responseFuture.get();
 
     assertThat(response.getMessages()).have(new Condition<>(m -> {

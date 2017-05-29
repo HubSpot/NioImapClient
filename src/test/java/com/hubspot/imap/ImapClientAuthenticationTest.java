@@ -2,8 +2,6 @@ package com.hubspot.imap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.concurrent.ExecutionException;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,8 +19,8 @@ public class ImapClientAuthenticationTest extends BaseGreenMailServerTest {
   @Test
   public void testGivenInvalidCredentials_doesThrowAuthenticationException() throws Exception {
     try (ImapClient client = getClientFactory().connect().get()) {
-      client.login(currentUser.getLogin(), "").await();
-    } catch (ExecutionException e) {
+      client.login(currentUser.getLogin(), "").join();
+    } catch (Exception e) {
       assertThat(e).hasCauseInstanceOf(AuthenticationFailedException.class);
     }
   }

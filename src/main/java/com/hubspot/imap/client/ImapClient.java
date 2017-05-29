@@ -136,7 +136,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return clientState;
   }
 
-  public CompletableFuture<Void> login(String userName, String authToken) {
+  public CompletableFuture<TaggedResponse> login(String userName, String authToken) {
     CompletableFuture<TaggedResponse> loginFuture;
     switch (configuration.authType()) {
       case XOAUTH2:
@@ -149,7 +149,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
     return loginFuture.thenCompose(response -> {
       if (response instanceof ContinuationResponse) {
-        return send(ImapCommandType.BLANK).thenAccept(blankResponse -> {
+        return send(ImapCommandType.BLANK).thenApply(blankResponse -> {
           String continuationMessage = blankResponse.getMessage();
 
           throw AuthenticationFailedException.fromContinuation(blankResponse.getMessage(), continuationMessage);
@@ -158,10 +158,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
       if (response.getCode() == ResponseCode.OK) {
         startKeepAlive();
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.completedFuture(response);
       }
 
-      CompletableFuture<Void> future = new CompletableFuture<>();
+      CompletableFuture<TaggedResponse> future = new CompletableFuture<>();
       future.completeExceptionally(new AuthenticationFailedException(response.getMessage()));
       return future;
     });

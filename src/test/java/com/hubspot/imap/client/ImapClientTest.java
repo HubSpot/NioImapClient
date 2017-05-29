@@ -56,8 +56,6 @@ import com.hubspot.imap.protocol.response.tagged.SearchResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 
-import io.netty.util.concurrent.Future;
-
 public class ImapClientTest extends BaseGreenMailServerTest {
 
   private ImapClient client;
@@ -270,7 +268,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     StreamingFetchResponse<Void> fetchResponse = fetchResponseFuture.get();
 
     int successful = 0;
-    for (Future consumerFuture : fetchResponse.getMessageConsumerFutures()) {
+    for (CompletableFuture consumerFuture : fetchResponse.getMessageConsumerFutures()) {
       consumerFuture.get();
       successful++;
     }

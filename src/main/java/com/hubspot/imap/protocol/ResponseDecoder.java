@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -339,7 +339,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         fetchCommand = ((StreamingFetchCommand) clientState.getCurrentCommand());
       }
 
-      Future<?> future = executorGroup.submit(() -> fetchCommand.handle(message));
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> fetchCommand.handle(message), executorGroup);
 
       untaggedResponses.add(future);
     } else {

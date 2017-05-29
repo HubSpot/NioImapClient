@@ -45,7 +45,7 @@ public class BaseGreenMailServerTest {
 
   protected ImapClient getLoggedInClient() throws InterruptedException, ExecutionException {
     ImapClient client = getClientFactory().connect().get();
-    client.login(currentUser.getEmail(), currentUser.getPassword()).await();
+    client.login(currentUser.getEmail(), currentUser.getPassword()).join();
 
     return client;
   }

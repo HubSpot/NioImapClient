@@ -21,8 +21,6 @@ import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.spotify.futures.CompletableFutures;
 
-import io.netty.util.concurrent.Future;
-
 public class ConcurrentConnectionTest extends BaseGreenMailServerTest {
   private static final int NUM_CONNS = 5;
 
@@ -52,8 +50,7 @@ public class ConcurrentConnectionTest extends BaseGreenMailServerTest {
           int noops = ThreadLocalRandom.current().nextInt(5);
 
           for (int x = 0; x < noops; x++) {
-            Future<NoopResponse> noopResponseFuture = client.noop();
-            NoopResponse response = noopResponseFuture.get();
+            NoopResponse response = client.noop().get();
 
             assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
 

@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -49,6 +50,7 @@ import com.hubspot.imap.protocol.response.tagged.SearchResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.utils.LogUtils;
+import com.hubspot.imap.utils.NettyCompletableFuture;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -134,10 +136,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return clientState;
   }
 
-  public Future<TaggedResponse> login(String userName, String authToken) {
-    Promise<TaggedResponse> loginPromise = promiseExecutor.next().newPromise();
-
-    Future<TaggedResponse> loginFuture;
+  public CompletableFuture<Void> login(String userName, String authToken) {
+    CompletableFuture<TaggedResponse> loginFuture;
     switch (configuration.authType()) {
       case XOAUTH2:
         loginFuture = oauthLogin(userName, authToken);
@@ -147,33 +147,23 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         break;
     }
 
-    loginFuture.addListener(future -> {
-      final Object response = future.get();
+    return loginFuture.thenCompose(response -> {
       if (response instanceof ContinuationResponse) {
-        send(ImapCommandType.BLANK).addListener(blankFuture -> {
-          String continuationMessage = ((ContinuationResponse) response).getMessage();
-          Object blankResponse = blankFuture.get();
-          if (blankResponse instanceof TaggedResponse) {
-            loginPromise.tryFailure(AuthenticationFailedException.fromContinuation(((TaggedResponse) blankResponse).getMessage(), continuationMessage));
-          } else {
-            loginPromise.tryFailure(AuthenticationFailedException.fromContinuation(continuationMessage));
-          }
+        return send(ImapCommandType.BLANK).thenAccept(blankResponse -> {
+          String continuationMessage = blankResponse.getMessage();
+
+          throw AuthenticationFailedException.fromContinuation(blankResponse.getMessage(), continuationMessage);
         });
-      } else {
-        TaggedResponse taggedResponse = ((TaggedResponse) response);
-        if (taggedResponse.getCode() == ResponseCode.OK) {
-          loginPromise.setSuccess(taggedResponse);
-        } else {
-
-          loginPromise.tryFailure(new AuthenticationFailedException(taggedResponse.getMessage()));
-        }
       }
-    });
 
-    return loginPromise.addListener(future -> {
-      if (future.isSuccess()) {
+      if (response.getCode() == ResponseCode.OK) {
         startKeepAlive();
+        return CompletableFuture.completedFuture(null);
       }
+
+      CompletableFuture<Void> future = new CompletableFuture<>();
+      future.completeExceptionally(new AuthenticationFailedException(response.getMessage()));
+      return future;
     });
   }
 
@@ -186,118 +176,120 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  private Future<TaggedResponse> passwordLogin(String userName, String authToken) {
+  private CompletableFuture<TaggedResponse> passwordLogin(String userName, String authToken) {
     return send(new BaseImapCommand(ImapCommandType.LOGIN, userName, authToken));
   }
 
-  private Future<TaggedResponse> oauthLogin(String userName, String authToken) {
+  private CompletableFuture<TaggedResponse> oauthLogin(String userName, String authToken) {
     return send(new XOAuth2Command(userName, authToken));
   }
 
-  public Future<TaggedResponse> logout() {
+  public CompletableFuture<TaggedResponse> logout() {
     return send(new BaseImapCommand(ImapCommandType.LOGOUT));
   }
 
-  public Future<ListResponse> list(String context, String query) {
+  public CompletableFuture<ListResponse> list(String context, String query) {
     return send(new ListCommand(context, query));
   }
 
-  public Future<OpenResponse> open(String folderName, FolderOpenMode openMode) {
+  public CompletableFuture<OpenResponse> open(String folderName, FolderOpenMode openMode) {
     return send(new OpenCommand(folderName, openMode));
   }
 
-  public Future<FetchResponse> fetch(long startId,
-                                     Optional<Long> stopId,
-                                     FetchDataItem fetchDataItem,
-                                     FetchDataItem... otherFetchDataItems) {
+  public CompletableFuture<FetchResponse> fetch(long startId,
+                                                Optional<Long> stopId,
+                                                FetchDataItem fetchDataItem,
+                                                FetchDataItem... otherFetchDataItems) {
     return send(new FetchCommand(startId, stopId, fetchDataItem, otherFetchDataItems));
   }
 
-  public Future<FetchResponse> fetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) {
+  public CompletableFuture<FetchResponse> fetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) {
     Preconditions.checkArgument(fetchItems.size() > 0, "Must have at least one FETCH item.");
     return send(new FetchCommand(startId, stopId, fetchItems));
   }
 
-  public <R> Future<StreamingFetchResponse<R>> uidfetch(long startId,
-                                                        Optional<Long> stopId,
-                                                        Function<ImapMessage, R> messageFunction,
-                                                        FetchDataItem item,
-                                                        FetchDataItem... otherItems) {
+  public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(long startId,
+                                                                   Optional<Long> stopId,
+                                                                   Function<ImapMessage, R> messageFunction,
+                                                                   FetchDataItem item,
+                                                                   FetchDataItem... otherItems) {
     return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems)));
   }
 
-  public <R> Future<StreamingFetchResponse<R>> fetch(long startId,
-                                                     Optional<Long> stopId,
-                                                     Function<ImapMessage, R> messageFunction,
-                                                     FetchDataItem item,
-                                                     FetchDataItem... otherItems) {
+  public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(long startId,
+                                                                Optional<Long> stopId,
+                                                                Function<ImapMessage, R> messageFunction,
+                                                                FetchDataItem item,
+                                                                FetchDataItem... otherItems) {
     return send(new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems));
   }
 
-  public <R> Future<StreamingFetchResponse<R>> fetch(long startId,
-                                                     Optional<Long> stopId,
-                                                     Function<ImapMessage, R> messageFunction,
-                                                     List<FetchDataItem> fetchDataItems) {
+  public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(long startId,
+                                                                Optional<Long> stopId,
+                                                                Function<ImapMessage, R> messageFunction,
+                                                                List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
     return send(new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems));
   }
 
-  public Future<FetchResponse> uidfetch(long startId,
-                                        Optional<Long> stopId,
-                                        FetchDataItem item,
-                                        FetchDataItem... otherItems) {
+  public CompletableFuture<FetchResponse> uidfetch(long startId,
+                                                   Optional<Long> stopId,
+                                                   FetchDataItem item,
+                                                   FetchDataItem... otherItems) {
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
   }
 
-  public Future<FetchResponse> uidfetch(Set<Long> uids, FetchDataItem first, FetchDataItem... others) {
+  public CompletableFuture<FetchResponse> uidfetch(Set<Long> uids, FetchDataItem first, FetchDataItem... others) {
     return uidfetch(uids, Lists.asList(first, others));
   }
 
-  public Future<FetchResponse> uidfetch(Set<Long> uids, List<FetchDataItem> items) {
+  public CompletableFuture<FetchResponse> uidfetch(Set<Long> uids, List<FetchDataItem> items) {
     return send(new UidCommand(ImapCommandType.FETCH, new SetFetchCommand(uids, items)));
   }
 
-  public Future<FetchResponse> uidfetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) {
+  public CompletableFuture<FetchResponse> uidfetch(long startId,
+                                                   Optional<Long> stopId,
+                                                   List<FetchDataItem> fetchItems) {
     Preconditions.checkArgument(fetchItems.size() > 0, "Must have at least one FETCH item.");
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchItems)));
   }
 
-  public <R> Future<StreamingFetchResponse<R>> uidfetch(long startId,
-                                                        Optional<Long> stopId,
-                                                        Function<ImapMessage, R> messageFunction,
-                                                        List<FetchDataItem> fetchDataItems) {
+  public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(long startId,
+                                                                   Optional<Long> stopId,
+                                                                   Function<ImapMessage, R> messageFunction,
+                                                                   List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
     return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems)));
   }
 
-  public Future<TaggedResponse> uidstore(StoreAction action,
-                                         long startId,
-                                         Optional<Long> stopId,
-                                         MessageFlag... flags) {
+  public CompletableFuture<TaggedResponse> uidstore(StoreAction action,
+                                                    long startId,
+                                                    Optional<Long> stopId,
+                                                    MessageFlag... flags) {
     return send(new UidCommand(ImapCommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
   }
 
-  public Future<SearchResponse> uidsearch(SearchKey... keys) {
+  public CompletableFuture<SearchResponse> uidsearch(SearchKey... keys) {
     return send(new UidCommand(ImapCommandType.SEARCH, new SearchCommand(keys)));
   }
 
-  public Future<SearchResponse> uidsearch(SearchCommand cmd) {
+  public CompletableFuture<SearchResponse> uidsearch(SearchCommand cmd) {
     return send(new UidCommand(ImapCommandType.SEARCH, cmd));
   }
 
-  public Future<SearchResponse> search(SearchKey... keys) {
+  public CompletableFuture<SearchResponse> search(SearchKey... keys) {
     return send(new SearchCommand(keys));
   }
 
-  public Future<SearchResponse> search(SearchCommand cmd) {
+  public CompletableFuture<SearchResponse> search(SearchCommand cmd) {
     return send(cmd);
   }
 
-  public Future<TaggedResponse> expunge() {
+  public CompletableFuture<TaggedResponse> expunge() {
     return send(ImapCommandType.EXPUNGE);
   }
 
-  public Future<NoopResponse> noop() {
+  public CompletableFuture<NoopResponse> noop() {
     return send(ImapCommandType.NOOP);
   }
 
@@ -309,7 +301,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return connectionClosed.get();
   }
 
-  public <T extends TaggedResponse> Future<T> send(ImapCommandType imapCommandType, String... args) {
+  public <T extends TaggedResponse> CompletableFuture<T> send(ImapCommandType imapCommandType, String... args) {
     BaseImapCommand baseImapCommand = new BaseImapCommand(imapCommandType, args);
     return send(baseImapCommand);
   }
@@ -322,7 +314,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
    * @param <T>         Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
    */
-  public synchronized <T extends TaggedResponse> Future<T> send(ImapCommand imapCommand) {
+  public synchronized <T extends TaggedResponse> CompletableFuture<T> send(ImapCommand imapCommand) {
     final Promise<T> commandPromise = promiseExecutor.next().newPromise();
     commandPromise.addListener((f) -> {
       writeNext();
@@ -330,10 +322,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
     send(imapCommand, commandPromise);
 
-    return commandPromise;
+    return NettyCompletableFuture.from(commandPromise);
   }
 
-  public synchronized void send(ImapCommand imapCommand, Promise promise) {
+  private synchronized void send(ImapCommand imapCommand, Promise promise) {
     if (connectionClosed.get()) {
       promise.tryFailure(new ConnectionClosedException("Cannot write to closed connection."));
       return;
@@ -347,14 +339,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  public void actuallySend(ImapCommand imapCommand, Promise promise) {
+  private void actuallySend(ImapCommand imapCommand, Promise promise) {
     currentCommandPromise = promise;
 
     clientState.setCurrentCommand(imapCommand);
     channel.writeAndFlush(imapCommand);
   }
 
-  public synchronized void writeNext() throws ConnectionClosedException {
+  private synchronized void writeNext() throws ConnectionClosedException {
     if (connectionClosed.get()) {
       return;
     }

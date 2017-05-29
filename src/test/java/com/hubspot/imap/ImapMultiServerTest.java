@@ -41,7 +41,7 @@ public abstract class ImapMultiServerTest {
 
   protected static ImapClient getLoggedInClient(TestServerConfig config) throws InterruptedException, ExecutionException, ConnectionClosedException {
     ImapClient client = getClientForConfig(config);
-    client.login(config.user(), config.password()).await();
+    client.login(config.user(), config.password()).join();
 
     return client;
   }

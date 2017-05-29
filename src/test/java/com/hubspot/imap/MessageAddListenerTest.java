@@ -2,6 +2,7 @@ package com.hubspot.imap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -13,8 +14,6 @@ import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
-
-import io.netty.util.concurrent.Future;
 
 public class MessageAddListenerTest extends BaseGreenMailServerTest {
 
@@ -38,10 +37,11 @@ public class MessageAddListenerTest extends BaseGreenMailServerTest {
 
     client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
     client.list("", "%");
-    Future<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
-    openFuture.await(30, TimeUnit.SECONDS);
+    CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
+    openFuture.get(30, TimeUnit.SECONDS);
 
-    assertThat(openFuture.isSuccess()).isTrue();
+    assertThat(openFuture.isDone()).isTrue();
+    assertThat(openFuture.isCompletedExceptionally()).isFalse();
     assertThat(openFuture.get().getCode()).isEqualTo(ResponseCode.OK);
     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
   }
@@ -51,10 +51,11 @@ public class MessageAddListenerTest extends BaseGreenMailServerTest {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().addOpenEventListener((e) -> countDownLatch.countDown());
-    Future<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
-    openFuture.await(30, TimeUnit.SECONDS);
+    CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
+    openFuture.get(30, TimeUnit.SECONDS);
 
-    assertThat(openFuture.isSuccess()).isTrue();
+    assertThat(openFuture.isDone()).isTrue();
+    assertThat(openFuture.isCompletedExceptionally()).isFalse();
     assertThat(openFuture.get().getCode()).isEqualTo(ResponseCode.OK);
     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
     assertThat(client.getState().getMessageNumber()).isEqualTo(openFuture.get().getExists());

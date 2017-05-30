@@ -407,7 +407,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         noop();
       }
     } else if (evt instanceof ByeEvent) {
-      if (channel.isOpen() && clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT) {
+      if (channel.isOpen() && (clientState.getCurrentCommand() == null || clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT)) {
         closeNow();
       }
     }

@@ -100,11 +100,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     this.connectionClosed = new AtomicBoolean(false);
   }
 
-  public synchronized Future<ImapClient> connect() {
+  public synchronized CompletableFuture<ImapClient> connect() {
     ChannelFuture future = bootstrap.connect(configuration.hostAndPort().getHostText(),
         configuration.hostAndPort().getPort());
 
-    Promise<ImapClient> result = promiseExecutor.next().newPromise();
+    CompletableFuture<ImapClient> resultFuture = new CompletableFuture<>();
     future.addListener(f -> {
       if (f.isSuccess()) {
         configureChannel(((ChannelFuture) f).channel());
@@ -113,11 +113,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
           writeNext();
         }
 
-        result.trySuccess(this);
+        resultFuture.complete(this);
       }
     });
 
-    return result;
+    return resultFuture;
   }
 
   private void configureChannel(Channel channel) {

@@ -86,9 +86,8 @@ public class ImapClientFactory implements Closeable {
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
         .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
-        .handler(configuration.useSsl() ? new ImapChannelInitializer(context, configuration) : new ImapChannelInitializer(configuration));
-
-    bootstrap.channel(channelClass);
+        .handler(configuration.useSsl() ? new ImapChannelInitializer(context, configuration) : new ImapChannelInitializer(configuration))
+        .channel(channelClass);
   }
 
   private ImapClient create(String clientName, Optional<ImapConfiguration> newConfig) {

@@ -35,7 +35,6 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
         configuration.hostAndPort().getPortOrDefault(993)));
     }
 
-
     channelPipeline.addLast(STRING_ENCODER);
   }
 }

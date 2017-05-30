@@ -101,22 +101,32 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public synchronized CompletableFuture<ImapClient> connect() {
+    Promise<ImapClient> promise = promiseExecutor.next().newPromise();
+
     ChannelFuture future = bootstrap.connect(configuration.hostAndPort().getHostText(),
         configuration.hostAndPort().getPort());
 
-    return NettyCompletableFuture.from(future).thenApply(aVoid -> {
-      configureChannel(future.channel());
-
-      if (pendingWriteQueue.peek() != null) {
+    future.addListener(f -> {
+      if (f.isSuccess()) {
         try {
-          writeNext();
-        } catch (ConnectionClosedException e) {
-          throw new RuntimeException(e);
-        }
-      }
+          configureChannel(((ChannelFuture) f).channel());
 
-      return this;
+          if (pendingWriteQueue.peek() != null) {
+            writeNext();
+          }
+
+          promise.trySuccess(this);
+        } catch (Throwable t) {
+          promise.tryFailure(t);
+        }
+      } else {
+        promise.tryFailure(f.cause());
+      }
     });
+
+    currentCommandPromise = promise;
+
+    return NettyCompletableFuture.from(promise);
   }
 
   private void configureChannel(Channel channel) {

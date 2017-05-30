@@ -6,6 +6,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
@@ -31,7 +32,6 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.Future;
 
 
 public class ImapClientFactory implements Closeable {
@@ -96,15 +96,15 @@ public class ImapClientFactory implements Closeable {
     return new ImapClient(finalConfig, bootstrap, promiseExecutorGroup, idleExecutorGroup, clientName);
   }
 
-  public Future<ImapClient> connect() {
+  public CompletableFuture<ImapClient> connect() {
     return connect(UUID.randomUUID().toString());
   }
 
-  public Future<ImapClient> connect(String clientName) {
+  public CompletableFuture<ImapClient> connect(String clientName) {
     return connect(clientName, Optional.empty());
   }
 
-  public Future<ImapClient> connect(String clientName, Optional<ImapConfiguration> configuration) {
+  public CompletableFuture<ImapClient> connect(String clientName, Optional<ImapConfiguration> configuration) {
     ImapClient client = create(clientName, configuration);
 
     return client.connect();

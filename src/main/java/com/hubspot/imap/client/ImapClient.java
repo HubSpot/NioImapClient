@@ -423,10 +423,15 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       logger.debug("Error while executing {}", clientState.getCurrentCommand().getCommandType(), cause);
       currentCommandPromise.tryFailure(cause);
     } else {
+      if (connectionClosed.get()) {
+        logger.debug("Caught exception to closed channel", cause);
+        return;
+      }
+
       // this is basically an unrecoverable condition (what do we do with this exception?!?!)
       // So we just the channel close and notify the user
       logger.error("Error in handler", cause);
-      closeNow();
+      idleExecutor.next().submit(this::closeNow);
     }
   }
 

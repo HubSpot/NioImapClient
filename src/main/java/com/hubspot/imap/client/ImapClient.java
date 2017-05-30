@@ -483,10 +483,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
 
     if (channel != null && channel.isOpen()) {
-      if (channel.pipeline().names().contains(KEEP_ALIVE_HANDLER)) {
-        channel.pipeline().remove(KEEP_ALIVE_HANDLER);
-      }
-
       try {
         channel.close().get(configuration.closeTimeoutSec(), TimeUnit.SECONDS);
       } catch (ExecutionException | TimeoutException e) {

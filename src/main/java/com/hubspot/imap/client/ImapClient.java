@@ -456,7 +456,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public void closeNow() {
-    connectionClosed.set(true);
+    if (!connectionClosed.compareAndSet(false, true)) {
+      logger.debug("Attempted to close already closed channel!");
+      return;
+    }
+
     if (channel != null && channel.isOpen()) {
       try {
         channel.close().get(configuration.closeTimeoutSec(), TimeUnit.SECONDS);

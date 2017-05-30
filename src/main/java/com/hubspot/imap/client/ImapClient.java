@@ -104,20 +104,19 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     ChannelFuture future = bootstrap.connect(configuration.hostAndPort().getHostText(),
         configuration.hostAndPort().getPort());
 
-    CompletableFuture<ImapClient> resultFuture = new CompletableFuture<>();
-    future.addListener(f -> {
-      if (f.isSuccess()) {
-        configureChannel(((ChannelFuture) f).channel());
+    return NettyCompletableFuture.from(future).thenApply(aVoid -> {
+      configureChannel(future.channel());
 
-        if (pendingWriteQueue.peek() != null) {
+      if (pendingWriteQueue.peek() != null) {
+        try {
           writeNext();
+        } catch (ConnectionClosedException e) {
+          throw new RuntimeException(e);
         }
-
-        resultFuture.complete(this);
       }
-    });
 
-    return resultFuture;
+      return this;
+    });
   }
 
   private void configureChannel(Channel channel) {

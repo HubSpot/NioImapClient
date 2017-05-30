@@ -119,6 +119,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         } catch (Throwable t) {
           promise.tryFailure(t);
         }
+      } else if (f.isCancelled()) {
+        promise.cancel(true);
       } else {
         promise.tryFailure(f.cause());
       }
@@ -421,8 +423,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       logger.debug("Error while executing {}", clientState.getCurrentCommand().getCommandType(), cause);
       currentCommandPromise.tryFailure(cause);
     } else {
+      // this is basically an unrecoverable condition (what do we do with this exception?!?!)
+      // So we just the channel close and notify the user
       logger.error("Error in handler", cause);
-      ctx.pipeline().fireExceptionCaught(cause);
+      closeNow();
     }
   }
 

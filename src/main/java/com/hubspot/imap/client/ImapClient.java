@@ -78,6 +78,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private final ImapClientState clientState;
   private final ImapCodec codec;
   private final ConcurrentLinkedQueue<PendingCommand> pendingWriteQueue;
+  private final AtomicBoolean connectionShutdown;
   private final AtomicBoolean connectionClosed;
 
   private Channel channel;
@@ -97,6 +98,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     this.clientState = new ImapClientState(clientName, promiseExecutor);
     this.codec = new ImapCodec(clientState);
     this.pendingWriteQueue = new ConcurrentLinkedQueue<>();
+    this.connectionShutdown = new AtomicBoolean(false);
     this.connectionClosed = new AtomicBoolean(false);
   }
 
@@ -181,9 +183,15 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private void startKeepAlive() {
     int keepAliveInterval = configuration.noopKeepAliveIntervalSec();
     if (keepAliveInterval > 0) {
-      if (!connectionClosed.get() && channel.pipeline().get(KEEP_ALIVE_HANDLER) == null) {
+      if (!connectionShutdown.get() && channel.pipeline().get(KEEP_ALIVE_HANDLER) == null) {
         this.channel.pipeline().addFirst(KEEP_ALIVE_HANDLER, new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
       }
+    }
+  }
+
+  private void stopKeepAlive() {
+    if (channel.pipeline().names().contains(KEEP_ALIVE_HANDLER)) {
+      channel.pipeline().remove(KEEP_ALIVE_HANDLER);
     }
   }
 
@@ -305,7 +313,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public boolean isConnected() {
-    return channel != null && channel.isActive() && channel.isWritable();
+    return channel != null && channel.isActive();
   }
 
   public boolean isClosed() {
@@ -337,7 +345,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   private synchronized void send(ImapCommand imapCommand, Promise promise) {
-    if (connectionClosed.get()) {
+    if (connectionShutdown.get()) {
       promise.tryFailure(new ConnectionClosedException("Cannot write to closed connection."));
       return;
     }
@@ -358,7 +366,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   private synchronized void writeNext() throws ConnectionClosedException {
-    if (connectionClosed.get()) {
+    if (connectionShutdown.get()) {
       return;
     }
 
@@ -405,7 +413,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
-      if (!connectionClosed.get()) {
+      if (!connectionShutdown.get()) {
         noop();
       }
     } else if (evt instanceof ByeEvent) {
@@ -423,7 +431,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       logger.debug("Error while executing {}", clientState.getCurrentCommand().getCommandType(), cause);
       currentCommandPromise.tryFailure(cause);
     } else {
-      if (connectionClosed.get()) {
+      if (connectionShutdown.get()) {
         logger.debug("Caught exception to closed channel", cause);
         return;
       }
@@ -436,11 +444,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public Future closeAsync() {
-    if (isConnected() && !connectionClosed.get()) {
-      connectionClosed.set(true);
+    if (isConnected() && connectionShutdown.compareAndSet(false, true)) {
       if (currentCommandPromise != null && !currentCommandPromise.isDone()) {
         currentCommandPromise.cancel(true);
       }
+
+      stopKeepAlive();
+      clearPendingWrites();
 
       return sendLogout();
     } else {
@@ -456,6 +466,17 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public void closeNow() {
+    if (!connectionShutdown.compareAndSet(false, true)) {
+      logger.debug("Attempted to close already closed channel!");
+      return;
+    }
+
+    stopKeepAlive();
+    clearPendingWrites();
+    closeInternal();
+  }
+
+  private void closeInternal() {
     if (!connectionClosed.compareAndSet(false, true)) {
       logger.debug("Attempted to close already closed channel!");
       return;
@@ -472,6 +493,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         logger.warn("Interrupted closing channel.", e);
       }
     }
+  }
+
+  private void clearPendingWrites() {
+    pendingWriteQueue.iterator().forEachRemaining(pendingCommand -> {
+      pendingCommand.promise.tryFailure(new ConnectionClosedException("Connection is closed"));
+    });
+
+    pendingWriteQueue.clear(); // Just to be sure
   }
 
   @Override

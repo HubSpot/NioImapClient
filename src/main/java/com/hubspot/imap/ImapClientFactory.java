@@ -39,6 +39,7 @@ public class ImapClientFactory implements Closeable {
 
   private final ImapConfiguration configuration;
   private final Bootstrap bootstrap;
+  private final SslContext sslContext;
   private final EventLoopGroup eventLoopGroup;
   private final EventExecutorGroup promiseExecutorGroup;
   private final EventExecutorGroup idleExecutorGroup;
@@ -64,18 +65,15 @@ public class ImapClientFactory implements Closeable {
     this.promiseExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads(), baseThreadFactoryBuilder.setNameFormat("imap-promise-executor-%d").build());
     this.idleExecutorGroup = new DefaultEventExecutorGroup(configuration.numExecutorThreads(), baseThreadFactoryBuilder.setNameFormat("imap-idle-executor-%d").build());
 
-    SslContext context = null;
-    if (configuration.useSsl()) {
-      try {
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(((KeyStore) null));
+    try {
+      TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      trustManagerFactory.init(((KeyStore) null));
 
-        context = SslContextBuilder.forClient()
-            .trustManager(trustManagerFactory)
-            .build();
-      } catch (NoSuchAlgorithmException | SSLException | KeyStoreException e) {
-        throw Throwables.propagate(e);
-      }
+      sslContext = SslContextBuilder.forClient()
+          .trustManager(trustManagerFactory)
+          .build();
+    } catch (NoSuchAlgorithmException | SSLException | KeyStoreException e) {
+      throw Throwables.propagate(e);
     }
 
     bootstrap.group(eventLoopGroup)
@@ -86,13 +84,13 @@ public class ImapClientFactory implements Closeable {
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.WRITE_BUFFER_HIGH_WATER_MARK, 32 * 1024)
         .option(ChannelOption.WRITE_BUFFER_LOW_WATER_MARK, 8 * 1024)
-        .handler(configuration.useSsl() ? new ImapChannelInitializer(context, configuration) : new ImapChannelInitializer(configuration))
+        .handler(configuration.useSsl() ? new ImapChannelInitializer(sslContext, configuration) : new ImapChannelInitializer(configuration))
         .channel(channelClass);
   }
 
   private ImapClient create(String clientName, Optional<ImapConfiguration> newConfig) {
     ImapConfiguration finalConfig = newConfig.orElse(configuration);
-    return new ImapClient(finalConfig, bootstrap, promiseExecutorGroup, idleExecutorGroup, clientName);
+    return new ImapClient(finalConfig, bootstrap, sslContext, promiseExecutorGroup, idleExecutorGroup, clientName);
   }
 
   public CompletableFuture<ImapClient> connect() {

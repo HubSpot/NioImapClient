@@ -18,7 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.hubspot.imap.ImapChannelAttrs;
-import com.hubspot.imap.ImapClientFactoryConfiguration;
+import com.hubspot.imap.ImapClientConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommand;
@@ -72,7 +72,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private static final String KEEP_ALIVE_HANDLER = "imap noop keep alive";
 
   private final Logger logger;
-  private final ImapClientFactoryConfiguration configuration;
+  private final ImapClientConfiguration configuration;
   private final Channel channel;
   private final SslContext sslContext;
   private final EventExecutorGroup promiseExecutor;
@@ -84,7 +84,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private volatile Promise currentCommandPromise;
 
-  public ImapClient(ImapClientFactoryConfiguration configuration,
+  public ImapClient(ImapClientConfiguration configuration,
                     Channel channel,
                     SslContext sslContext,
                     EventExecutorGroup promiseExecutor,
@@ -493,24 +493,24 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  public ImapClientFactoryConfiguration getConfiguration() {
+  public ImapClientConfiguration getConfiguration() {
     return configuration;
   }
 
   private static final class PendingCommand {
     private static final Recycler<PendingCommand> RECYCLER = new Recycler<PendingCommand>() {
       @Override
-      protected PendingCommand newObject(Handle handle) {
+      protected PendingCommand newObject(Handle<PendingCommand> handle) {
         return new PendingCommand(handle);
       }
     };
 
-    private final Recycler.Handle handle;
+    private final Recycler.Handle<PendingCommand> handle;
 
     private ImapCommand imapCommand;
     private Promise promise;
 
-    public PendingCommand(Handle handle) {
+    public PendingCommand(Handle<PendingCommand> handle) {
       this.handle = handle;
     }
 
@@ -526,7 +526,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     private void recycle() {
       imapCommand = null;
       promise = null;
-      RECYCLER.recycle(this, handle);
+      handle.recycle(this);
     }
   }
 }

@@ -22,7 +22,7 @@ public interface TestServerConfigIF {
 
   String password();
 
-  ImapClientFactoryConfiguration imapConfiguration();
+  ImapClientConfiguration imapConfiguration();
 
   @Default
   default int port() {

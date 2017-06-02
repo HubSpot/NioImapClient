@@ -25,6 +25,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import com.hubspot.imap.ImapChannelAttrs;
+import com.hubspot.imap.ImapClientConfiguration;
 import com.hubspot.imap.ImapClientFactoryConfiguration;
 import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
@@ -125,7 +126,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private ImapMessage.Builder currentMessage;
 
-  public ResponseDecoder(ImapClientFactoryConfiguration configuration,
+  public ResponseDecoder(ImapClientConfiguration configuration,
                          ImapClientState clientState,
                          EventExecutorGroup executorGroup) {
     super(State.SKIP_CONTROL_CHARS);

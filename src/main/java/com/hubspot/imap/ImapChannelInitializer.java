@@ -14,14 +14,14 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
   private static final StringEncoder STRING_ENCODER = new StringEncoder(Charset.forName("UTF-8"));
 
   private final SslContext sslContext;
-  private final ImapClientFactoryConfiguration configuration;
+  private final ImapClientConfiguration configuration;
 
-  public ImapChannelInitializer(SslContext sslContext, ImapClientFactoryConfiguration configuration) {
+  public ImapChannelInitializer(SslContext sslContext, ImapClientConfiguration configuration) {
     this.sslContext = sslContext;
     this.configuration = configuration;
   }
 
-  public ImapChannelInitializer(ImapClientFactoryConfiguration configuration) {
+  public ImapChannelInitializer(ImapClientConfiguration configuration) {
     this(null, configuration);
   }
 

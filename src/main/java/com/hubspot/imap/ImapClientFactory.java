@@ -4,8 +4,6 @@ import java.io.Closeable;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import javax.net.ssl.SSLException;
@@ -32,6 +30,10 @@ public class ImapClientFactory implements Closeable {
   private final ImapClientFactoryConfiguration configuration;
   private final SslContext sslContext;
 
+  public ImapClientFactory() {
+    this(ImapClientFactoryConfiguration.builder().build());
+  }
+
   public ImapClientFactory(ImapClientFactoryConfiguration configuration) {
     this.configuration = configuration;
 
@@ -47,36 +49,26 @@ public class ImapClientFactory implements Closeable {
     }
   }
 
-  private ImapClient create(String clientName, Channel channel, ImapClientFactoryConfiguration configuration) {
-    return new ImapClient(configuration, channel, sslContext, configuration.executor(), clientName);
+  public CompletableFuture<ImapClient> connect(ImapClientConfiguration clientConfiguration) {
+    return connect("unknown-client", clientConfiguration);
   }
 
-  public CompletableFuture<ImapClient> connect() {
-    return connect(UUID.randomUUID().toString());
-  }
-
-  public CompletableFuture<ImapClient> connect(String clientName) {
-    return connect(clientName, Optional.empty());
-  }
-
-  public CompletableFuture<ImapClient> connect(String clientName, Optional<ImapClientFactoryConfiguration> maybeConfigOverride) {
-    ImapClientFactoryConfiguration configuration = maybeConfigOverride.orElse(this.configuration);
-
+  public CompletableFuture<ImapClient> connect(String clientName, ImapClientConfiguration clientConfiguration) {
     Bootstrap bootstrap = new Bootstrap().group(configuration.eventLoopGroup())
-        .option(ChannelOption.SO_LINGER, configuration.soLinger())
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, configuration.connectTimeoutMillis())
+        .option(ChannelOption.SO_LINGER, clientConfiguration.soLinger())
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, clientConfiguration.connectTimeoutMillis())
         .option(ChannelOption.SO_KEEPALIVE, false)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-        .handler(configuration.useSsl() ? new ImapChannelInitializer(sslContext, configuration) : new ImapChannelInitializer(configuration))
-        .channel(configuration.channelClass());
+        .channel(configuration.channelClass())
+        .handler(clientConfiguration.useSsl() ? new ImapChannelInitializer(sslContext, clientConfiguration) : new ImapChannelInitializer(clientConfiguration));
 
     CompletableFuture<ImapClient> connectFuture = new CompletableFuture<>();
 
-    bootstrap.connect(configuration.hostAndPort().getHostText(), configuration.hostAndPort().getPort()).addListener(f -> {
+    bootstrap.connect(clientConfiguration.hostAndPort().getHostText(), clientConfiguration.hostAndPort().getPort()).addListener(f -> {
       if (f.isSuccess()) {
         Channel channel = ((ChannelFuture) f).channel();
 
-        ImapClient client = create(clientName, channel, configuration);
+        ImapClient client = new ImapClient(clientConfiguration, channel, sslContext, configuration.executor(), clientName);
         configuration.executor().execute(() -> {
           connectFuture.complete(client);
         });

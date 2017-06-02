@@ -37,6 +37,7 @@ import com.hubspot.imap.protocol.command.search.SearchCommand;
 import com.hubspot.imap.protocol.command.search.keys.SearchKey;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
+import com.hubspot.imap.protocol.exceptions.StartTlsFailedException;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.message.MessageFlag;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
@@ -57,6 +58,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
@@ -73,6 +76,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private final Logger logger;
   private final ImapConfiguration configuration;
   private final Bootstrap bootstrap;
+  private final SslContext sslContext;
   private final EventExecutorGroup promiseExecutor;
   private final EventExecutorGroup idleExecutor;
   private final ImapClientState clientState;
@@ -87,12 +91,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public ImapClient(ImapConfiguration configuration,
                     Bootstrap bootstrap,
+                    SslContext sslContext,
                     EventExecutorGroup promiseExecutor,
                     EventExecutorGroup idleExecutor,
                     String clientName) {
     this.logger = LogUtils.loggerWithName(ImapClient.class, clientName);
     this.configuration = configuration;
     this.bootstrap = bootstrap;
+    this.sslContext = sslContext;
     this.promiseExecutor = promiseExecutor;
     this.idleExecutor = idleExecutor;
     this.clientState = new ImapClientState(clientName, promiseExecutor);
@@ -177,6 +183,18 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       CompletableFuture<TaggedResponse> future = new CompletableFuture<>();
       future.completeExceptionally(new AuthenticationFailedException(response.getMessage()));
       return future;
+    });
+  }
+
+  public CompletableFuture<TaggedResponse> startTls() {
+    return send(ImapCommandType.STARTTLS).thenApply(response -> {
+      if (response.getCode() != ResponseCode.OK) {
+        throw new StartTlsFailedException(response.getMessage());
+      }
+
+      channel.pipeline().addFirst(new SslHandler(sslContext.newEngine(channel.alloc()), false));
+
+      return response;
     });
   }
 

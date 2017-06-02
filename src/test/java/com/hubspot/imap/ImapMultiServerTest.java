@@ -35,7 +35,7 @@ public abstract class ImapMultiServerTest {
   }
 
   protected static ImapClient getClientForConfig(TestServerConfig config) throws InterruptedException, ExecutionException {
-    ImapClientFactory clientFactory = new ImapClientFactory(config.imapConfiguration());
+    ImapClientFactory clientFactory = new ImapClientFactory(config.imapConfiguration().withTracingEnabled(true));
     return clientFactory.connect("test").get();
   }
 

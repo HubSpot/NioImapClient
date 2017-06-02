@@ -8,7 +8,7 @@ import com.google.common.net.HostAndPort;
 
 public class ConnectionFailureTest extends BaseGreenMailServerTest {
   @Override
-  protected ImapConfiguration getImapConfig() {
+  protected ImapClientFactoryConfiguration getImapConfig() {
     return super.getImapConfig().withUseSsl(true);
   }
 

@@ -8,29 +8,17 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.net.HostAndPort;
 
-import io.netty.channel.epoll.EpollMode;
-
 @Immutable
 @Style(
     typeAbstract = {"*IF"},
     typeImmutable = "*"
 )
-@JsonDeserialize(as = ImapConfiguration.class)
-@JsonSerialize(as = ImapConfiguration.class)
-public interface ImapConfigurationIF {
+@JsonDeserialize(as = ImapClientConfiguration.class)
+@JsonSerialize(as = ImapClientConfiguration.class)
+public interface ImapClientConfigurationIF {
   HostAndPort hostAndPort();
 
   AuthType authType();
-
-  @Default
-  default EpollMode epollMode() {
-    return EpollMode.EDGE_TRIGGERED;
-  }
-
-  @Default
-  default boolean useEpoll() {
-    return false;
-  }
 
   @Default
   default boolean useSsl() {
@@ -50,16 +38,6 @@ public interface ImapConfigurationIF {
   @Default
   default int writeBackOffMs() {
     return 100;
-  }
-
-  @Default
-  default int numEventLoopThreads() {
-    return 0;
-  }
-
-  @Default
-  default int numExecutorThreads() {
-    return Runtime.getRuntime().availableProcessors() * 2;
   }
 
   @Default

@@ -7,7 +7,7 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import com.google.common.net.HostAndPort;
-import com.hubspot.imap.ImapConfigurationIF.AuthType;
+import com.hubspot.imap.ImapClientConfigurationIF.AuthType;
 import com.hubspot.imap.client.ImapClient;
 import com.icegreen.greenmail.junit.GreenMailRule;
 import com.icegreen.greenmail.user.GreenMailUser;
@@ -28,23 +28,22 @@ public class BaseGreenMailServerTest {
     currentUser = greenMail.setUser("to@localhost.com", "to@localhost.com", "testing");
   }
 
-  protected ImapConfiguration getImapConfig() {
-    return ImapConfiguration.builder()
+  protected ImapClientConfiguration getImapConfig() {
+    return ImapClientConfiguration.builder()
         .authType(AuthType.PASSWORD)
         .hostAndPort(HostAndPort.fromParts("localhost", greenMail.getImap().getPort()))
         .useSsl(false)
-        .useEpoll(true)
         .connectTimeoutMillis(1000)
         .tracingEnabled(false)
         .build();
   }
 
   protected ImapClientFactory getClientFactory() {
-    return new ImapClientFactory(getImapConfig());
+    return new ImapClientFactory(ImapClientFactoryConfiguration.builder().build());
   }
 
   protected ImapClient getLoggedInClient() throws InterruptedException, ExecutionException {
-    ImapClient client = getClientFactory().connect().get();
+    ImapClient client = getClientFactory().connect(getImapConfig()).get();
     client.login(currentUser.getEmail(), currentUser.getPassword()).join();
 
     return client;

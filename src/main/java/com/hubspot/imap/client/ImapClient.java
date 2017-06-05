@@ -18,7 +18,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.hubspot.imap.ImapChannelAttrs;
-import com.hubspot.imap.ImapConfiguration;
+import com.hubspot.imap.ImapClientConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommand;
@@ -53,10 +53,8 @@ import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.utils.LogUtils;
 import com.hubspot.imap.utils.NettyCompletableFuture;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
@@ -74,73 +72,38 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private static final String KEEP_ALIVE_HANDLER = "imap noop keep alive";
 
   private final Logger logger;
-  private final ImapConfiguration configuration;
-  private final Bootstrap bootstrap;
+  private final ImapClientConfiguration configuration;
+  private final Channel channel;
   private final SslContext sslContext;
   private final EventExecutorGroup promiseExecutor;
-  private final EventExecutorGroup idleExecutor;
   private final ImapClientState clientState;
   private final ImapCodec codec;
   private final ConcurrentLinkedQueue<PendingCommand> pendingWriteQueue;
   private final AtomicBoolean connectionShutdown;
   private final AtomicBoolean connectionClosed;
 
-  private Channel channel;
-
   private volatile Promise currentCommandPromise;
 
-  public ImapClient(ImapConfiguration configuration,
-                    Bootstrap bootstrap,
+  public ImapClient(ImapClientConfiguration configuration,
+                    Channel channel,
                     SslContext sslContext,
                     EventExecutorGroup promiseExecutor,
-                    EventExecutorGroup idleExecutor,
                     String clientName) {
     this.logger = LogUtils.loggerWithName(ImapClient.class, clientName);
     this.configuration = configuration;
-    this.bootstrap = bootstrap;
+    this.channel = channel;
     this.sslContext = sslContext;
     this.promiseExecutor = promiseExecutor;
-    this.idleExecutor = idleExecutor;
     this.clientState = new ImapClientState(clientName, promiseExecutor);
     this.codec = new ImapCodec(clientState);
     this.pendingWriteQueue = new ConcurrentLinkedQueue<>();
     this.connectionShutdown = new AtomicBoolean(false);
     this.connectionClosed = new AtomicBoolean(false);
+
+    configureChannel();
   }
 
-  public synchronized CompletableFuture<ImapClient> connect() {
-    Promise<ImapClient> promise = promiseExecutor.next().newPromise();
-
-    ChannelFuture future = bootstrap.connect(configuration.hostAndPort().getHostText(),
-        configuration.hostAndPort().getPort());
-
-    future.addListener(f -> {
-      if (f.isSuccess()) {
-        try {
-          configureChannel(((ChannelFuture) f).channel());
-
-          if (pendingWriteQueue.peek() != null) {
-            writeNext();
-          }
-
-          promise.trySuccess(this);
-        } catch (Throwable t) {
-          promise.tryFailure(t);
-        }
-      } else if (f.isCancelled()) {
-        promise.cancel(true);
-      } else {
-        promise.tryFailure(f.cause());
-      }
-    });
-
-    currentCommandPromise = promise;
-
-    return NettyCompletableFuture.from(promise);
-  }
-
-  private void configureChannel(Channel channel) {
-    this.channel = channel;
+  private void configureChannel() {
     this.channel.pipeline()
         .addLast(new ReadTimeoutHandler(configuration.socketTimeoutMs(), TimeUnit.MILLISECONDS))
         .addLast(new ResponseDecoder(configuration, clientState, promiseExecutor))
@@ -457,7 +420,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       // this is basically an unrecoverable condition (what do we do with this exception?!?!)
       // So we just the channel close and notify the user
       logger.error("Error in handler", cause);
-      idleExecutor.next().submit(this::closeNow);
+      promiseExecutor.next().submit(this::closeNow);
     }
   }
 
@@ -472,7 +435,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
       return sendLogout();
     } else {
-      return idleExecutor.next().submit(this::closeNow);
+      return promiseExecutor.next().submit(this::closeNow);
     }
   }
 
@@ -530,24 +493,24 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  public ImapConfiguration getConfiguration() {
+  public ImapClientConfiguration getConfiguration() {
     return configuration;
   }
 
   private static final class PendingCommand {
     private static final Recycler<PendingCommand> RECYCLER = new Recycler<PendingCommand>() {
       @Override
-      protected PendingCommand newObject(Handle handle) {
+      protected PendingCommand newObject(Handle<PendingCommand> handle) {
         return new PendingCommand(handle);
       }
     };
 
-    private final Recycler.Handle handle;
+    private final Recycler.Handle<PendingCommand> handle;
 
     private ImapCommand imapCommand;
     private Promise promise;
 
-    public PendingCommand(Handle handle) {
+    public PendingCommand(Handle<PendingCommand> handle) {
       this.handle = handle;
     }
 
@@ -563,7 +526,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     private void recycle() {
       imapCommand = null;
       promise = null;
-      RECYCLER.recycle(this, handle);
+      handle.recycle(this);
     }
   }
 }

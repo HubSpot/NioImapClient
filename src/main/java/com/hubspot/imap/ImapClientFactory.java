@@ -35,11 +35,15 @@ public class ImapClientFactory implements Closeable {
   }
 
   public ImapClientFactory(ImapClientFactoryConfiguration configuration) {
+    this(configuration, null);
+  }
+  
+  public ImapClientFactory(ImapClientFactoryConfiguration configuration, KeyStore keyStore) {
     this.configuration = configuration;
 
     try {
       TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      trustManagerFactory.init(((KeyStore) null));
+      trustManagerFactory.init(keyStore);
 
       sslContext = SslContextBuilder.forClient()
           .trustManager(trustManagerFactory)

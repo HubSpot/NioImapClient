@@ -23,7 +23,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 
-
 public class ImapClientFactory implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClientFactory.class);
 
@@ -37,7 +36,7 @@ public class ImapClientFactory implements Closeable {
   public ImapClientFactory(ImapClientFactoryConfiguration configuration) {
     this(configuration, null);
   }
-  
+
   public ImapClientFactory(ImapClientFactoryConfiguration configuration, KeyStore keyStore) {
     this.configuration = configuration;
 

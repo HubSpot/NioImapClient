@@ -84,6 +84,7 @@ public class EnvelopeParser {
       if (string.startsWith("NIL")) {
         return new ArrayList<>();
       } else {
+        LOGGER.debug("Failed to cast object to list: {} ", string);
         throw new IllegalStateException("A list cannot have string value other than \"NIL\"");
       }
     } else if (object instanceof NilMarker) {

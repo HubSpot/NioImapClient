@@ -41,6 +41,8 @@ public class EnvelopeParser {
    * @return Parsed Envelope object.
    */
   public Envelope parse(List<Object> in) {
+    LOGGER.debug("Parsing envelope response: {}", in);
+
     String dateString = castToString(in.get(0));
     String subject = castToString(in.get(1));
 

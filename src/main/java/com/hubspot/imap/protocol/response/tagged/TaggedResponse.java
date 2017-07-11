@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.base.MoreObjects;
+import com.hubspot.imap.protocol.response.ImapResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 
-public interface TaggedResponse {
+public interface TaggedResponse extends ImapResponse {
   String getTag();
-  String getMessage();
   List<Object> getUntagged();
   ResponseCode getCode();
 

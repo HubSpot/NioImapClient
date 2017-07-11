@@ -3,9 +3,7 @@ package com.hubspot.imap.protocol.response;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
-public interface ContinuationResponse {
-  String getMessage();
-
+public interface ContinuationResponse extends ImapResponse {
   class Builder implements ContinuationResponse {
     private String message;
 

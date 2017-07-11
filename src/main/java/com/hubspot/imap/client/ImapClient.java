@@ -41,6 +41,7 @@ import com.hubspot.imap.protocol.exceptions.StartTlsFailedException;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.message.MessageFlag;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
+import com.hubspot.imap.protocol.response.ImapResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
@@ -119,7 +120,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public CompletableFuture<TaggedResponse> login(String userName, String authToken) {
-    CompletableFuture<TaggedResponse> loginFuture;
+    CompletableFuture<? extends ImapResponse> loginFuture;
     switch (configuration.authType()) {
       case XOAUTH2:
         loginFuture = oauthLogin(userName, authToken);
@@ -131,16 +132,18 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
     return loginFuture.thenCompose(response -> {
       if (response instanceof ContinuationResponse) {
-        return send(ImapCommandType.BLANK).thenApply(blankResponse -> {
+        return this.<TaggedResponse>send(ImapCommandType.BLANK).thenApply(blankResponse -> {
           String continuationMessage = blankResponse.getMessage();
 
           throw AuthenticationFailedException.fromContinuation(blankResponse.getMessage(), continuationMessage);
         });
       }
 
-      if (response.getCode() == ResponseCode.OK) {
+      TaggedResponse taggedResponse = ((TaggedResponse) response);
+
+      if (taggedResponse.getCode() == ResponseCode.OK) {
         startKeepAlive();
-        return CompletableFuture.completedFuture(response);
+        return CompletableFuture.completedFuture(taggedResponse);
       }
 
       CompletableFuture<TaggedResponse> future = new CompletableFuture<>();
@@ -150,7 +153,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public CompletableFuture<TaggedResponse> startTls() {
-    return send(ImapCommandType.STARTTLS).thenApply(response -> {
+    return this.<TaggedResponse>send(ImapCommandType.STARTTLS).thenApply(response -> {
       if (response.getCode() != ResponseCode.OK) {
         throw new StartTlsFailedException(response.getMessage());
       }
@@ -176,12 +179,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  private CompletableFuture<TaggedResponse> passwordLogin(String userName, String authToken) {
-    return send(new BaseImapCommand(ImapCommandType.LOGIN, userName, authToken));
+  private CompletableFuture<? extends ImapResponse> passwordLogin(String userName, String authToken) {
+    return sendRaw(new BaseImapCommand(ImapCommandType.LOGIN, userName, authToken));
   }
 
-  private CompletableFuture<TaggedResponse> oauthLogin(String userName, String authToken) {
-    return send(new XOAuth2Command(userName, authToken));
+  private CompletableFuture<? extends ImapResponse> oauthLogin(String userName, String authToken) {
+    return sendRaw(new XOAuth2Command(userName, authToken));
   }
 
   public CompletableFuture<TaggedResponse> logout() {
@@ -306,6 +309,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(baseImapCommand);
   }
 
+
+  public synchronized <T extends TaggedResponse> CompletableFuture<T> send(ImapCommand imapCommand) {
+    return sendRaw(imapCommand);
+  }
+
   /**
    * Sends a command. If there is currently a command in progress, this command will be queued and executed when the currently running command finishes.
    * It is possible for a command to be queued and then a connection closed before it is actually executed, so it is important to listen to the returned future in order to ensure that the command was completed.
@@ -314,7 +322,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
    * @param <T>         Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
    */
-  public synchronized <T extends TaggedResponse> CompletableFuture<T> send(ImapCommand imapCommand) {
+  public synchronized <T extends ImapResponse> CompletableFuture<T> sendRaw(ImapCommand imapCommand) {
     final Promise<T> commandPromise = promiseExecutor.next().newPromise();
     commandPromise.addListener((f) -> {
       writeNext();

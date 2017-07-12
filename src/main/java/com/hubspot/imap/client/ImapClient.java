@@ -132,10 +132,9 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
     return loginFuture.thenCompose(response -> {
       if (response instanceof ContinuationResponse) {
+        ContinuationResponse continuationResponse = ((ContinuationResponse) response);
         return this.<TaggedResponse>send(ImapCommandType.BLANK).thenApply(blankResponse -> {
-          String continuationMessage = blankResponse.getMessage();
-
-          throw AuthenticationFailedException.fromContinuation(blankResponse.getMessage(), continuationMessage);
+          throw AuthenticationFailedException.fromContinuation(blankResponse.getMessage(), continuationResponse.getMessage());
         });
       }
 

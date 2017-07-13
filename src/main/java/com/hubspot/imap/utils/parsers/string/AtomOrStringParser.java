@@ -44,7 +44,7 @@ public class AtomOrStringParser implements ByteBufParser<String> {
           break;
         }
       } else if (c == QUOTE && previousChar != BACKSLASH) {
-        if (size == 0) {    // Start Quote
+        if (size == 0 && !isQuoted) {    // Start Quote
           isQuoted = true;
         } else {            // End Quote
           break;

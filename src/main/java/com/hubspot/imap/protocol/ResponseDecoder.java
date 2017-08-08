@@ -26,7 +26,6 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.ImapClientConfiguration;
-import com.hubspot.imap.ImapClientFactoryConfiguration;
 import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
@@ -170,6 +169,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     FETCH,
     FETCH_BODY,
     RESET;
+  }
+
+  @Override
+  protected void handlerRemoved0(ChannelHandlerContext ctx) throws Exception {
+    bufferedBodyParser.close();
   }
 
   @Timed

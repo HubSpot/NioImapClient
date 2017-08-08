@@ -1,5 +1,7 @@
 package com.hubspot.imap.utils.parsers.string;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
@@ -11,7 +13,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.Signal;
 
-public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
+public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Closeable {
 
   private static final Signal REPLAYING_SIGNAL;
   static {
@@ -101,6 +103,14 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
   private void inc() {
     size++;
     pos++;
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (buf != null) {
+      buf.release();
+      buf = null;
+    }
   }
 
   private enum State {

@@ -38,52 +38,55 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>> {
 
   @Override
   public Optional<String> parse(ByteBuf in) {
-    for (;;) {
-      switch (state) {
-        case START:
-          char c = ((char) in.readUnsignedByte());
-          if (c == '{') {
-            in.readerIndex(in.readerIndex() - 1);
-            expectedSize = sizeParser.parse(in);
-            state = State.SKIP_CRLF;
-            return Optional.empty();
-          } else if (Character.isWhitespace(c)) {
-            continue;
-          } else {
-            in.readerIndex(in.readerIndex() - 1);
-            state = State.PARSE_STRING;
-            continue;
-          }
-        case SKIP_CRLF:
-          in.readBytes(2);
-          state = State.PARSE_SIZE;
-          continue;
-        case PARSE_STRING:
-          return Optional.of(stringParser.parse(in));
-        case PARSE_SIZE:
-          if (buf == null) {
-            buf = PooledByteBufAllocator.DEFAULT.buffer(expectedSize);
-          }
-
-          pos = in.readerIndex();
-          try {
-            while (size < expectedSize) {
-              buf.writeByte((char) in.readUnsignedByte());
-              inc();
+    try {
+      for (;;) {
+        switch (state) {
+          case START:
+            char c = ((char) in.readUnsignedByte());
+            if (c == '{') {
+              in.readerIndex(in.readerIndex() - 1);
+              expectedSize = sizeParser.parse(in);
+              state = State.SKIP_CRLF;
+              return Optional.empty();
+            } else if (Character.isWhitespace(c)) {
+              continue;
+            } else {
+              in.readerIndex(in.readerIndex() - 1);
+              state = State.PARSE_STRING;
+              continue;
             }
-          } catch (Signal e) {
-            e.expect(REPLAYING_SIGNAL);
-            in.readerIndex(pos);
-            return Optional.empty();
-          }
+          case SKIP_CRLF:
+            in.readBytes(2);
+            state = State.PARSE_SIZE;
+            continue;
+          case PARSE_STRING:
+            return Optional.of(stringParser.parse(in));
+          case PARSE_SIZE:
+            if (buf == null) {
+              buf = PooledByteBufAllocator.DEFAULT.buffer(expectedSize);
+            }
 
-          String result = buf.toString(StandardCharsets.UTF_8);
-          reset();
+            pos = in.readerIndex();
+            try {
+              while (size < expectedSize) {
+                buf.writeByte((char) in.readUnsignedByte());
+                inc();
+              }
+            } catch (Signal e) {
+              e.expect(REPLAYING_SIGNAL);
+              in.readerIndex(pos);
+              return Optional.empty();
+            }
 
-          return Optional.of(result);
+            String result = buf.toString(StandardCharsets.UTF_8);
+            reset();
+
+            return Optional.of(result);
+        }
       }
+    } finally {
+      in.release();
     }
-
   }
 
   private void reset() {

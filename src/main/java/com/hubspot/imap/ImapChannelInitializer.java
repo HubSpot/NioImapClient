@@ -31,7 +31,7 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     if (sslContext != null) {
       channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(),
-        configuration.hostAndPort().getHostText(),
+        configuration.hostAndPort().getHost(),
         configuration.hostAndPort().getPortOrDefault(993)));
     }
 

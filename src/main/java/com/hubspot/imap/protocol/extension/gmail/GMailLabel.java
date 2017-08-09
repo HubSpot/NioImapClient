@@ -1,10 +1,10 @@
 package com.hubspot.imap.protocol.extension.gmail;
 
-import com.google.common.base.Objects;
-import com.google.common.collect.Maps;
-
 import java.util.Arrays;
 import java.util.Map;
+
+import com.google.common.base.Objects;
+import com.google.common.collect.Maps;
 
 public interface GMailLabel {
   String getLabel();
@@ -14,7 +14,8 @@ public interface GMailLabel {
     INBOX("\\Inbox"),
     DRAFTS("\\Draft");
 
-    private static final Map<String, SystemLabel> INDEX = Maps.uniqueIndex(Arrays.asList(SystemLabel.values()), SystemLabel::getLabel);
+    // Travis uses version 31 of JDK8 and needs a little help with lambdas
+    private static final Map<String, SystemLabel> INDEX = Maps.uniqueIndex(Arrays.asList(SystemLabel.values()), (SystemLabel systemLabel) -> systemLabel.getLabel());
 
     private final String label;
 

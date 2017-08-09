@@ -14,6 +14,7 @@ public interface GMailLabel {
     INBOX("\\Inbox"),
     DRAFTS("\\Draft");
 
+    // Travis uses version 31 of JDK8 and needs a little help with lambdas
     private static final Map<String, SystemLabel> INDEX = Maps.uniqueIndex(Arrays.asList(SystemLabel.values()), (SystemLabel systemLabel) -> systemLabel.getLabel());
 
     private final String label;

@@ -14,7 +14,7 @@ public interface GMailLabel {
     INBOX("\\Inbox"),
     DRAFTS("\\Draft");
 
-    private static final Map<String, SystemLabel> INDEX = Maps.uniqueIndex(Arrays.asList(SystemLabel.values()), systemLabel -> systemLabel.getLabel());
+    private static final Map<String, SystemLabel> INDEX = Maps.uniqueIndex(Arrays.asList(SystemLabel.values()), (SystemLabel systemLabel) -> systemLabel.getLabel());
 
     private final String label;
 

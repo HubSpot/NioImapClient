@@ -67,7 +67,7 @@ public class ImapClientFactory implements Closeable {
 
     CompletableFuture<ImapClient> connectFuture = new CompletableFuture<>();
 
-    bootstrap.connect(clientConfiguration.hostAndPort().getHostText(), clientConfiguration.hostAndPort().getPort()).addListener(f -> {
+    bootstrap.connect(clientConfiguration.hostAndPort().getHost(), clientConfiguration.hostAndPort().getPort()).addListener(f -> {
       if (f.isSuccess()) {
         Channel channel = ((ChannelFuture) f).channel();
 

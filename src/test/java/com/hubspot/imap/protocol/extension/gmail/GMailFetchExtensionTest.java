@@ -25,7 +25,7 @@ public class GMailFetchExtensionTest extends ImapMultiServerTest {
 
   @Test
   public void testGmailFetchExtensions() throws Exception {
-    if (!testServerConfig.imapConfiguration().hostAndPort().getHostText().contains("gmail")) {
+    if (!testServerConfig.imapConfiguration().hostAndPort().getHost().contains("gmail")) {
       return;
     }
 

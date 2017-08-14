@@ -38,6 +38,7 @@
   <properties>
     <project.build.targetJdk>1.8</project.build.targetJdk>
     <netty.version>4.1.8.Final</netty.version>
+    <dep.guava.version>20.0</dep.guava.version>
   </properties>
 
   <profiles>

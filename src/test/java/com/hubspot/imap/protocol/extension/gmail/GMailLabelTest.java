@@ -26,10 +26,10 @@ import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 @RunWith(Parameterized.class)
 public class GMailLabelTest extends ImapMultiServerTest {
   @Parameter public TestServerConfig testServerConfig;
-  
+
   @Test
   public void testCanFetchLabels() throws Exception {
-    if (!testServerConfig.imapConfiguration().hostAndPort().getHostText().contains("gmail")) {
+    if (!testServerConfig.imapConfiguration().hostAndPort().getHost().contains("gmail")) {
       return;
     }
 

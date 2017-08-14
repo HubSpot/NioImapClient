@@ -1,10 +1,10 @@
 package com.hubspot.imap.protocol.extension.gmail;
 
-import java.util.Arrays;
-import java.util.Map;
-
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
+
+import java.util.Arrays;
+import java.util.Map;
 
 public interface GMailLabel {
   String getLabel();

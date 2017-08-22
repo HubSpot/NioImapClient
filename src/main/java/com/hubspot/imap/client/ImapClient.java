@@ -25,6 +25,7 @@ import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.ListCommand;
 import com.hubspot.imap.protocol.command.OpenCommand;
+import com.hubspot.imap.protocol.command.QuotedImapCommand;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
 import com.hubspot.imap.protocol.command.XOAuth2Command;
@@ -179,7 +180,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   private CompletableFuture<? extends ImapResponse> passwordLogin(String userName, String authToken) {
-    return sendRaw(new BaseImapCommand(ImapCommandType.LOGIN, userName, authToken));
+    return sendRaw(new QuotedImapCommand(ImapCommandType.LOGIN, userName, authToken));
   }
 
   private CompletableFuture<? extends ImapResponse> oauthLogin(String userName, String authToken) {

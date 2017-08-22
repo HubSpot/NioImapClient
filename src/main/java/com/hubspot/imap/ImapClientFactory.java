@@ -28,32 +28,40 @@ public class ImapClientFactory implements Closeable {
   private final ImapClientFactoryConfiguration configuration;
   private final SslContext sslContext;
 
-  public ImapClientFactory() throws NoSuchAlgorithmException, KeyStoreException, SSLException {
+  public ImapClientFactory() {
     this(ImapClientFactoryConfiguration.builder().build());
   }
 
-  public ImapClientFactory(ImapClientFactoryConfiguration configuration) throws NoSuchAlgorithmException, KeyStoreException, SSLException {
+  public ImapClientFactory(ImapClientFactoryConfiguration configuration) {
     this(configuration, (KeyStore) null);
   }
 
-  public ImapClientFactory(ImapClientFactoryConfiguration configuration, TrustManagerFactory trustManagerFactory) throws SSLException {
+  public ImapClientFactory(ImapClientFactoryConfiguration configuration, TrustManagerFactory trustManagerFactory) {
     this.configuration = configuration;
 
-    sslContext = SslContextBuilder.forClient()
-        .trustManager(trustManagerFactory)
-        .build();
+    try {
+      sslContext = SslContextBuilder.forClient()
+          .trustManager(trustManagerFactory)
+          .build();
 
+    } catch (SSLException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public ImapClientFactory(ImapClientFactoryConfiguration configuration, KeyStore keyStore) throws NoSuchAlgorithmException, KeyStoreException, SSLException {
+  public ImapClientFactory(ImapClientFactoryConfiguration configuration, KeyStore keyStore) {
     this.configuration = configuration;
 
+    try {
       TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       trustManagerFactory.init(keyStore);
 
       sslContext = SslContextBuilder.forClient()
           .trustManager(trustManagerFactory)
           .build();
+    } catch (NoSuchAlgorithmException | SSLException | KeyStoreException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public CompletableFuture<ImapClient> connect(ImapClientConfiguration clientConfiguration) {

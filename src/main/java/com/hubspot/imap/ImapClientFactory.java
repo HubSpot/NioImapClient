@@ -9,12 +9,6 @@ import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Throwables;
-import com.hubspot.imap.client.ImapClient;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -22,6 +16,11 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.hubspot.imap.client.ImapClient;
 
 public class ImapClientFactory implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImapClientFactory.class);
@@ -34,7 +33,20 @@ public class ImapClientFactory implements Closeable {
   }
 
   public ImapClientFactory(ImapClientFactoryConfiguration configuration) {
-    this(configuration, null);
+    this(configuration, (KeyStore) null);
+  }
+
+  public ImapClientFactory(ImapClientFactoryConfiguration configuration, TrustManagerFactory trustManagerFactory) {
+    this.configuration = configuration;
+
+    try {
+      sslContext = SslContextBuilder.forClient()
+          .trustManager(trustManagerFactory)
+          .build();
+
+    } catch (SSLException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public ImapClientFactory(ImapClientFactoryConfiguration configuration, KeyStore keyStore) {
@@ -48,7 +60,7 @@ public class ImapClientFactory implements Closeable {
           .trustManager(trustManagerFactory)
           .build();
     } catch (NoSuchAlgorithmException | SSLException | KeyStoreException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

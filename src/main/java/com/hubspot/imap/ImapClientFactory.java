@@ -1,9 +1,13 @@
 package com.hubspot.imap;
 
 import java.io.Closeable;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CompletableFuture;
 
 import javax.net.ssl.SSLException;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +33,20 @@ public class ImapClientFactory implements Closeable {
   }
 
   public ImapClientFactory(ImapClientFactoryConfiguration configuration) {
+    this(configuration, (KeyStore)null);
+  }
+
+  public ImapClientFactory(ImapClientFactoryConfiguration configuration, KeyStore keyStore) {
     this.configuration = configuration;
 
     try {
+      TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      trustManagerFactory.init(keyStore);
+
       sslContext = SslContextBuilder.forClient()
+          .trustManager(trustManagerFactory)
           .build();
-    } catch (SSLException e) {
+    } catch (NoSuchAlgorithmException | SSLException | KeyStoreException e) {
       throw new RuntimeException(e);
     }
   }

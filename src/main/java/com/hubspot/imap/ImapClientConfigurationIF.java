@@ -1,5 +1,9 @@
 package com.hubspot.imap;
 
+import java.util.Optional;
+
+import javax.net.ssl.TrustManagerFactory;
+
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
@@ -73,6 +77,11 @@ public interface ImapClientConfigurationIF {
   @Default
   default int maxHeaderCount() {
     return 10000;
+  }
+
+  @Default
+  default Optional<TrustManagerFactory> trustManagerFactory() {
+    return Optional.empty();
   }
 
   enum AuthType {

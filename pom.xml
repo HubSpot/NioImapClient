@@ -194,6 +194,10 @@
       <artifactId>completable-futures</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>completable-futures</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

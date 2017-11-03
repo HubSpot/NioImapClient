@@ -1,10 +1,9 @@
 package com.hubspot.imap.protocol.command;
 
+import java.util.List;
+
 import com.google.common.collect.Lists;
 import com.hubspot.imap.protocol.message.MessageFlag;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class StoreCommand extends BaseImapCommand {
 
@@ -42,7 +41,7 @@ public class StoreCommand extends BaseImapCommand {
 
   @Override
   public List<String> getArgs() {
-    return Lists.newArrayList(getRange(), getAction(), getFlagString());
+    return Lists.newArrayList(getRange(), getAction(), getFlagString(flags));
   }
 
   @Override
@@ -56,9 +55,5 @@ public class StoreCommand extends BaseImapCommand {
 
   private String getRange() {
     return String.valueOf(startId) + ":" + String.valueOf(stopId);
-  }
-
-  private String getFlagString() {
-    return "(" + SPACE_JOINER.join(flags.stream().map(MessageFlag::getString).collect(Collectors.toList())) + ")";
   }
 }

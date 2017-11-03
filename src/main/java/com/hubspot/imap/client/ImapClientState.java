@@ -2,6 +2,7 @@ package com.hubspot.imap.client;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -28,6 +29,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final AtomicReference<ImapCommand> currentCommand;
   private final AtomicLong commandCount;
   private final AtomicLong messageNumber;
+  private final AtomicBoolean noTag;
 
   private final List<MessageAddConsumer> messageAddListeners;
   private final List<Consumer<OpenEvent>> openEventListeners;
@@ -43,6 +45,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     this.currentCommand = new AtomicReference<>();
     this.commandCount = new AtomicLong(0);
     this.messageNumber = new AtomicLong(0);
+    this.noTag = new AtomicBoolean(false);
 
     this.messageAddListeners = new CopyOnWriteArrayList<>();
     this.openEventListeners = new CopyOnWriteArrayList<>();
@@ -115,6 +118,14 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
 
   public String getNextTag() {
     return String.format("A%03d ", commandCount.getAndIncrement());
+  }
+
+  public boolean getNoTag() {
+    return noTag.getAndSet(false);
+  }
+
+  public void setNoTag() {
+    noTag.set(true);
   }
 
   public ImapCommand getCurrentCommand() {

@@ -16,6 +16,7 @@ public enum ImapCommandType {
   SEARCH,
   CAPABILITY,
   COPY,
-  STARTTLS
+  STARTTLS,
+  APPEND
   ;
 }

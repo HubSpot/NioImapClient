@@ -1,5 +1,7 @@
 package com.hubspot.imap.protocol.command;
 
+import java.nio.charset.Charset;
+
 import com.google.common.base.Joiner;
 
 public class StringLiteralCommand extends BaseImapCommand {
@@ -14,7 +16,7 @@ public class StringLiteralCommand extends BaseImapCommand {
     return String.format("%s", SPACE_JOINER.join(getArgs()));
   }
 
-  public int size() {
-    return commandString().getBytes().length;
+  public int size(String charset) {
+    return commandString().getBytes(Charset.forName(charset)).length;
   }
 }

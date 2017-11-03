@@ -207,7 +207,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public CompletableFuture<TaggedResponse> append(String folderName, Set<MessageFlag> flags, Optional<ZonedDateTime> dateTime, ImapMessage message) throws Exception {
     StringLiteralCommand stringLiteralCommand = new StringLiteralCommand(message.bodyToString());
-    AppendCommand appendCommand = new AppendCommand(folderName, flags, dateTime, stringLiteralCommand.size());
+    AppendCommand appendCommand = new AppendCommand(folderName, flags, dateTime, stringLiteralCommand.size(message.getBody().getCharset()));
 
     return CompletableFutures.handleCompose(send(appendCommand), (BiFunction<ImapResponse, Throwable, CompletableFuture<TaggedResponse>>) (imapResponse, throwable) -> {
       if (throwable != null || !(imapResponse instanceof ContinuationResponse)) {

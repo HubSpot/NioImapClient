@@ -32,7 +32,7 @@ public interface ImapMessage {
   String bodyToString() throws IOException;
 
   class Builder implements ImapMessage {
-    public static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z");
+    public static final DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z");
 
     private Optional<Set<MessageFlag>> flags = Optional.empty();
     private long messageNumber;

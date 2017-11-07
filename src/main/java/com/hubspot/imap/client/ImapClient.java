@@ -213,7 +213,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       if (throwable != null || !(imapResponse instanceof ContinuationResponse)) {
         throw new UnexpectedAppendResponseException(throwable);
       }
-      clientState.setNoTag();
+
       return send(stringLiteralCommand);
     }).toCompletableFuture();
   }

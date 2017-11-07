@@ -1,9 +1,10 @@
 package com.hubspot.imap.protocol.message;
 
+import static com.hubspot.imap.utils.formats.ImapDateFormat.INTERNALDATE_FORMATTER;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -29,10 +30,16 @@ public interface ImapMessage {
   long getGmailThreadId() throws UnfetchedFieldException;
   Set<GMailLabel> getGMailLabels() throws UnfetchedFieldException;
   Message getBody() throws UnfetchedFieldException;
-  String bodyToString() throws IOException;
+
+  default String bodyToString() throws UnfetchedFieldException, IOException {
+    MessageWriter writer = new DefaultMessageWriter();
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+    writer.writeMessage(getBody(), baos);
+    return baos.toString(getBody().getCharset());
+  }
 
   class Builder implements ImapMessage {
-    public static final DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z");
 
     private Optional<Set<MessageFlag>> flags = Optional.empty();
     private long messageNumber;
@@ -146,14 +153,6 @@ public interface ImapMessage {
     public Builder setBody(Message body) {
       this.body = Optional.of(body);
       return this;
-    }
-
-    public String bodyToString() throws IOException {
-      MessageWriter writer = new DefaultMessageWriter();
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-      writer.writeMessage(body.get(), baos);
-      return baos.toString(body.get().getCharset());
     }
 
     @Override

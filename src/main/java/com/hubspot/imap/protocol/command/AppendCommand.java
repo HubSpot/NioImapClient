@@ -1,6 +1,6 @@
 package com.hubspot.imap.protocol.command;
 
-import static com.hubspot.imap.protocol.message.ImapMessage.Builder.INTERNALDATE_FORMATTER;
+import static com.hubspot.imap.utils.formats.ImapDateFormat.INTERNALDATE_FORMATTER;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;

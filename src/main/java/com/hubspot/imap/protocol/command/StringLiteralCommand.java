@@ -2,18 +2,17 @@ package com.hubspot.imap.protocol.command;
 
 import java.nio.charset.Charset;
 
-import com.google.common.base.Joiner;
-
 public class StringLiteralCommand extends BaseImapCommand {
-  protected static final Joiner SPACE_JOINER = Joiner.on(" ").skipNulls();
+  private final String stringLiteral;
 
-  public StringLiteralCommand(String... args) {
-    super(ImapCommandType.BLANK, args);
+  public StringLiteralCommand(String stringLiteral) {
+    super(ImapCommandType.BLANK, false);
+    this.stringLiteral = stringLiteral;
   }
 
   @Override
   public String commandString() {
-    return String.format("%s", SPACE_JOINER.join(getArgs()));
+    return stringLiteral;
   }
 
   public int size(String charset) {

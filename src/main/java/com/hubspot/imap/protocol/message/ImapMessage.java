@@ -2,8 +2,6 @@ package com.hubspot.imap.protocol.message;
 
 import static com.hubspot.imap.utils.formats.ImapDateFormat.INTERNALDATE_FORMATTER;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Optional;
@@ -11,8 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.james.mime4j.dom.Message;
-import org.apache.james.mime4j.dom.MessageWriter;
-import org.apache.james.mime4j.message.DefaultMessageWriter;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
@@ -30,14 +26,6 @@ public interface ImapMessage {
   long getGmailThreadId() throws UnfetchedFieldException;
   Set<GMailLabel> getGMailLabels() throws UnfetchedFieldException;
   Message getBody() throws UnfetchedFieldException;
-
-  default String bodyToString() throws UnfetchedFieldException, IOException {
-    MessageWriter writer = new DefaultMessageWriter();
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-    writer.writeMessage(getBody(), baos);
-    return baos.toString(getBody().getCharset());
-  }
 
   class Builder implements ImapMessage {
 

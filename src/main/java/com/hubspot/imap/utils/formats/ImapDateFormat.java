@@ -19,7 +19,7 @@ public class ImapDateFormat {
       .appendPattern("dd-MMM-yyyy ")
       .toFormatter(Locale.US);
 
-  public static final DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss Z");
+  public static final DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z");
 
   public static String toImapDateWithTimeString(ZonedDateTime d) {
     return IMAP_FULL_DATE_FORMAT.format(d);

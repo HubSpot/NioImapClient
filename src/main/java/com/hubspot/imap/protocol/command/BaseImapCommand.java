@@ -8,18 +8,18 @@ import com.hubspot.imap.protocol.message.MessageFlag;
 
 public class BaseImapCommand extends BaseImapAtom implements ImapCommand {
   protected final ImapCommandType type;
-  private final boolean requiresTag;
+  private final boolean tagged;
 
   public BaseImapCommand(ImapCommandType type, String... args) {
     super(args);
-    requiresTag = true;
+    tagged = true;
     this.type = type;
   }
 
-  public BaseImapCommand(ImapCommandType type, boolean requiresTag, String... args) {
+  public BaseImapCommand(ImapCommandType type, boolean tagged, String... args) {
     super(args);
     this.type = type;
-    this.requiresTag = requiresTag;
+    this.tagged = tagged;
   }
 
   public String commandString() {
@@ -34,8 +34,8 @@ public class BaseImapCommand extends BaseImapAtom implements ImapCommand {
     return type;
   }
 
-  public boolean getRequiresTag() {
-    return requiresTag;
+  public boolean isTagged() {
+    return tagged;
   }
 
   String getFlagString(Collection<MessageFlag> flags) {

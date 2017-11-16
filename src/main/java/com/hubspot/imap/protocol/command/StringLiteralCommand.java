@@ -4,10 +4,15 @@ import java.nio.charset.Charset;
 
 public class StringLiteralCommand extends BaseImapCommand {
   private final String stringLiteral;
+  private final Charset charset;
+  private final int size;
 
-  public StringLiteralCommand(String stringLiteral) {
+
+  public StringLiteralCommand(String stringLiteral, Charset charset) {
     super(ImapCommandType.BLANK, false);
     this.stringLiteral = stringLiteral;
+    this.charset = charset;
+    this.size = commandString().getBytes(charset).length;
   }
 
   @Override
@@ -15,7 +20,11 @@ public class StringLiteralCommand extends BaseImapCommand {
     return stringLiteral;
   }
 
-  public int size(String charset) {
-    return commandString().getBytes(Charset.forName(charset)).length;
+  public int getSize() {
+    return size;
+  }
+
+  public Charset getCharset() {
+    return charset;
   }
 }

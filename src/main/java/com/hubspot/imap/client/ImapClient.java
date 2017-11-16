@@ -1,6 +1,7 @@
 package com.hubspot.imap.client;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +12,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -31,7 +31,6 @@ import com.hubspot.imap.protocol.command.OpenCommand;
 import com.hubspot.imap.protocol.command.QuotedImapCommand;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
-import com.hubspot.imap.protocol.command.StringLiteralCommand;
 import com.hubspot.imap.protocol.command.XOAuth2Command;
 import com.hubspot.imap.protocol.command.fetch.FetchCommand;
 import com.hubspot.imap.protocol.command.fetch.SetFetchCommand;
@@ -43,9 +42,9 @@ import com.hubspot.imap.protocol.command.search.keys.SearchKey;
 import com.hubspot.imap.protocol.exceptions.AuthenticationFailedException;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import com.hubspot.imap.protocol.exceptions.StartTlsFailedException;
-import com.hubspot.imap.protocol.exceptions.UnexpectedAppendResponseException;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.message.MessageFlag;
+import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ImapResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
@@ -205,17 +204,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new OpenCommand(folderName, openMode));
   }
 
-  public CompletableFuture<TaggedResponse> append(String folderName, Set<MessageFlag> flags, Optional<ZonedDateTime> dateTime, ImapMessage message) throws Exception {
-    StringLiteralCommand stringLiteralCommand = new StringLiteralCommand(message.bodyToString());
-    AppendCommand appendCommand = new AppendCommand(folderName, flags, dateTime, stringLiteralCommand.size(message.getBody().getCharset()));
+  public CompletableFuture<TaggedResponse> append(String folderName, Set<MessageFlag> flags, Optional<ZonedDateTime> dateTime, ImapMessage message) throws UnfetchedFieldException, IOException {
+    AppendCommand appendCommand = new AppendCommand(this, folderName, flags, dateTime, message);
 
-    return CompletableFutures.handleCompose(send(appendCommand), (BiFunction<ImapResponse, Throwable, CompletableFuture<TaggedResponse>>) (imapResponse, throwable) -> {
-      if (throwable != null || !(imapResponse instanceof ContinuationResponse)) {
-        throw new UnexpectedAppendResponseException(throwable);
-      }
-
-      return send(stringLiteralCommand);
-    }).toCompletableFuture();
+    return CompletableFutures.handleCompose(send(appendCommand), appendCommand::continueAfterResponse).toCompletableFuture();
   }
 
   public CompletableFuture<FetchResponse> fetch(long startId,

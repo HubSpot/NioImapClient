@@ -24,6 +24,7 @@ import com.hubspot.imap.ImapClientConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
 import com.hubspot.imap.protocol.command.AppendCommand;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
+import com.hubspot.imap.protocol.command.ContinuableCommand;
 import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.ListCommand;
@@ -322,6 +323,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
 
   public synchronized <T extends TaggedResponse> CompletableFuture<T> send(ImapCommand imapCommand) {
+    return sendRaw(imapCommand);
+  }
+
+  public synchronized <T extends ContinuationResponse> CompletableFuture<T> send(ContinuableCommand imapCommand) {
     return sendRaw(imapCommand);
   }
 

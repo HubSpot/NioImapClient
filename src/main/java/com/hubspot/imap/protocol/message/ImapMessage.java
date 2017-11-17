@@ -1,7 +1,8 @@
 package com.hubspot.imap.protocol.message;
 
+import static com.hubspot.imap.utils.formats.ImapDateFormat.INTERNALDATE_FORMATTER;
+
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +28,6 @@ public interface ImapMessage {
   Message getBody() throws UnfetchedFieldException;
 
   class Builder implements ImapMessage {
-    private static DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z");
 
     private Optional<Set<MessageFlag>> flags = Optional.empty();
     private long messageNumber;

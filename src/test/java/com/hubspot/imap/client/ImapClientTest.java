@@ -18,10 +18,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import org.apache.james.mime4j.dom.Body;
 import org.apache.james.mime4j.dom.Entity;
+import org.apache.james.mime4j.dom.Header;
+import org.apache.james.mime4j.dom.Message;
 import org.apache.james.mime4j.dom.Multipart;
 import org.apache.james.mime4j.dom.SingleBody;
 import org.apache.james.mime4j.dom.TextBody;
+import org.apache.james.mime4j.field.DefaultFieldParser;
+import org.apache.james.mime4j.message.BasicBodyFactory;
+import org.apache.james.mime4j.message.HeaderImpl;
+import org.apache.james.mime4j.message.MessageImpl;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +37,7 @@ import org.junit.Test;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import com.hubspot.imap.BaseGreenMailServerTest;
 import com.hubspot.imap.TestUtils;
 import com.hubspot.imap.protocol.command.ImapCommandType;
@@ -399,5 +407,43 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
     assertThat(searchResponse.getMessageIds().size()).isEqualTo(3);
+  }
+
+  @Test
+  public void testAppend() throws Exception {
+    Header header = new HeaderImpl();
+    header.addField(DefaultFieldParser.parse("Subject: This is the subject"));
+    header.addField(DefaultFieldParser.parse("To: hello@foo.com"));
+    header.addField(DefaultFieldParser.parse("From: goodbye@foo.com"));
+    header.addField(DefaultFieldParser.parse("Date: 10-MAY-1994 00:00:00 -0000 (UTC)"));
+    header.addField(DefaultFieldParser.parse("Message-ID: 12345"));
+
+    Envelope envelope = new Envelope.Builder().setDate(ZonedDateTime.of(1994, 5, 10, 0,0,0,0, ZoneId.of("UTC")));
+
+    Body body = BasicBodyFactory.INSTANCE.textBody("This is a test");
+
+    Message message = new MessageImpl();
+    message.setBody(body);
+    message.setHeader(header);
+
+    ImapMessage imapMessage = new ImapMessage.Builder()
+        .setFlags(ImmutableSet.of(StandardMessageFlag.SEEN, StandardMessageFlag.RECENT))
+        .setEnvelope(envelope)
+        .setBody(message);
+
+    FetchResponse preAppendFetchAll = client.fetch(1, Optional.empty(), FetchDataItemType.UID, FetchDataItemType.FLAGS, FetchDataItemType.ENVELOPE, new BodyPeekFetchDataItem()).get();
+    assertThat(preAppendFetchAll.getMessages().size()).isEqualTo(1);
+
+    TaggedResponse appendResponse = client.append(DEFAULT_FOLDER, imapMessage.getFlags(), imapMessage.getEnvelope().getDate(), imapMessage).get();
+    assertThat(appendResponse.getCode()).isEqualTo(ResponseCode.OK);
+    long uid = Long.parseLong(appendResponse.getMessage().substring(25, 26));
+
+    FetchResponse postAppendFetchAll = client.fetch(1, Optional.empty(), FetchDataItemType.UID, FetchDataItemType.ENVELOPE, new BodyPeekFetchDataItem()).get();
+    assertThat(postAppendFetchAll.getMessages().size()).isEqualTo(2);
+
+    FetchResponse postAppendFetchUid = client.uidfetch(uid, Optional.of(uid), FetchDataItemType.UID, FetchDataItemType.ENVELOPE, new BodyPeekFetchDataItem()).get();
+    assertThat(postAppendFetchUid.getMessages().size()).isEqualTo(1);
+    assertThat(postAppendFetchUid.getMessages().iterator().next().getBody().getSubject()).isEqualToIgnoringCase("This is the subject");
+    assertThat(postAppendFetchUid.getMessages().iterator().next().getEnvelope().getMessageId()).isEqualToIgnoringCase("12345");
   }
 }

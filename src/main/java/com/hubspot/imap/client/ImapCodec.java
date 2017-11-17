@@ -38,7 +38,7 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
   @Override
   protected void encode(ChannelHandlerContext ctx, BaseImapCommand msg, List<Object> out) throws Exception {
     String data = msg.commandString();
-    String tag = clientState.getNextTag();
+    String tag = msg.isTagged() ? clientState.getNextTag() : "";
 
     trace(ctx, tag, data);
 

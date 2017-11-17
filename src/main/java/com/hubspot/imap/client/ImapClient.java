@@ -1,6 +1,8 @@
 package com.hubspot.imap.client;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -20,7 +22,9 @@ import com.google.common.collect.Lists;
 import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.ImapClientConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
+import com.hubspot.imap.protocol.command.AppendCommand;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
+import com.hubspot.imap.protocol.command.ContinuableCommand;
 import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.ListCommand;
@@ -41,6 +45,7 @@ import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import com.hubspot.imap.protocol.exceptions.StartTlsFailedException;
 import com.hubspot.imap.protocol.message.ImapMessage;
 import com.hubspot.imap.protocol.message.MessageFlag;
+import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ImapResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
@@ -54,6 +59,7 @@ import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.utils.LogUtils;
 import com.hubspot.imap.utils.NettyCompletableFuture;
+import com.spotify.futures.CompletableFutures;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -199,6 +205,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new OpenCommand(folderName, openMode));
   }
 
+  public CompletableFuture<TaggedResponse> append(String folderName, Set<MessageFlag> flags, Optional<ZonedDateTime> dateTime, ImapMessage message) throws UnfetchedFieldException, IOException {
+    AppendCommand appendCommand = new AppendCommand(this, folderName, flags, dateTime, message);
+
+    return CompletableFutures.handleCompose(send(appendCommand), appendCommand::continueAfterResponse).toCompletableFuture();
+  }
+
   public CompletableFuture<FetchResponse> fetch(long startId,
                                                 Optional<Long> stopId,
                                                 FetchDataItem fetchDataItem,
@@ -311,6 +323,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
 
   public synchronized <T extends TaggedResponse> CompletableFuture<T> send(ImapCommand imapCommand) {
+    return sendRaw(imapCommand);
+  }
+
+  public synchronized <T extends ContinuationResponse> CompletableFuture<T> send(ContinuableCommand imapCommand) {
     return sendRaw(imapCommand);
   }
 

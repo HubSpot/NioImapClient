@@ -28,6 +28,7 @@ import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.ImapClientConfiguration;
 import com.hubspot.imap.client.ImapClientState;
 import com.hubspot.imap.protocol.ResponseDecoder.State;
+import com.hubspot.imap.protocol.capabilities.Capabilities;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.UidCommand;
 import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
@@ -43,6 +44,7 @@ import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
+import com.hubspot.imap.protocol.response.untagged.UntaggedCapabilityResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse.Builder;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponse;
@@ -430,6 +432,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       case UIDVALIDITY:
         untaggedResponses.add(parseIntResponse(type, in));
         break;
+      case CAPABILITY:
+        untaggedResponses.add(parseCapability(in));
+        break;
       default:
         untaggedResponses.add(lineParser.parse(in));
     }
@@ -531,6 +536,12 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
 
     return new UntaggedSearchResponse(ids);
+  }
+
+  private UntaggedCapabilityResponse parseCapability(ByteBuf in) {
+    String line = lineParser.parse(in);
+
+    return new UntaggedCapabilityResponse(Capabilities.parseFrom(line));
   }
 
   private FolderMetadata parseFolderMetadata(ByteBuf in) {

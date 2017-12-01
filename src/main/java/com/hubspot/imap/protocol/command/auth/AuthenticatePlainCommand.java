@@ -1,5 +1,6 @@
 package com.hubspot.imap.protocol.command.auth;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 import com.google.common.io.BaseEncoding;
@@ -32,7 +33,7 @@ public class AuthenticatePlainCommand extends ContinuableCommand<TaggedResponse>
     }
 
     String toEncode = NUL + user + NUL + password;
-    String base64EncodedAuthRequest = BaseEncoding.base64().encode(toEncode.getBytes());
+    String base64EncodedAuthRequest = BaseEncoding.base64().encode(toEncode.getBytes(StandardCharsets.UTF_8));
     return imapClient.send(new SimpleStringCommand(base64EncodedAuthRequest));
   }
 }

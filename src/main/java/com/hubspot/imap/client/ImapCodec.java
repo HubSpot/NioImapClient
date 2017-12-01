@@ -11,6 +11,7 @@ import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
 import com.hubspot.imap.protocol.response.events.ExpungeEvent;
 import com.hubspot.imap.protocol.response.events.OpenEvent;
+import com.hubspot.imap.protocol.response.tagged.CapabilityResponse;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.protocol.response.tagged.ListResponse.Builder;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
@@ -72,6 +73,9 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
             taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse);
           }
 
+          break;
+        case CAPABILITY:
+          taggedResponse = new CapabilityResponse.Builder().fromResponse(taggedResponse);
           break;
         case NOOP:
           taggedResponse = new NoopResponse.Builder().fromResponse(taggedResponse);

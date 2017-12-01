@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.ImapClientConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
+import com.hubspot.imap.protocol.capabilities.Capabilities;
 import com.hubspot.imap.protocol.command.AppendCommand;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ContinuableCommand;
@@ -50,6 +52,7 @@ import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ImapResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
+import com.hubspot.imap.protocol.response.tagged.CapabilityResponse;
 import com.hubspot.imap.protocol.response.tagged.FetchResponse;
 import com.hubspot.imap.protocol.response.tagged.ListResponse;
 import com.hubspot.imap.protocol.response.tagged.NoopResponse;
@@ -89,6 +92,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private final ConcurrentLinkedQueue<PendingCommand> pendingWriteQueue;
   private final AtomicBoolean connectionShutdown;
   private final AtomicBoolean connectionClosed;
+  private final AtomicReference<Capabilities> capabilities;
 
   private volatile Promise currentCommandPromise;
 
@@ -107,6 +111,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     this.pendingWriteQueue = new ConcurrentLinkedQueue<>();
     this.connectionShutdown = new AtomicBoolean(false);
     this.connectionClosed = new AtomicBoolean(false);
+    this.capabilities = new AtomicReference<>(null);
 
     configureChannel();
   }
@@ -124,6 +129,18 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public ImapClientState getState() {
     return clientState;
+  }
+
+  public CompletableFuture<Capabilities> capability() {
+    if (capabilities.get() == null) {
+      return this.<CapabilityResponse>send(ImapCommandType.CAPABILITY).thenApply(CapabilityResponse::getCapabilities).whenComplete((newCapabilities, throwable) -> {
+        if (throwable != null) {
+          capabilities.getAndSet(newCapabilities);
+        }
+      });
+    }
+
+    return CompletableFuture.completedFuture(capabilities.get());
   }
 
   public CompletableFuture<TaggedResponse> login(String userName, String authToken) {

@@ -40,6 +40,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.hubspot.imap.BaseGreenMailServerTest;
 import com.hubspot.imap.TestUtils;
+import com.hubspot.imap.protocol.capabilities.Capabilities;
 import com.hubspot.imap.protocol.command.ImapCommandType;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
@@ -90,10 +91,10 @@ public class ImapClientTest extends BaseGreenMailServerTest {
   }
 
   @Test
-  public void testCapability_doesGetResponse() throws Exception {
-    TaggedResponse taggedResponse = client.send(ImapCommandType.CAPABILITY).get();
+  public void testCapability_doesSetCapabilities() throws Exception {
+    Capabilities capabilities = client.capability().join();
 
-    assertThat(taggedResponse.getCode()).isEqualTo(ResponseCode.OK);
+    assertThat(capabilities.getCapabilities().size()).isGreaterThan(0);
   }
 
   @Test

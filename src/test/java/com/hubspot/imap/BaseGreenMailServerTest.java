@@ -34,7 +34,7 @@ public class BaseGreenMailServerTest {
         .hostAndPort(HostAndPort.fromParts("localhost", greenMail.getImap().getPort()))
         .useSsl(false)
         .connectTimeoutMillis(1000)
-        .tracingEnabled(false)
+        .tracingEnabled(true)
         .build();
   }
 

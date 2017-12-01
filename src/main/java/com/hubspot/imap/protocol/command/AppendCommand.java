@@ -23,7 +23,7 @@ import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.utils.GmailUtils;
 import com.hubspot.imap.utils.ImapMessageWriterUtils;
 
-public class AppendCommand extends ContinuableCommand {
+public class AppendCommand extends ContinuableCommand<TaggedResponse> {
   private final String folderName;
   private final Set<MessageFlag> flags;
   private final Optional<ZonedDateTime> dateTime;

@@ -32,7 +32,7 @@ import com.hubspot.imap.protocol.command.OpenCommand;
 import com.hubspot.imap.protocol.command.QuotedImapCommand;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
-import com.hubspot.imap.protocol.command.XOAuth2Command;
+import com.hubspot.imap.protocol.command.auth.XOAuth2Command;
 import com.hubspot.imap.protocol.command.fetch.FetchCommand;
 import com.hubspot.imap.protocol.command.fetch.SetFetchCommand;
 import com.hubspot.imap.protocol.command.fetch.StreamingFetchCommand;
@@ -207,8 +207,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public CompletableFuture<TaggedResponse> append(String folderName, Set<MessageFlag> flags, Optional<ZonedDateTime> dateTime, ImapMessage message) throws UnfetchedFieldException, IOException {
     AppendCommand appendCommand = new AppendCommand(this, folderName, flags, dateTime, message);
-
-    return CompletableFutures.handleCompose(send(appendCommand), appendCommand::continueAfterResponse).toCompletableFuture();
+    return send(appendCommand);
   }
 
   public CompletableFuture<FetchResponse> fetch(long startId,
@@ -326,8 +325,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return sendRaw(imapCommand);
   }
 
-  public synchronized <T extends ContinuationResponse> CompletableFuture<T> send(ContinuableCommand imapCommand) {
-    return sendRaw(imapCommand);
+  public synchronized <T extends TaggedResponse, A extends ContinuableCommand<T>> CompletableFuture<T> send(A imapCommand) {
+    return CompletableFutures.handleCompose(sendRaw(imapCommand), imapCommand::continueAfterResponse).toCompletableFuture();
   }
 
   /**

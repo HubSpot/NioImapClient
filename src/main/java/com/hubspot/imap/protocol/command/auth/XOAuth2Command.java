@@ -1,10 +1,12 @@
-package com.hubspot.imap.protocol.command;
-
-import com.google.common.collect.Lists;
-import com.google.common.io.BaseEncoding;
+package com.hubspot.imap.protocol.command.auth;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
+import com.google.common.collect.Lists;
+import com.google.common.io.BaseEncoding;
+import com.hubspot.imap.protocol.command.BaseImapCommand;
+import com.hubspot.imap.protocol.command.ImapCommandType;
 
 public class XOAuth2Command extends BaseImapCommand {
   private static final BaseEncoding B64 = BaseEncoding.base64();

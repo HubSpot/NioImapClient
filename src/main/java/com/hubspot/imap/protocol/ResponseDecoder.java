@@ -594,12 +594,15 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private void trace(String prefix, ByteBuf in) {
-    int index = in.readerIndex();
-    skipControlCharacters(in);
-    String line = allBytesParser.parse(in);
-    logger.info("{}({}): {}", prefix, state().name(), line);
+    try {
+      int index = in.readerIndex();
+      String line = allBytesParser.parse(in);
+      logger.info("{}({}): {}", prefix, state().name(), line);
 
-    in.readerIndex(index);
+      in.readerIndex(index);
+    } catch (Exception e) {
+      logger.error("Caught exception while attempting to log tracing data!", e);
+    }
   }
 
   private static void skipControlCharacters(ByteBuf buffer) {

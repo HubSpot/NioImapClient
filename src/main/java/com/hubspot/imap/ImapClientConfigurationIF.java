@@ -11,9 +11,9 @@ import org.immutables.value.Value.Style;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 import com.hubspot.imap.protocol.capabilities.AuthMechanism;
+import com.hubspot.imap.utils.ConfigDefaults;
 
 @Immutable
 @Style(
@@ -23,12 +23,6 @@ import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 @JsonDeserialize(as = ImapClientConfiguration.class)
 @JsonSerialize(as = ImapClientConfiguration.class)
 public interface ImapClientConfigurationIF {
-  List<AuthMechanism> DEFAULT_ALLOWED_AUTH_MECHANISMS = Lists.newArrayList(
-      AuthMechanism.XOAUTH2,
-      AuthMechanism.PLAIN,
-      AuthMechanism.LOGIN
-  );
-
   HostAndPort hostAndPort();
 
   AuthMechanism authType();
@@ -95,6 +89,6 @@ public interface ImapClientConfigurationIF {
 
   @Default
   default List<AuthMechanism> allowedAuthMechanisms() {
-    return DEFAULT_ALLOWED_AUTH_MECHANISMS;
+    return ConfigDefaults.DEFAULT_ALLOWED_AUTH_MECHANISMS;
   }
 }

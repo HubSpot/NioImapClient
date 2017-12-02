@@ -17,6 +17,6 @@ public enum AuthMechanism {
   private static final Map<String, AuthMechanism> INDEX = Maps.uniqueIndex(Arrays.asList(AuthMechanism.values()), authMechanism -> authMechanism.name().toLowerCase());
 
   public static AuthMechanism fromString(String name) {
-    return INDEX.getOrDefault(name, AuthMechanism.UNKNOWN);
+    return INDEX.getOrDefault(name.toLowerCase(), AuthMechanism.UNKNOWN);
   }
 }

@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.ImapClientConfiguration;
 import com.hubspot.imap.protocol.ResponseDecoder;
+import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 import com.hubspot.imap.protocol.capabilities.Capabilities;
 import com.hubspot.imap.protocol.command.AppendCommand;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
@@ -34,6 +35,7 @@ import com.hubspot.imap.protocol.command.OpenCommand;
 import com.hubspot.imap.protocol.command.QuotedImapCommand;
 import com.hubspot.imap.protocol.command.SilentStoreCommand;
 import com.hubspot.imap.protocol.command.StoreCommand.StoreAction;
+import com.hubspot.imap.protocol.command.auth.AuthenticatePlainCommand;
 import com.hubspot.imap.protocol.command.auth.XOAuth2Command;
 import com.hubspot.imap.protocol.command.fetch.FetchCommand;
 import com.hubspot.imap.protocol.command.fetch.SetFetchCommand;
@@ -81,6 +83,7 @@ import io.netty.util.concurrent.Promise;
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, Closeable {
 
   private static final String KEEP_ALIVE_HANDLER = "imap noop keep alive";
+  private static final List<AuthMechanism> SUPPORTED_AUTH_MECHANISMS = Lists.newArrayList(AuthMechanism.XOAUTH2, AuthMechanism.PLAIN, AuthMechanism.LOGIN);
 
   private final Logger logger;
   private final ImapClientConfiguration configuration;
@@ -144,10 +147,27 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   public CompletableFuture<TaggedResponse> login(String userName, String authToken) {
+    return capability().thenCompose(cpb -> {
+      Optional<AuthMechanism> firstSupportedMechanism = SUPPORTED_AUTH_MECHANISMS.stream()
+          .filter(authMechanism -> cpb.getAuthMechanisms().contains(authMechanism))
+          .findFirst();
+
+      if (!firstSupportedMechanism.isPresent()) {
+        logger.warn("No supported auth mechanism found, falling back to LOGIN");
+      }
+
+      return login(userName, authToken, firstSupportedMechanism.orElse(AuthMechanism.LOGIN));
+    });
+  }
+
+  public CompletableFuture<TaggedResponse> login(String userName, String authToken, AuthMechanism authMechanism) {
     CompletableFuture<? extends ImapResponse> loginFuture;
-    switch (configuration.authType()) {
+    switch (authMechanism) {
       case XOAUTH2:
         loginFuture = oauthLogin(userName, authToken);
+        break;
+      case PLAIN:
+        loginFuture = authPlain(userName, authToken);
         break;
       default:
         loginFuture = passwordLogin(userName, authToken);
@@ -208,6 +228,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private CompletableFuture<? extends ImapResponse> oauthLogin(String userName, String authToken) {
     return sendRaw(new XOAuth2Command(userName, authToken));
+  }
+
+  private CompletableFuture<? extends ImapResponse> authPlain(String userName, String authToken) {
+    return send(new AuthenticatePlainCommand(this, userName, authToken));
   }
 
   public CompletableFuture<TaggedResponse> logout() {

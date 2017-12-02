@@ -11,6 +11,7 @@ import org.immutables.value.Value.Style;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.net.HostAndPort;
+import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 
 @Immutable
 @Style(
@@ -22,7 +23,7 @@ import com.google.common.net.HostAndPort;
 public interface ImapClientConfigurationIF {
   HostAndPort hostAndPort();
 
-  AuthType authType();
+  AuthMechanism authType();
 
   @Default
   default boolean useSsl() {
@@ -82,10 +83,5 @@ public interface ImapClientConfigurationIF {
   @Default
   default Optional<TrustManagerFactory> trustManagerFactory() {
     return Optional.empty();
-  }
-
-  enum AuthType {
-    PASSWORD,
-    XOAUTH2;
   }
 }

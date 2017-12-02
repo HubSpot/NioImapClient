@@ -48,6 +48,8 @@ public class Capabilities {
       if (parts.length < 2) {
         return StandardCapabilities.AUTH;
       }
+
+      return new AuthCapability(parts[1]);
     }
 
     return StandardCapabilities.fromString(capability).orElse(new UnknownCapability(capability));

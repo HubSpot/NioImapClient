@@ -1,6 +1,6 @@
 package com.hubspot.imap.protocol.capabilities;
 
-public class AuthCapability {
+public class AuthCapability implements Capability {
 
   private final AuthMechanism mechanism;
 
@@ -14,5 +14,10 @@ public class AuthCapability {
 
   public AuthMechanism getMechanism() {
     return mechanism;
+  }
+
+  @Override
+  public String getCapability() {
+    return StandardCapabilities.AUTH + "=" + getMechanism().name();
   }
 }

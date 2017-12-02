@@ -7,8 +7,8 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import com.google.common.net.HostAndPort;
-import com.hubspot.imap.ImapClientConfigurationIF.AuthType;
 import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 import com.icegreen.greenmail.junit.GreenMailRule;
 import com.icegreen.greenmail.user.GreenMailUser;
 import com.icegreen.greenmail.util.GreenMailUtil;
@@ -30,7 +30,7 @@ public class BaseGreenMailServerTest {
 
   protected ImapClientConfiguration getImapConfig() {
     return ImapClientConfiguration.builder()
-        .authType(AuthType.PASSWORD)
+        .authType(AuthMechanism.LOGIN)
         .hostAndPort(HostAndPort.fromParts("localhost", greenMail.getImap().getPort()))
         .useSsl(false)
         .connectTimeoutMillis(1000)

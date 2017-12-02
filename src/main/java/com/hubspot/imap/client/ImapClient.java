@@ -83,7 +83,6 @@ import io.netty.util.concurrent.Promise;
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, Closeable {
 
   private static final String KEEP_ALIVE_HANDLER = "imap noop keep alive";
-  private static final List<AuthMechanism> SUPPORTED_AUTH_MECHANISMS = Lists.newArrayList(AuthMechanism.XOAUTH2, AuthMechanism.PLAIN, AuthMechanism.LOGIN);
 
   private final Logger logger;
   private final ImapClientConfiguration configuration;
@@ -148,7 +147,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public CompletableFuture<TaggedResponse> login(String userName, String authToken) {
     return capability().thenCompose(cpb -> {
-      Optional<AuthMechanism> firstSupportedMechanism = SUPPORTED_AUTH_MECHANISMS.stream()
+      Optional<AuthMechanism> firstSupportedMechanism = configuration.allowedAuthMechanisms().stream()
           .filter(authMechanism -> cpb.getAuthMechanisms().contains(authMechanism))
           .findFirst();
 

@@ -1,5 +1,6 @@
 package com.hubspot.imap;
 
+import java.util.List;
 import java.util.Optional;
 
 import javax.net.ssl.TrustManagerFactory;
@@ -10,6 +11,7 @@ import org.immutables.value.Value.Style;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 
@@ -21,6 +23,12 @@ import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 @JsonDeserialize(as = ImapClientConfiguration.class)
 @JsonSerialize(as = ImapClientConfiguration.class)
 public interface ImapClientConfigurationIF {
+  List<AuthMechanism> DEFAULT_ALLOWED_AUTH_MECHANISMS = Lists.newArrayList(
+      AuthMechanism.XOAUTH2,
+      AuthMechanism.PLAIN,
+      AuthMechanism.LOGIN
+  );
+
   HostAndPort hostAndPort();
 
   AuthMechanism authType();
@@ -83,5 +91,10 @@ public interface ImapClientConfigurationIF {
   @Default
   default Optional<TrustManagerFactory> trustManagerFactory() {
     return Optional.empty();
+  }
+
+  @Default
+  default List<AuthMechanism> allowedAuthMechanisms() {
+    return DEFAULT_ALLOWED_AUTH_MECHANISMS;
   }
 }

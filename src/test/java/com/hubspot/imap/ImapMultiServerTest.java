@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +18,8 @@ import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 
 public abstract class ImapMultiServerTest {
+  private static final Logger LOG = LoggerFactory.getLogger(ImapMultiServerTest.class);
+
   private static List<TestServerConfig> getTestConfigs() throws IOException {
     InputStream inputStream = Thread.currentThread().getContextClassLoader()
         .getResourceAsStream("profiles.yaml");
@@ -30,6 +34,7 @@ public abstract class ImapMultiServerTest {
     try {
       return getTestConfigs();
     } catch (Exception e) {
+      LOG.error("Failed to load test configs!", e);
       return Collections.emptyList();
     }
   }

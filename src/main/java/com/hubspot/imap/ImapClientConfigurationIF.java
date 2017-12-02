@@ -1,5 +1,6 @@
 package com.hubspot.imap;
 
+import java.util.List;
 import java.util.Optional;
 
 import javax.net.ssl.TrustManagerFactory;
@@ -11,6 +12,8 @@ import org.immutables.value.Value.Style;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.net.HostAndPort;
+import com.hubspot.imap.protocol.capabilities.AuthMechanism;
+import com.hubspot.imap.utils.ConfigDefaults;
 
 @Immutable
 @Style(
@@ -22,7 +25,7 @@ import com.google.common.net.HostAndPort;
 public interface ImapClientConfigurationIF {
   HostAndPort hostAndPort();
 
-  AuthType authType();
+  AuthMechanism authType();
 
   @Default
   default boolean useSsl() {
@@ -84,8 +87,8 @@ public interface ImapClientConfigurationIF {
     return Optional.empty();
   }
 
-  enum AuthType {
-    PASSWORD,
-    XOAUTH2;
+  @Default
+  default List<AuthMechanism> allowedAuthMechanisms() {
+    return ConfigDefaults.DEFAULT_ALLOWED_AUTH_MECHANISMS;
   }
 }

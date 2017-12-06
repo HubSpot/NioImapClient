@@ -13,7 +13,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.Signal;
 
-public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Closeable {
+public class BufferedBodyParser implements ByteBufParser<Optional<byte[]>>, Closeable {
 
   private static final Signal REPLAYING_SIGNAL;
   static {
@@ -28,6 +28,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
   private int size;
   private int pos;
   private ByteBuf buf;
+  private boolean reset;
 
   public BufferedBodyParser(SoftReferencedAppendableCharSequence sequenceRef) {
     this.stringParser = new AtomOrStringParser(sequenceRef, 10000);
@@ -36,10 +37,14 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
     this.expectedSize = -1;
     this.size = 0;
     this.state = State.START;
+    this.reset = false;
   }
 
   @Override
-  public Optional<String> parse(ByteBuf in) {
+  public Optional<byte[]> parse(ByteBuf in) {
+    if (reset) {
+      reset();
+    }
     for (;;) {
       switch (state) {
         case START:
@@ -61,7 +66,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
           state = State.PARSE_SIZE;
           continue;
         case PARSE_STRING:
-          return Optional.of(stringParser.parse(in));
+          return Optional.of(stringParser.parse(in).getBytes(StandardCharsets.UTF_8));
         case PARSE_SIZE:
           if (buf == null) {
             buf = PooledByteBufAllocator.DEFAULT.buffer(expectedSize);
@@ -73,19 +78,15 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
               buf.writeByte((char) in.readUnsignedByte());
               inc();
             }
+            reset = true;
+            return Optional.of(buf.array());
           } catch (Signal e) {
             e.expect(REPLAYING_SIGNAL);
             in.readerIndex(pos);
             return Optional.empty();
           }
-
-          String result = buf.toString(StandardCharsets.UTF_8);
-          reset();
-
-          return Optional.of(result);
       }
     }
-
   }
 
   private void reset() {
@@ -94,6 +95,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
       buf = null;
     }
 
+    reset = false;
     size = 0;
     expectedSize = -1;
     pos = 0;

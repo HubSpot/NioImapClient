@@ -34,7 +34,7 @@ public class AppendCommand extends ContinuableCommand<TaggedResponse> {
     this.folderName = folderName;
     this.flags = flags;
     this.dateTime = dateTime;
-    this.stringLiteralCommand = new StringLiteralCommand(ImapMessageWriterUtils.messageBodyToString(message), Charset.forName(message.getBody().getCharset()));
+    this.stringLiteralCommand = new StringLiteralCommand(ImapMessageWriterUtils.messageBodyToStringCRLF(message), Charset.forName(message.getBody().getCharset()));
   }
 
   public StringLiteralCommand getStringLiteralCommand() {

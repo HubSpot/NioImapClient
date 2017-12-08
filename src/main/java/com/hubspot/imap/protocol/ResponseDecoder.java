@@ -489,13 +489,13 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   @Timed
   Optional<Message> parseBodyContent(ByteBuf in) throws ResponseParseException {
-    Optional<InputStream> body = bufferedBodyParser.parse(in);
-    if (!body.isPresent()) {
+    Optional<InputStream> bodyInputStream = bufferedBodyParser.parse(in);
+    if (!bodyInputStream.isPresent()) {
       return Optional.empty();
     }
 
     try {
-      return Optional.of(messageBuilder.parseMessage(body.get()));
+      return Optional.of(messageBuilder.parseMessage(bodyInputStream.get()));
     } catch (IOException|NullPointerException e) {
       throw new ResponseParseException(e);
     }

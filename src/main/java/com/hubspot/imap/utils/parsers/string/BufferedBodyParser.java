@@ -1,7 +1,9 @@
 package com.hubspot.imap.utils.parsers.string;
 
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
@@ -9,11 +11,12 @@ import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.ByteBufParser;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.Signal;
 
-public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Closeable {
+public class BufferedBodyParser implements ByteBufParser<Optional<InputStream>>, Closeable {
 
   private static final Signal REPLAYING_SIGNAL;
   static {
@@ -39,7 +42,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
   }
 
   @Override
-  public Optional<String> parse(ByteBuf in) {
+  public Optional<InputStream> parse(ByteBuf in) {
     for (;;) {
       switch (state) {
         case START:
@@ -61,7 +64,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
           state = State.PARSE_SIZE;
           continue;
         case PARSE_STRING:
-          return Optional.of(stringParser.parse(in));
+          return Optional.of(new ByteArrayInputStream(stringParser.parse(in).getBytes(StandardCharsets.UTF_8)));
         case PARSE_SIZE:
           if (buf == null) {
             buf = PooledByteBufAllocator.DEFAULT.buffer(expectedSize);
@@ -79,10 +82,10 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
             return Optional.empty();
           }
 
-          String result = buf.toString(StandardCharsets.UTF_8);
+          ByteBuf result = buf.copy();
           reset();
 
-          return Optional.of(result);
+          return Optional.of(new ByteBufInputStream(result));
       }
     }
 

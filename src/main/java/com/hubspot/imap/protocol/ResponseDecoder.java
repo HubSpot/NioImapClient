@@ -1,7 +1,9 @@
 package com.hubspot.imap.protocol;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -489,13 +491,13 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   @Timed
   Optional<Message> parseBodyContent(ByteBuf in) throws ResponseParseException {
-    Optional<InputStream> bodyInputStream = bufferedBodyParser.parse(in);
-    if (!bodyInputStream.isPresent()) {
+    Optional<String> body = bufferedBodyParser.parse(in);
+    if (!body.isPresent()) {
       return Optional.empty();
     }
 
-    try {
-      return Optional.of(messageBuilder.parseMessage(bodyInputStream.get()));
+    try (InputStream inputStream = new ByteArrayInputStream(body.get().getBytes(StandardCharsets.UTF_8))) {
+      return Optional.of(messageBuilder.parseMessage(inputStream));
     } catch (IOException|NullPointerException e) {
       throw new ResponseParseException(e);
     }

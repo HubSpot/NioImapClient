@@ -13,7 +13,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.Signal;
 
-public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Closeable {
+public class BufferedBodyParser implements ByteBufParser<Optional<byte[]>>, Closeable {
 
   private static final Signal REPLAYING_SIGNAL;
   static {
@@ -39,7 +39,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
   }
 
   @Override
-  public Optional<String> parse(ByteBuf in) {
+  public Optional<byte[]> parse(ByteBuf in) {
     for (;;) {
       switch (state) {
         case START:
@@ -61,7 +61,7 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
           state = State.PARSE_SIZE;
           continue;
         case PARSE_STRING:
-          return Optional.of(stringParser.parse(in));
+          return Optional.of(stringParser.parse(in).getBytes(StandardCharsets.UTF_8));
         case PARSE_SIZE:
           if (buf == null) {
             buf = PooledByteBufAllocator.DEFAULT.buffer(expectedSize);
@@ -79,7 +79,8 @@ public class BufferedBodyParser implements ByteBufParser<Optional<String>>, Clos
             return Optional.empty();
           }
 
-          String result = buf.toString(StandardCharsets.UTF_8);
+          byte[] result = new byte[buf.readableBytes()];
+          buf.getBytes(buf.readerIndex(), result);
           reset();
 
           return Optional.of(result);

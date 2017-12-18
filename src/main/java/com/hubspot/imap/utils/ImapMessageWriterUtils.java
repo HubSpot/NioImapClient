@@ -18,4 +18,12 @@ public class ImapMessageWriterUtils {
     writer.writeMessage(imapMessage.getBody(), outputStream);
     return outputStream.toString(imapMessage.getBody().getCharset());
   }
+
+  public static String messageBodyToStringCRLF(ImapMessage imapMessage) throws UnfetchedFieldException, IOException {
+    return terminateLinesWithCRLF(messageBodyToString(imapMessage));
+  }
+
+  public static String terminateLinesWithCRLF(String messageString) {
+    return messageString.replaceAll("((?<!\\r)\\n|\\r(?!\\n))", "\r\n");
+  }
 }

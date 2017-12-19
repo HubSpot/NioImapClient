@@ -14,8 +14,9 @@ public class ImapMessageWriterUtils {
   public static String messageBodyToString(ImapMessage imapMessage) throws UnfetchedFieldException, IOException {
     MessageWriter writer = new DefaultMessageWriter();
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    CRLFOutputStream crlfOutputStream = new CRLFOutputStream(outputStream);
 
-    writer.writeMessage(imapMessage.getBody(), outputStream);
+    writer.writeMessage(imapMessage.getBody(), crlfOutputStream);
     return outputStream.toString(imapMessage.getBody().getCharset());
   }
 }

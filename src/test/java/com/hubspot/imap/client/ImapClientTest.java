@@ -419,7 +419,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     header.addField(DefaultFieldParser.parse("Date: 10-MAY-1994 00:00:00 -0000 (UTC)"));
     header.addField(DefaultFieldParser.parse("Message-ID: 12345"));
 
-    Envelope envelope = new Envelope.Builder().setDate(ZonedDateTime.of(1994, 5, 10, 0,0,0,0, ZoneId.of("UTC")));
+    Envelope envelope = new Envelope.Builder().setDate(ZonedDateTime.of(1994, 5, 10, 0, 0, 0, 0, ZoneId.of("UTC")));
 
     Body body = BasicBodyFactory.INSTANCE.textBody("This is a test");
 

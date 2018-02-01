@@ -8,12 +8,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.james.mime4j.dom.Header;
@@ -28,32 +26,9 @@ import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapAddress;
 import com.hubspot.imap.protocol.message.ImapAddress.Builder;
 import com.hubspot.imap.utils.NilMarker;
+import com.hubspot.imap.utils.enums.EnvelopeField;
 
 public class EnvelopeParser {
-
-  enum EnvelopeField {
-    DATE("date"),
-    SUBJECT("subject"),
-    FROM("from"),
-    SENDER("sender"),
-    REPLY_TO("replyto"),
-    TO("to"),
-    CC("cc"),
-    BCC("bcc"),
-    IN_REPLY_TO("inreplyto"),
-    MESSAGE_ID("message-id");
-
-    private final String fieldName;
-    static final Map<String, EnvelopeField> NAME_INDEX = Arrays.stream(EnvelopeField.values()).collect(Collectors.toMap(EnvelopeField::getFieldName, Function.identity()));
-
-    EnvelopeField(String fieldName) {
-      this.fieldName = fieldName;
-    }
-
-    String getFieldName() {
-      return fieldName;
-    }
-  }
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
   private static final Splitter COMMA_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
@@ -112,7 +87,7 @@ public class EnvelopeParser {
     return envelope.build();
   }
 
-  public static Envelope fromHeader(Header header) {
+  public static Envelope parseHeader(Header header) {
     Map<String, String> envelopeFields = header.getFields().stream()
         .filter(f -> EnvelopeField.NAME_INDEX.containsKey(f.getName().toLowerCase()))
         .collect(Collectors.toMap(f -> f.getName().toLowerCase(), Field::getBody));
@@ -142,15 +117,13 @@ public class EnvelopeParser {
   }
 
   private static List<ImapAddress> emailAddressesFromStringList(String addresses) {
-    return Strings.isNullOrEmpty(addresses) ?
-        Collections.EMPTY_LIST :
-        COMMA_SPLITTER.splitToList(addresses).stream().map(address -> new Builder().setAddress(address)).collect(Collectors.toList());
+    return emailAddressesFromStringList(addresses, Collections.emptyList());
   }
 
   private static List<ImapAddress> emailAddressesFromStringList(String addresses, List<ImapAddress> defaults) {
-    return Strings.isNullOrEmpty(addresses) ?
-        defaults :
-        COMMA_SPLITTER.splitToList(addresses).stream().map(address -> new Builder().setAddress(address)).collect(Collectors.toList());
+    return Strings.isNullOrEmpty(addresses)
+        ? defaults
+        : COMMA_SPLITTER.splitToList(addresses).stream().map(address -> new ImapAddress.Builder().setAddress(address)).collect(Collectors.toList());
   }
 
   @SuppressWarnings("unchecked")

@@ -367,10 +367,10 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         Body body = currentMessage.getBody();
         if (body instanceof AbstractEntity) {
           AbstractEntity message = (AbstractEntity) body;
-          currentMessage.setEnvelope(EnvelopeParser.fromHeader(message.getHeader()));
+          currentMessage.setEnvelope(EnvelopeParser.parseHeader(message.getHeader()));
         }
       } catch (UnfetchedFieldException e1) {
-        // ignored
+        // ignored - no body, nothing to build envelope from
       }
     }
   }

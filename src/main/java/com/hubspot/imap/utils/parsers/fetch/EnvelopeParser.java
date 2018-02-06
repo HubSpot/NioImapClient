@@ -1,5 +1,14 @@
 package com.hubspot.imap.utils.parsers.fetch;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
+import com.hubspot.imap.protocol.message.Envelope;
+import com.hubspot.imap.protocol.message.ImapAddress;
+import com.hubspot.imap.protocol.message.ImapAddress.Builder;
+import com.hubspot.imap.utils.NilMarker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -11,27 +20,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.james.mime4j.dom.Header;
-import org.apache.james.mime4j.stream.Field;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.hubspot.imap.protocol.message.Envelope;
-import com.hubspot.imap.protocol.message.ImapAddress;
-import com.hubspot.imap.protocol.message.ImapAddress.Builder;
-import com.hubspot.imap.utils.NilMarker;
-import com.hubspot.imap.utils.enums.EnvelopeField;
-
 public class EnvelopeParser {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
-  private static final Splitter COMMA_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
 
   static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]").withLocale(Locale.US);
 
@@ -48,7 +40,7 @@ public class EnvelopeParser {
    * @param in ByteBuf containing the full envelope response.
    * @return Parsed Envelope object.
    */
-  public static Envelope parse(List<Object> in) {
+  public Envelope parse(List<Object> in) {
     LOGGER.debug("Parsing envelope response: {}", in);
 
     String dateString = castToString(in.get(0));
@@ -87,47 +79,8 @@ public class EnvelopeParser {
     return envelope.build();
   }
 
-  public static Envelope parseHeader(Header header) {
-    Map<String, String> envelopeFields = header.getFields().stream()
-        .filter(f -> EnvelopeField.NAME_INDEX.containsKey(f.getName().toLowerCase()))
-        .collect(Collectors.toMap(f -> f.getName().toLowerCase(), Field::getBody));
-    Envelope.Builder envelope = new Envelope.Builder();
-
-    String dateString = envelopeFields.get(EnvelopeField.DATE.getFieldName());
-    List<ImapAddress> fromAddress = emailAddressesFromStringList(envelopeFields.get(EnvelopeField.FROM.getFieldName()));
-    envelope.setDateString(dateString)
-        .setSubject(envelopeFields.get(EnvelopeField.SUBJECT.getFieldName()))
-        .setFrom(fromAddress)
-        .setSender(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.SENDER.getFieldName()), fromAddress))
-        .setReplyTo(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.REPLY_TO.getFieldName()), fromAddress))
-        .setTo(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.TO.getFieldName())))
-        .setCc(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.CC.getFieldName())))
-        .setBcc(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.BCC.getFieldName())))
-        .setInReplyTo(envelopeFields.get(EnvelopeField.IN_REPLY_TO.getFieldName()))
-        .setMessageId(envelopeFields.get(EnvelopeField.MESSAGE_ID.getFieldName()));
-
-    try {
-      if (!Strings.isNullOrEmpty(dateString)) {
-        envelope.setDate(parseDate(dateString));
-      }
-    } catch (DateTimeParseException e) {
-      LOGGER.debug("Failed to parse date {}", header.getField("date").getBody(), e);
-    }
-    return envelope.build();
-  }
-
-  private static List<ImapAddress> emailAddressesFromStringList(String addresses) {
-    return emailAddressesFromStringList(addresses, Collections.emptyList());
-  }
-
-  private static List<ImapAddress> emailAddressesFromStringList(String addresses, List<ImapAddress> defaults) {
-    return Strings.isNullOrEmpty(addresses)
-        ? defaults
-        : COMMA_SPLITTER.splitToList(addresses).stream().map(address -> new ImapAddress.Builder().setAddress(address)).collect(Collectors.toList());
-  }
-
   @SuppressWarnings("unchecked")
-  private static List<Object> castToList(Object object) {
+  private List<Object> castToList(Object object) {
     if (object instanceof String) {
       String string = ((String) object);
       if (string.startsWith("NIL")) {
@@ -144,7 +97,7 @@ public class EnvelopeParser {
   }
 
   @SuppressWarnings("unchecked")
-  private static String castToString(Object object) {
+  private String castToString(Object object) {
     if (object instanceof String) {
       return ((String) object);
     } else if (object instanceof NilMarker) {
@@ -155,7 +108,7 @@ public class EnvelopeParser {
   }
 
   @SuppressWarnings("unchecked")
-  private static List<ImapAddress> emailAddressesFromNestedList(List<Object> in) {
+  private List<ImapAddress> emailAddressesFromNestedList(List<Object> in) {
     if (in.size() == 0) {
       return new ArrayList<>();
     }

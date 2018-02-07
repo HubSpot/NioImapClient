@@ -13,8 +13,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.james.mime4j.MimeException;
+import org.apache.james.mime4j.dom.Body;
 import org.apache.james.mime4j.dom.Message;
 import org.apache.james.mime4j.dom.MessageServiceFactory;
+import org.apache.james.mime4j.message.AbstractEntity;
 import org.apache.james.mime4j.message.DefaultMessageBuilder;
 import org.apache.james.mime4j.stream.MimeConfig;
 import org.slf4j.Logger;
@@ -39,6 +41,7 @@ import com.hubspot.imap.protocol.folder.FolderFlags;
 import com.hubspot.imap.protocol.folder.FolderMetadata;
 import com.hubspot.imap.protocol.message.Envelope;
 import com.hubspot.imap.protocol.message.ImapMessage;
+import com.hubspot.imap.protocol.message.UnfetchedFieldException;
 import com.hubspot.imap.protocol.response.ContinuationResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.events.ByeEvent;
@@ -334,6 +337,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private void messageComplete() {
+    setEnvelopeIfAbsent();
     ImapMessage message = currentMessage.build();
     currentMessage = null;
 
@@ -353,6 +357,22 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     }
 
     checkpoint(State.RESET);
+  }
+
+  private void setEnvelopeIfAbsent() {
+    try {
+      currentMessage.getEnvelope();
+    } catch (UnfetchedFieldException e) {
+      try {
+        Body body = currentMessage.getBody();
+        if (body instanceof AbstractEntity) {
+          AbstractEntity message = (AbstractEntity) body;
+          currentMessage.setEnvelope(EnvelopeParser.parseHeader(message.getHeader()));
+        }
+      } catch (UnfetchedFieldException e1) {
+        // ignored - no body, nothing to build envelope from
+      }
+    }
   }
 
   private void handleTagged(ByteBuf in, List<Object> out) {

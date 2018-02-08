@@ -10,11 +10,11 @@ public enum EnvelopeField {
   SUBJECT("subject"),
   FROM("from"),
   SENDER("sender"),
-  REPLY_TO("replyto"),
+  REPLY_TO("reply-to"),
   TO("to"),
   CC("cc"),
   BCC("bcc"),
-  IN_REPLY_TO("inreplyto"),
+  IN_REPLY_TO("in-reply-to"),
   MESSAGE_ID("message-id");
 
   private final String fieldName;

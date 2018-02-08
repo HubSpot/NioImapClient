@@ -91,7 +91,9 @@ public class EnvelopeParser {
   public static Envelope parseHeader(Header header) {
     Map<String, String> envelopeFields = header.getFields().stream()
         .filter(f -> EnvelopeField.NAME_INDEX.containsKey(f.getName().toLowerCase()))
-        .collect(Collectors.toMap(f -> f.getName().toLowerCase(), Field::getBody));
+        .collect(Collectors.groupingBy(field -> field.getName().toLowerCase(),
+            Collectors.mapping(Field::getBody, Collectors.joining(","))));
+
     Envelope.Builder envelope = new Envelope.Builder();
 
     String dateString = envelopeFields.get(EnvelopeField.DATE.getFieldName());

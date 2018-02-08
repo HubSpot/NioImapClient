@@ -32,6 +32,7 @@ public class EnvelopeParser {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
   private static final Splitter COMMA_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
+  private static final Splitter ADDRESS_SPLITTER = Splitter.onPattern("[\\<\\>]").omitEmptyStrings().trimResults();
 
   static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]").withLocale(Locale.US);
 
@@ -123,7 +124,22 @@ public class EnvelopeParser {
   private static List<ImapAddress> emailAddressesFromStringList(String addresses, List<ImapAddress> defaults) {
     return Strings.isNullOrEmpty(addresses)
         ? defaults
-        : COMMA_SPLITTER.splitToList(addresses).stream().map(address -> new ImapAddress.Builder().setAddress(address)).collect(Collectors.toList());
+        : COMMA_SPLITTER.splitToList(addresses).stream()
+          .map(ADDRESS_SPLITTER::splitToList)
+          .map(EnvelopeParser::imapAddressFromParts)
+          .collect(Collectors.toList());
+  }
+
+  private static ImapAddress imapAddressFromParts(List<String> addressParts) {
+    ImapAddress.Builder addressBuilder = new ImapAddress.Builder();
+
+    if (addressParts.size() == 1) {
+      addressBuilder.setAddress(addressParts.get(0));
+    } else {
+      addressBuilder.setPersonal(addressParts.get(0)).setAddress(addressParts.get(1));
+    }
+
+    return addressBuilder.build();
   }
 
   @SuppressWarnings("unchecked")

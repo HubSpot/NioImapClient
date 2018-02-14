@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.james.mime4j.dom.Header;
@@ -129,19 +130,28 @@ public class EnvelopeParser {
         : COMMA_SPLITTER.splitToList(addresses).stream()
           .map(ADDRESS_SPLITTER::splitToList)
           .map(EnvelopeParser::imapAddressFromParts)
+          .filter(Optional::isPresent)
+          .map(Optional::get)
           .collect(Collectors.toList());
   }
 
-  private static ImapAddress imapAddressFromParts(List<String> addressParts) {
+  private static Optional<ImapAddress> imapAddressFromParts(List<String> addressParts) {
+    if (addressParts.isEmpty()) {
+      return Optional.empty();
+    }
+
     ImapAddress.Builder addressBuilder = new ImapAddress.Builder();
 
     if (addressParts.size() == 1) {
       addressBuilder.setAddress(addressParts.get(0));
     } else {
+      if (addressParts.size() > 2) {
+        LOGGER.info("Expected two address parts but found {} - {}, defaulting to first and second parts", addressParts.size(), addressParts);
+      }
       addressBuilder.setPersonal(addressParts.get(0)).setAddress(addressParts.get(1));
     }
 
-    return addressBuilder.build();
+    return Optional.of(addressBuilder.build());
   }
 
   @SuppressWarnings("unchecked")

@@ -24,6 +24,7 @@ public class EnvelopeParseTest {
 
   private static final byte[] TEST_ENVELOPE = "(\"Tue, 28 Jul 2015 14:03:15 +0000\" \"Declined: weekly tennis @ Tue Jul 28, 2015 7pm - 9pm (jhuang@hubspot.com)\" ((\"Peter Casinelli\" NIL \"pcasinelli\" \"hubspot.com\")) ((\"Calendar <calendar-notification@google.com>\" NIL \"Google\" NIL)) ((\"Peter Casinelli\" NIL \"pcasinelli\" \"hubspot.com\")) ((NIL NIL \"jhuang\" \"hubspot.com\")) NIL NIL NIL \"<001a1135b6f27860f9051befeeb2@google.com>\"))\n".getBytes(StandardCharsets.UTF_8);
   private static final byte[] TEST_ENVELOPE_EMPTY_SUBJECT = "(\"Fri, 23 Jun 2017 17:55:45 +0200\" \"\" ((\"Test Name\" NIL \"testing0478\" \"gmail.com\")) ((\"Test Again\" NIL \"test12345\" \"gmail.com\")) ((\"Test Other\" NIL \"test456\" \"gmail.com\")) ((NIL NIL \"info\" \"test.com\")) NIL NIL NIL \"<testmessageid@mail.gmail.com>\")".getBytes(StandardCharsets.UTF_8);
+  private static final byte[] TEST_ENVELOPE_NIL_ADDRESS = "(\"Tue, 28 Jul 2015 14:03:15 +0000\" \"Declined: weekly tennis @ Tue Jul 28, 2015 7pm - 9pm (jhuang@hubspot.com)\" (NIL (\"Peter Casinelli\" NIL \"pcasinelli\" \"hubspot.com\")) ((\"Calendar <calendar-notification@google.com>\" NIL \"Google\" NIL)) ((\"Peter Casinelli\" NIL \"pcasinelli\" \"hubspot.com\")) ((NIL NIL \"jhuang\" \"hubspot.com\")) NIL NIL NIL \"<001a1135b6f27860f9051befeeb2@google.com>\"))\n".getBytes(StandardCharsets.UTF_8);
 
   private static final Mailbox ADDRESS1 = new Mailbox("bcox5021", "gmail.com");
   private static final Mailbox ADDRESS2 = new Mailbox("bcox", "hubspot.com");
@@ -61,6 +62,15 @@ public class EnvelopeParseTest {
 
     assertThat(envelope.getSubject()).isEmpty();
     assertThat(envelope.getDateString()).isNotEmpty();
+  }
+
+  @Test
+  public void testCanParseEnvelope3() throws Exception {
+    NestedArrayParser<String> nestedArrayParser = ARRAY_PARSER_RECYCLER.get();
+    Envelope envelope = EnvelopeParser.parse(nestedArrayParser.parse(wrappedBuffer(TEST_ENVELOPE_NIL_ADDRESS)));
+    nestedArrayParser.recycle();
+
+    assertThat(envelope.getSubject()).isNotEmpty();
   }
 
   @Test

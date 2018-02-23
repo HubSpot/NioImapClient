@@ -189,19 +189,16 @@ public class EnvelopeParser {
     }
 
     return in.stream()
-        .map(o -> {
-          if (o instanceof NilMarker) {
-            return Collections.<String>emptyList();
-          } else {
-            return ((List<Object>) o).stream().map(e -> {
+        .filter(o -> !(o instanceof NilMarker))
+        .map(o -> ((List<Object>) o).stream()
+            .map(e -> {
               if (e instanceof NilMarker) {
                 return null;
               } else {
                 return ((String) e);
               }
-            }).collect(Collectors.toList());
-          }
-        })
+            })
+            .collect(Collectors.toList()))
         .map(o -> new Builder().parseFrom(o).build())
         .collect(Collectors.toList());
   }

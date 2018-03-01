@@ -56,7 +56,7 @@ public class ImapClientFactory implements Closeable {
   }
 
   public CompletableFuture<ImapClient> connect(String clientName, ImapClientConfiguration clientConfiguration) {
-    SslContext finalSslContext = sslContext;
+    final SslContext finalSslContext;
     if (clientConfiguration.trustManagerFactory().isPresent()) {
       try {
         finalSslContext = SslContextBuilder.forClient()
@@ -65,6 +65,8 @@ public class ImapClientFactory implements Closeable {
       } catch (SSLException e) {
         throw new RuntimeException(e);
       }
+    } else {
+      finalSslContext = sslContext;
     }
 
     Bootstrap bootstrap = new Bootstrap().group(configuration.eventLoopGroup())
@@ -81,7 +83,7 @@ public class ImapClientFactory implements Closeable {
       if (f.isSuccess()) {
         Channel channel = ((ChannelFuture) f).channel();
 
-        ImapClient client = new ImapClient(clientConfiguration, channel, sslContext, configuration.executor(), clientName);
+        ImapClient client = new ImapClient(clientConfiguration, channel, finalSslContext, configuration.executor(), clientName);
         configuration.executor().execute(() -> {
           connectFuture.complete(client);
         });

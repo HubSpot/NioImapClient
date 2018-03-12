@@ -4,6 +4,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.Locale;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 public class ImapDateFormat {
   private static final DateTimeFormatter IMAP_FULL_DATE_FORMAT =
@@ -20,6 +23,8 @@ public class ImapDateFormat {
       .toFormatter(Locale.US);
 
   public static final DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z");
+  private static final DateTimeFormatter INTERNALDATE_FORMATTER_WITH_ZONE = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z z");
+  public static final Set<DateTimeFormatter> INTERNALDATE_FORMATTERS = ImmutableSet.of(INTERNALDATE_FORMATTER, INTERNALDATE_FORMATTER_WITH_ZONE);
 
   public static String toImapDateWithTimeString(ZonedDateTime d) {
     return IMAP_FULL_DATE_FORMAT.format(d);

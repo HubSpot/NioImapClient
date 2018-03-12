@@ -1,8 +1,9 @@
 package com.hubspot.imap.protocol.message;
 
-import static com.hubspot.imap.utils.formats.ImapDateFormat.INTERNALDATE_FORMATTER;
+import static com.hubspot.imap.utils.formats.ImapDateFormat.INTERNALDATE_FORMATTERS;
 
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -85,7 +86,14 @@ public interface ImapMessage {
     }
 
     public Builder setInternalDate(String internalDate) {
-      this.internalDate = Optional.of(ZonedDateTime.parse(internalDate.trim(), INTERNALDATE_FORMATTER));
+      for (DateTimeFormatter formatter : INTERNALDATE_FORMATTERS) {
+        try {
+          this.internalDate = Optional.of(ZonedDateTime.parse(internalDate.trim(), formatter));
+          return this;
+        } catch (Exception e) {
+          // swallow
+        }
+      }
       return this;
     }
 

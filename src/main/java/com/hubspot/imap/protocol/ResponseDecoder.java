@@ -378,11 +378,17 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void handleTagged(ByteBuf in, List<Object> out) {
     String tag = wordParser.parse(in);
     String codeString = wordParser.parse(in);
-    ResponseCode code = ResponseCode.valueOf(codeString);
     String message = lineParser.parse(in);
 
+    try {
+      ResponseCode code = ResponseCode.valueOf(codeString);
+      responseBuilder.setCode(code);
+    } catch (IllegalArgumentException e) {
+      logger.warn("Invalid response code for message: tag - {}, codeString - {}, message - {}", tag, codeString, message);
+      throw e;
+    }
+
     responseBuilder.setTag(tag);
-    responseBuilder.setCode(code);
     responseBuilder.setMessage(message);
     responseBuilder.setUntagged(Lists.newArrayList(untaggedResponses));
 

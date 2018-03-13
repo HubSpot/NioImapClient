@@ -12,6 +12,8 @@ import org.junit.Test;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.string.AtomOrStringParser;
 
+import io.netty.handler.codec.DecoderException;
+
 public class AtomOrStringParserTest {
   private static final SoftReferencedAppendableCharSequence SEQUENCE_REF = new SoftReferencedAppendableCharSequence(1000);
   private static final AtomOrStringParser PARSER = new AtomOrStringParser(SEQUENCE_REF, 1000);
@@ -21,6 +23,9 @@ public class AtomOrStringParserTest {
   private static final byte[] QUOTED_RESULT = Arrays.copyOfRange(QUOTED, 1, QUOTED.length-1);
   private static final byte[] ESCAPED_QUOTES = "\"This contains \\\"quotes\\\"\"".getBytes(StandardCharsets.UTF_8);
   private static final byte[] ESCAPED_QUOTES_RESULT = Arrays.copyOfRange(ESCAPED_QUOTES, 1, ESCAPED_QUOTES.length - 1);
+  private static final byte[] LITERAL = "{10}\nabcdefghij".getBytes(StandardCharsets.UTF_8);
+  private static final byte[] LITERAL_RESULT = "abcdefghij".getBytes(StandardCharsets.UTF_8);
+  private static final byte[] LITERAL_MISMATCHING_LENGTH = "{10}\nabcdefghijk".getBytes(StandardCharsets.UTF_8);
 
   @Test
   public void testGivenUnquotedString_doesReturnWholeString() throws Exception {
@@ -38,5 +43,16 @@ public class AtomOrStringParserTest {
   public void testGivenStringWithEscapedQuotesQuotedString_doesReturnStringWithoutSurroundingQuotes() throws Exception {
     String result = PARSER.parse(wrappedBuffer(ESCAPED_QUOTES));
     assertThat(result.getBytes(StandardCharsets.UTF_8)).isEqualTo(ESCAPED_QUOTES_RESULT);
+  }
+
+  @Test
+  public void testGivenStringWithLiteral_doesReturnLiteralWithCorrectLength() throws Exception {
+    String result = PARSER.parse(wrappedBuffer(LITERAL));
+    assertThat(result.getBytes(StandardCharsets.UTF_8)).isEqualTo(LITERAL_RESULT);
+  }
+
+  @Test(expected = DecoderException.class)
+  public void testGivenStringWithLiteralOfWrongLength_doesThrowDecoderException() {
+    PARSER.parse(wrappedBuffer(LITERAL_MISMATCHING_LENGTH));
   }
 }

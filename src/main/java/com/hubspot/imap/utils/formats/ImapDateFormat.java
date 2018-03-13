@@ -1,5 +1,6 @@
 package com.hubspot.imap.utils.formats;
 
+import java.time.DateTimeException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -24,7 +25,7 @@ public class ImapDateFormat {
 
   public static final DateTimeFormatter INTERNALDATE_FORMATTER = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z");
   private static final DateTimeFormatter INTERNALDATE_FORMATTER_WITH_ZONE = DateTimeFormatter.ofPattern("d-MMM-yyyy HH:mm:ss Z z");
-  public static final Set<DateTimeFormatter> INTERNALDATE_FORMATTERS = ImmutableSet.of(INTERNALDATE_FORMATTER, INTERNALDATE_FORMATTER_WITH_ZONE);
+  private static final Set<DateTimeFormatter> INTERNALDATE_FORMATTERS = ImmutableSet.of(INTERNALDATE_FORMATTER, INTERNALDATE_FORMATTER_WITH_ZONE);
 
   public static String toImapDateWithTimeString(ZonedDateTime d) {
     return IMAP_FULL_DATE_FORMAT.format(d);
@@ -32,5 +33,17 @@ public class ImapDateFormat {
 
   public static String toImapDateOnlyString(ZonedDateTime d) {
     return IMAP_SHORT_DATE_FORMAT.format(d);
+  }
+
+  public static ZonedDateTime fromStringToZonedDateTime(String dateString) {
+    for (DateTimeFormatter formatter : INTERNALDATE_FORMATTERS) {
+      try {
+        return ZonedDateTime.parse(dateString.trim(), formatter);
+      } catch (Exception e) {
+        // swallow
+      }
+    }
+
+    throw new DateTimeException(String.format("Failed to parse date string: '%s'", dateString));
   }
 }

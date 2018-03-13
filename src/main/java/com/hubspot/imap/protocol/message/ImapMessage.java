@@ -1,7 +1,5 @@
 package com.hubspot.imap.protocol.message;
 
-import static com.hubspot.imap.utils.formats.ImapDateFormat.INTERNALDATE_FORMATTER;
-
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Optional;
@@ -13,6 +11,7 @@ import org.apache.james.mime4j.dom.Message;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
+import com.hubspot.imap.utils.formats.ImapDateFormat;
 
 public interface ImapMessage {
 
@@ -85,7 +84,7 @@ public interface ImapMessage {
     }
 
     public Builder setInternalDate(String internalDate) {
-      this.internalDate = Optional.of(ZonedDateTime.parse(internalDate.trim(), INTERNALDATE_FORMATTER));
+      this.internalDate = Optional.of(ImapDateFormat.fromStringToZonedDateTime(internalDate));
       return this;
     }
 

@@ -93,14 +93,13 @@ public class AtomOrStringParser implements ByteBufParser<String> {
    * begins after any CLRF characters following the '}' character.
    */
   private String parseLiteral(ByteBuf buffer, AppendableCharSequence seq) {
-    StringBuilder digitBuilder = new StringBuilder();
+    int length = 0;
 
-    char c = ((char) buffer.readUnsignedByte());
+    char c = (char) buffer.readUnsignedByte();
     while (c != '}') {
-      digitBuilder.append(c);
-      c = ((char) buffer.readUnsignedByte());
+      length = (length * 10) + Character.getNumericValue(c);
+      c = (char) buffer.readUnsignedByte();
     }
-    int length = Integer.parseInt(digitBuilder.toString());
 
     if (length > 0) {
       c = (char) buffer.readUnsignedByte();

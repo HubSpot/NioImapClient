@@ -4,7 +4,9 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.james.mime4j.dom.Header;
 import org.apache.james.mime4j.dom.address.Mailbox;
@@ -13,7 +15,9 @@ import org.apache.james.mime4j.message.HeaderImpl;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
 import com.hubspot.imap.protocol.message.Envelope;
+import com.hubspot.imap.protocol.message.ImapAddress;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.NestedArrayParser.Recycler;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
@@ -78,5 +82,20 @@ public class EnvelopeParseTest {
     Envelope envelope = EnvelopeParser.parseHeader(header);
     assertThat(envelope.getInReplyTo()).isNullOrEmpty();
     assertThat(envelope.getMessageId()).isNotEmpty();
+  }
+
+  @Test
+  public void testAddressParsing() throws Exception {
+    ImapAddress brian = new ImapAddress.Builder().setPersonal("Brian Cox").setAddress("brian@test.com");
+    ImapAddress bill = new ImapAddress.Builder().setPersonal("Bill").setAddress("bill@test.com");
+    ImapAddress bob = new ImapAddress.Builder().setPersonal("Bob Cox").setAddress("bob@test.com");
+    ImapAddress unknown = new ImapAddress.Builder().setAddress("unknown@test.com");
+
+    List<ImapAddress> addressList = Lists.newArrayList(brian, bill, bob, unknown);
+
+    String addresses = "bcox, Brian Cox <brian@test.com>, Cox, Bill <bill@test.com>, Bob Cox <bob@test.com>, unknown@test.com";
+
+    List<ImapAddress> result = EnvelopeParser.emailAddressesFromStringList(addresses, Collections.emptyList());
+    assertThat(result).containsOnlyElementsOf(addressList);
   }
 }

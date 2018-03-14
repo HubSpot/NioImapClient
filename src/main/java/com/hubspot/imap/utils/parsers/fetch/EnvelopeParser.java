@@ -32,7 +32,7 @@ import com.hubspot.imap.utils.enums.EnvelopeField;
 public class EnvelopeParser {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
-  private static final Splitter COMMA_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
+  private static final Splitter COMMA_SPLITTER = Splitter.onPattern(",").omitEmptyStrings().trimResults();
   private static final Splitter ADDRESS_SPLITTER = Splitter.onPattern("[\\<\\>]").omitEmptyStrings().trimResults();
 
   static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]").withLocale(Locale.US);
@@ -124,7 +124,8 @@ public class EnvelopeParser {
     return emailAddressesFromStringList(addresses, Collections.emptyList());
   }
 
-  private static List<ImapAddress> emailAddressesFromStringList(String addresses, List<ImapAddress> defaults) {
+  @VisibleForTesting
+  public static List<ImapAddress> emailAddressesFromStringList(String addresses, List<ImapAddress> defaults) {
     return Strings.isNullOrEmpty(addresses)
         ? defaults
         : COMMA_SPLITTER.splitToList(addresses).stream()
@@ -140,15 +141,23 @@ public class EnvelopeParser {
       return Optional.empty();
     }
 
-    ImapAddress.Builder addressBuilder = new ImapAddress.Builder();
 
-    if (addressParts.size() == 1) {
-      addressBuilder.setAddress(addressParts.get(0));
-    } else {
-      if (addressParts.size() > 2) {
-        LOGGER.info("Expected two address parts but found {} - {}, defaulting to first and second parts", addressParts.size(), addressParts);
-      }
-      addressBuilder.setPersonal(addressParts.get(0)).setAddress(addressParts.get(1));
+    Optional<String> emailAddress = addressParts.stream().filter(part -> part.contains("@")).findFirst();
+
+    if (!emailAddress.isPresent()) {
+      return Optional.empty();
+    }
+
+    ImapAddress.Builder addressBuilder = new ImapAddress.Builder();
+    addressBuilder.setAddress(emailAddress.get());
+    int emailIndex = addressParts.indexOf(emailAddress.get());
+
+    if (addressParts.size() > 2) {
+      LOGGER.warn("Expected two address parts but found {} - {}", addressParts.size(), addressParts);
+    }
+
+    if (emailIndex > 0) {
+      addressBuilder.setPersonal(addressParts.get(emailIndex - 1));
     }
 
     return Optional.of(addressBuilder.build());

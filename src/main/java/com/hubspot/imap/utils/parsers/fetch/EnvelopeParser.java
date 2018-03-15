@@ -151,7 +151,6 @@ public class EnvelopeParser {
       return Optional.empty();
     }
 
-
     Optional<String> emailAddressMaybe = addressParts.stream().filter(part -> part.contains("@")).findFirst();
 
     if (!emailAddressMaybe.isPresent()) {
@@ -159,7 +158,6 @@ public class EnvelopeParser {
     }
 
     String emailAddress = emailAddressMaybe.get();
-
     ImapAddress.Builder addressBuilder = new ImapAddress.Builder();
     addressBuilder.setAddress(emailAddress);
     int emailIndex = addressParts.indexOf(emailAddress);

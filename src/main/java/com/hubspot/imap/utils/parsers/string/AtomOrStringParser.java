@@ -1,7 +1,5 @@
 package com.hubspot.imap.utils.parsers.string;
 
-import java.nio.charset.StandardCharsets;
-
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.ByteBufParser;
 
@@ -25,8 +23,6 @@ public class AtomOrStringParser implements ByteBufParser<String> {
 
   public String parse(ByteBuf buffer) {
     AppendableCharSequence seq = sequenceRef.get();
-
-    seq.append(buffer.readCharSequence(length, StandardCharsets.UTF_8);
 
     seq.reset();
     size = 0;

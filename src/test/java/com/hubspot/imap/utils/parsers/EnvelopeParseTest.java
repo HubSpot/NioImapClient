@@ -86,16 +86,26 @@ public class EnvelopeParseTest {
 
   @Test
   public void testAddressParsing() throws Exception {
-    ImapAddress brian = new ImapAddress.Builder().setPersonal("Brian Cox").setAddress("brian@test.com");
-    ImapAddress bill = new ImapAddress.Builder().setPersonal("Bill").setAddress("bill@test.com");
-    ImapAddress bob = new ImapAddress.Builder().setPersonal("Bob Cox").setAddress("bob@test.com");
-    ImapAddress unknown = new ImapAddress.Builder().setAddress("unknown@test.com");
+    ImapAddress brianWithPersonal = new ImapAddress.Builder().setPersonal("bcox, Brian Cox").setAddress("brian@test.com");
+    ImapAddress billWithPersonal = new ImapAddress.Builder().setPersonal("Cox, Bill").setAddress("bill@test.com");
+    ImapAddress bobWithPersonal = new ImapAddress.Builder().setPersonal("Bob Cox").setAddress("bob@test.com");
+    ImapAddress brian = new ImapAddress.Builder().setAddress("brian@test.com");
+    ImapAddress bill = new ImapAddress.Builder().setAddress("bill@test.com");
+    ImapAddress bob = new ImapAddress.Builder().setAddress("bob@test.com");
 
-    List<ImapAddress> addressList = Lists.newArrayList(brian, bill, bob, unknown);
+    List<ImapAddress> addressListWithPersonal = Lists.newArrayList(brianWithPersonal, billWithPersonal, bobWithPersonal);
+    List<ImapAddress> addressList = Lists.newArrayList(brian, bill, bob);
 
-    String addresses = "bcox, Brian Cox <brian@test.com>, Cox, Bill <bill@test.com>, Bob Cox <bob@test.com>, unknown@test.com";
+    String addresses = "bcox, Brian Cox <brian@test.com>, Cox, Bill <bill@test.com>, Bob Cox <bob@test.com>";
+    String addresses1 = "brian@test.com, bill@test.com, bob@test.com";
+    String addresses2 = "<brian@test.com>, <bill@test.com>, <bob@test.com>";
+
 
     List<ImapAddress> result = EnvelopeParser.emailAddressesFromStringList(addresses, Collections.emptyList());
-    assertThat(result).containsOnlyElementsOf(addressList);
+    List<ImapAddress> result1 = EnvelopeParser.emailAddressesFromStringList(addresses1, Collections.emptyList());
+    List<ImapAddress> result2 = EnvelopeParser.emailAddressesFromStringList(addresses2, Collections.emptyList());
+    assertThat(result).containsOnlyElementsOf(addressListWithPersonal);
+    assertThat(result1).containsOnlyElementsOf(addressList);
+    assertThat(result2).containsOnlyElementsOf(addressList);
   }
 }

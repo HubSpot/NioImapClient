@@ -32,7 +32,8 @@ import com.hubspot.imap.utils.enums.EnvelopeField;
 public class EnvelopeParser {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
-  private static final Splitter COMMA_SPLITTER = Splitter.onPattern(",").omitEmptyStrings().trimResults();
+  private static final Splitter COMMA_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
+  private static final Splitter PARAMETER_COMMA_SPLITTER = Splitter.onPattern("(\\>,)").omitEmptyStrings().trimResults();
   private static final Splitter ADDRESS_SPLITTER = Splitter.onPattern("[\\<\\>]").omitEmptyStrings().trimResults();
 
   static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]").withLocale(Locale.US);
@@ -128,12 +129,21 @@ public class EnvelopeParser {
   public static List<ImapAddress> emailAddressesFromStringList(String addresses, List<ImapAddress> defaults) {
     return Strings.isNullOrEmpty(addresses)
         ? defaults
-        : COMMA_SPLITTER.splitToList(addresses).stream()
+        : getSplitter(addresses)
+        .splitToList(addresses).stream()
           .map(ADDRESS_SPLITTER::splitToList)
           .map(EnvelopeParser::imapAddressFromParts)
           .filter(Optional::isPresent)
           .map(Optional::get)
           .collect(Collectors.toList());
+  }
+
+  private static Splitter getSplitter(String addresses) {
+    if (addresses.contains(">")) {
+      return PARAMETER_COMMA_SPLITTER;
+    } else {
+      return COMMA_SPLITTER;
+    }
   }
 
   private static Optional<ImapAddress> imapAddressFromParts(List<String> addressParts) {
@@ -142,15 +152,17 @@ public class EnvelopeParser {
     }
 
 
-    Optional<String> emailAddress = addressParts.stream().filter(part -> part.contains("@")).findFirst();
+    Optional<String> emailAddressMaybe = addressParts.stream().filter(part -> part.contains("@")).findFirst();
 
-    if (!emailAddress.isPresent()) {
+    if (!emailAddressMaybe.isPresent()) {
       return Optional.empty();
     }
 
+    String emailAddress = emailAddressMaybe.get();
+
     ImapAddress.Builder addressBuilder = new ImapAddress.Builder();
-    addressBuilder.setAddress(emailAddress.get());
-    int emailIndex = addressParts.indexOf(emailAddress.get());
+    addressBuilder.setAddress(emailAddress);
+    int emailIndex = addressParts.indexOf(emailAddress);
 
     if (addressParts.size() > 2) {
       LOGGER.warn("Expected two address parts but found {} - {}", addressParts.size(), addressParts);

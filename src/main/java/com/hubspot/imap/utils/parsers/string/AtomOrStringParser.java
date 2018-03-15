@@ -122,7 +122,6 @@ public class AtomOrStringParser implements ByteBufParser<String> {
     return c == '\n' || c == '\r';
   }
 
-
   private void append(AppendableCharSequence seq, char c) {
     if (size >= maxStringLength) {
       throw new TooLongFrameException("String is larger than " + maxStringLength + " bytes.");

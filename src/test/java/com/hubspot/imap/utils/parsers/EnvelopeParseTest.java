@@ -100,7 +100,6 @@ public class EnvelopeParseTest {
     String addresses1 = "brian@test.com, bill@test.com, bob@test.com";
     String addresses2 = "<brian@test.com>, <bill@test.com>, <bob@test.com>";
 
-
     List<ImapAddress> result = EnvelopeParser.emailAddressesFromStringList(addresses, Collections.emptyList());
     List<ImapAddress> result1 = EnvelopeParser.emailAddressesFromStringList(addresses1, Collections.emptyList());
     List<ImapAddress> result2 = EnvelopeParser.emailAddressesFromStringList(addresses2, Collections.emptyList());

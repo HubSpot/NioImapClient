@@ -72,15 +72,6 @@ public class AtomOrStringParser implements ByteBufParser<String> {
     return seq.toString();
   }
 
-  private void append(AppendableCharSequence seq, char c) {
-    if (size >= maxStringLength) {
-      throw new TooLongFrameException("String is larger than " + maxStringLength + " bytes.");
-    }
-
-    size++;
-    seq.append(c);
-  }
-
   /**
    * See https://tools.ietf.org/html/rfc3501.html#section-4.3
    *
@@ -93,32 +84,33 @@ public class AtomOrStringParser implements ByteBufParser<String> {
    * begins after any CLRF characters following the '}' character.
    */
   private String parseLiteral(ByteBuf buffer, AppendableCharSequence seq) {
-    int length = 0;
+    int length = 0, digit = 0;
 
     char c = (char) buffer.readUnsignedByte();
     while (c != '}') {
-      length = (length * 10) + Character.getNumericValue(c);
-      c = (char) buffer.readUnsignedByte();
+      if (Character.isDigit(c)) {
+        digit = Character.digit(c, 10);
+        length = (length * 10) + digit;
+        c = (char) buffer.readUnsignedByte();
+      } else {
+        throw new DecoderException(
+            String.format(
+                "Found non-digit character %c where a digit was expected",
+                c
+            )
+        );
+      }
     }
 
     if (length > 0) {
+      //ignore crlf characters after '}'
       c = (char) buffer.readUnsignedByte();
-      while (isCLRFCharacter(c)) {
+      while (isCRLFCharacter(c)) {
         c = (char) buffer.readUnsignedByte();
       }
 
-      seq.append(c);
-      length -= 1;
-      while (length > 0) {
-        seq.append((char) buffer.readUnsignedByte());
-        length--;
-      }
-
-      if (buffer.readableBytes() != 0) {
-        String originalBuffer = seq.toString()
-            + buffer.toString(StandardCharsets.UTF_8);
-        throw new DecoderException("String literal doesn't match expected length " + originalBuffer);
-      }
+      append(seq, c);
+      append(seq, buffer, length);
 
       return seq.toString();
     } else {
@@ -126,7 +118,26 @@ public class AtomOrStringParser implements ByteBufParser<String> {
     }
   }
 
-  private boolean isCLRFCharacter(char c) {
+  private boolean isCRLFCharacter(char c) {
     return c == '\n' || c == '\r';
+  }
+
+
+  private void append(AppendableCharSequence seq, char c) {
+    if (size >= maxStringLength) {
+      throw new TooLongFrameException("String is larger than " + maxStringLength + " bytes.");
+    }
+
+    size++;
+    seq.append(c);
+  }
+
+  private void append(AppendableCharSequence seq, ByteBuf buffer, int length) {
+    if (size + length >= maxStringLength) {
+      throw new TooLongFrameException("String is larger than " + maxStringLength + " bytes.");
+    }
+
+    size += length;
+    seq.append(buffer.readCharSequence(length - 1, StandardCharsets.UTF_8));
   }
 }

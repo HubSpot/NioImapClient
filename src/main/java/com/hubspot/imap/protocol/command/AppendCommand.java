@@ -66,8 +66,12 @@ public class AppendCommand extends ContinuableCommand<TaggedResponse> {
 
   @Override
   public CompletableFuture<TaggedResponse> continueAfterResponse(ImapResponse imapResponse, Throwable throwable) {
-    if (throwable != null || !(imapResponse instanceof ContinuationResponse)) {
+    if (throwable != null) {
       throw new UnexpectedAppendResponseException(throwable);
+    }
+
+    if (!(imapResponse instanceof ContinuationResponse)) {
+      throw new UnexpectedAppendResponseException(imapResponse);
     }
 
     return imapClient.send(getStringLiteralCommand());

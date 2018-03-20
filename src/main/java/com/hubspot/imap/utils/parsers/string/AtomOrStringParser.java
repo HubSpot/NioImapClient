@@ -84,20 +84,17 @@ public class AtomOrStringParser implements ByteBufParser<String> {
    * begins after any CLRF characters following the '}' character.
    */
   private String parseLiteral(ByteBuf buffer, AppendableCharSequence seq) {
-    int length = 0, digit = 0;
+    int length = 0;
 
     char c = (char) buffer.readUnsignedByte();
     while (c != '}') {
       if (Character.isDigit(c)) {
-        digit = Character.digit(c, 10);
+        int digit = Character.digit(c, 10);
         length = (length * 10) + digit;
         c = (char) buffer.readUnsignedByte();
       } else {
         throw new DecoderException(
-            String.format(
-                "Found non-digit character %c where a digit was expected",
-                c
-            )
+            String.format("Found non-digit character %c where a digit was expected", c)
         );
       }
     }

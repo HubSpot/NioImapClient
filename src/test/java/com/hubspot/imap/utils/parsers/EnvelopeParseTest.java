@@ -4,7 +4,9 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.james.mime4j.dom.Header;
 import org.apache.james.mime4j.dom.address.Mailbox;
@@ -13,7 +15,9 @@ import org.apache.james.mime4j.message.HeaderImpl;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
 import com.hubspot.imap.protocol.message.Envelope;
+import com.hubspot.imap.protocol.message.ImapAddress;
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.NestedArrayParser.Recycler;
 import com.hubspot.imap.utils.parsers.fetch.EnvelopeParser;
@@ -78,5 +82,29 @@ public class EnvelopeParseTest {
     Envelope envelope = EnvelopeParser.parseHeader(header);
     assertThat(envelope.getInReplyTo()).isNullOrEmpty();
     assertThat(envelope.getMessageId()).isNotEmpty();
+  }
+
+  @Test
+  public void testAddressParsing() throws Exception {
+    ImapAddress brianWithPersonal = new ImapAddress.Builder().setPersonal("bcox, Brian Cox").setAddress("brian@test.com");
+    ImapAddress billWithPersonal = new ImapAddress.Builder().setPersonal("Cox, Bill").setAddress("bill@test.com");
+    ImapAddress bobWithPersonal = new ImapAddress.Builder().setPersonal("Bob Cox").setAddress("bob@test.com");
+    ImapAddress brian = new ImapAddress.Builder().setAddress("brian@test.com");
+    ImapAddress bill = new ImapAddress.Builder().setAddress("bill@test.com");
+    ImapAddress bob = new ImapAddress.Builder().setAddress("bob@test.com");
+
+    List<ImapAddress> addressListWithPersonal = Lists.newArrayList(brianWithPersonal, billWithPersonal, bobWithPersonal);
+    List<ImapAddress> addressList = Lists.newArrayList(brian, bill, bob);
+
+    String addresses = "bcox, Brian Cox <brian@test.com>, Cox, Bill <bill@test.com>, Bob Cox <bob@test.com>";
+    String addresses1 = "brian@test.com, bill@test.com, bob@test.com";
+    String addresses2 = "<brian@test.com>, <bill@test.com>, <bob@test.com>";
+
+    List<ImapAddress> result = EnvelopeParser.emailAddressesFromStringList(addresses, Collections.emptyList());
+    List<ImapAddress> result1 = EnvelopeParser.emailAddressesFromStringList(addresses1, Collections.emptyList());
+    List<ImapAddress> result2 = EnvelopeParser.emailAddressesFromStringList(addresses2, Collections.emptyList());
+    assertThat(result).containsOnlyElementsOf(addressListWithPersonal);
+    assertThat(result1).containsOnlyElementsOf(addressList);
+    assertThat(result2).containsOnlyElementsOf(addressList);
   }
 }

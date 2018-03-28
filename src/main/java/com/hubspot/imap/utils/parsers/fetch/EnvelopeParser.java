@@ -127,23 +127,23 @@ public class EnvelopeParser {
 
   @VisibleForTesting
   public static List<ImapAddress> emailAddressesFromStringList(String addresses, List<ImapAddress> defaults) {
-    return Strings.isNullOrEmpty(addresses)
-        ? defaults
-        : getSplitter(addresses)
-        .splitToList(addresses).stream()
-          .map(ADDRESS_SPLITTER::splitToList)
-          .map(EnvelopeParser::imapAddressFromParts)
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .collect(Collectors.toList());
+    if (Strings.isNullOrEmpty(addresses)) {
+      return defaults;
+    }
+
+    return getSplitter(addresses).splitToList(addresses).stream()
+        .map(ADDRESS_SPLITTER::splitToList)
+        .map(EnvelopeParser::imapAddressFromParts)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toList());
   }
 
   private static Splitter getSplitter(String addresses) {
     if (addresses.contains(">")) {
       return PARAMETER_COMMA_SPLITTER;
-    } else {
-      return COMMA_SPLITTER;
     }
+    return COMMA_SPLITTER;
   }
 
   private static Optional<ImapAddress> imapAddressFromParts(List<String> addressParts) {

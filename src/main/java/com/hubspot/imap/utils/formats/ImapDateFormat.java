@@ -10,7 +10,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 public class ImapDateFormat {
-  private static final DateTimeFormatter IMAP_FULL_DATE_FORMAT =
+  public static final DateTimeFormatter IMAP_FULL_DATE_FORMAT =
     new DateTimeFormatterBuilder()
       .appendPattern("dd-MMM-yyyy ")
       .appendPattern("HH:mm:ss ")

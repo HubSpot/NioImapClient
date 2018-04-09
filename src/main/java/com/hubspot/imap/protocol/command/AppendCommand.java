@@ -1,6 +1,6 @@
 package com.hubspot.imap.protocol.command;
 
-import static com.hubspot.imap.utils.formats.ImapDateFormat.INTERNALDATE_FORMATTER;
+import static com.hubspot.imap.utils.formats.ImapDateFormat.IMAP_FULL_DATE_FORMAT;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -52,7 +52,7 @@ public class AppendCommand extends ContinuableCommand<TaggedResponse> {
     }
 
     if (dateTime.isPresent()) {
-      args.add(GmailUtils.quote(dateTime.get().format(INTERNALDATE_FORMATTER)));
+      args.add(GmailUtils.quote(dateTime.get().format(IMAP_FULL_DATE_FORMAT)));
     }
 
     args.add(String.format("{%d}", stringLiteralCommand.getSize()));

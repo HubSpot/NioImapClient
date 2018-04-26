@@ -458,7 +458,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt instanceof IdleStateEvent) {
       if (!connectionShutdown.get()) {
-        noop();
+        CompletableFuture<NoopResponse> noopResponse = noop();
+        noopResponse.whenComplete((resp, throwable) -> {
+          if (!resp.getCode().equals(ResponseCode.OK) && channel.isOpen()) {
+            //closeNow();
+            logger.debug("Not OK response from NOOP: {}", resp.toString());
+          }
+        });
       }
     } else if (evt instanceof ByeEvent) {
       if (channel.isOpen() && (clientState.getCurrentCommand() == null || clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT)) {

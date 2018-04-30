@@ -462,10 +462,10 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         noopResponse.whenComplete((resp, throwable) -> {
           if (channel.isOpen()) {
             if (throwable != null) {
-              logger.debug("Exception from NOOP", throwable);
+              logger.warn("Exception from NOOP", throwable);
               //closeNow();
             } else if (!resp.getCode().equals(ResponseCode.OK)) {
-              logger.debug("Not OK response from NOOP: {}", resp.toString());
+              logger.warn("Not OK response from NOOP: {}", resp.toString());
               //closeNow();
             }
           }

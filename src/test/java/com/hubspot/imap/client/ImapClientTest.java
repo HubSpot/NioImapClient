@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -38,7 +39,10 @@ import org.junit.Test;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HostAndPort;
 import com.hubspot.imap.BaseGreenMailServerTest;
+import com.hubspot.imap.ImapClientConfiguration;
+import com.hubspot.imap.ProxyConfig;
 import com.hubspot.imap.TestUtils;
 import com.hubspot.imap.protocol.capabilities.Capabilities;
 import com.hubspot.imap.protocol.command.ImapCommandType;
@@ -447,4 +451,26 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     assertThat(postAppendFetchUid.getMessages().iterator().next().getBody().getSubject()).isEqualToIgnoringCase("This is the subject");
     assertThat(postAppendFetchUid.getMessages().iterator().next().getEnvelope().getMessageId()).isEqualToIgnoringCase("12345");
   }
+
+
+
+  @Test(expected = CompletionException.class)
+  public void itShouldTryProxy() throws Exception {
+    // we expect a read timeout because that's how the client handles RESET commands
+    // TODO - if we get a RESET on the response of a command, we should return the failure that we get back.
+    ImapClient client = getLoggedInClient(ImapClientConfiguration.builder()
+        .hostAndPort(HostAndPort.fromParts("localhost", greenMail.getImap().getPort() + 1))
+        .useSsl(false)
+        .proxyConfig(Optional.of(ProxyConfig.builder()
+            .proxyHost(HostAndPort.fromParts("localhost", greenMail.getImap().getPort()))
+            .proxyLocalIpAddress(Optional.of("127.0.0.10"))
+            .build()
+        ))
+        .socketTimeoutMs(500)
+        .connectTimeoutMillis(500)
+        .closeTimeoutSec(500)
+        .tracingEnabled(true)
+        .build());
+  }
+
 }

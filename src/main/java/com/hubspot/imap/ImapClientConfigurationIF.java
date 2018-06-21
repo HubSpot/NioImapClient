@@ -97,6 +97,11 @@ public interface ImapClientConfigurationIF {
   }
 
   @Default
+  default Optional<ProxyConfig> proxyConfig() {
+    return Optional.empty();
+  }
+
+  @Default
   default List<AuthMechanism> allowedAuthMechanisms() {
     return ConfigDefaults.DEFAULT_ALLOWED_AUTH_MECHANISMS;
   }

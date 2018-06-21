@@ -18,6 +18,7 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.hubspot.imap.ImapChannelAttrs;
@@ -87,7 +88,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   private final Logger logger;
   private final ImapClientConfiguration configuration;
   private final Channel channel;
-  private final SslContext sslContext;
+  private final Supplier<SslContext> sslContextSupplier;
   private final EventExecutorGroup promiseExecutor;
   private final ImapClientState clientState;
   private final ImapCodec codec;
@@ -100,13 +101,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public ImapClient(ImapClientConfiguration configuration,
                     Channel channel,
-                    SslContext sslContext,
+                    Supplier<SslContext> sslContextSupplier,
                     EventExecutorGroup promiseExecutor,
                     String clientName) {
     this.logger = LogUtils.loggerWithName(ImapClient.class, clientName);
     this.configuration = configuration;
     this.channel = channel;
-    this.sslContext = sslContext;
+    this.sslContextSupplier = sslContextSupplier;
     this.promiseExecutor = promiseExecutor;
     this.clientState = new ImapClientState(clientName, promiseExecutor);
     this.codec = new ImapCodec(clientState);
@@ -200,10 +201,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         throw new StartTlsFailedException(response.getMessage());
       }
 
-      channel.pipeline().addFirst(new SslHandler(sslContext.newEngine(channel.alloc()), false));
+      addTlsToChannel();
 
       return response;
     });
+  }
+
+  public void addTlsToChannel() {
+    channel.pipeline().addFirst(new SslHandler(sslContextSupplier.get().newEngine(channel.alloc()), false));
   }
 
   private void startKeepAlive() {

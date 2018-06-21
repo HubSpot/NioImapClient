@@ -12,7 +12,11 @@ import javax.net.ssl.TrustManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.net.HostAndPort;
 import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.protocol.command.ProxyCommand;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -56,18 +60,8 @@ public class ImapClientFactory implements Closeable {
   }
 
   public CompletableFuture<ImapClient> connect(String clientName, ImapClientConfiguration clientConfiguration) {
-    final SslContext finalSslContext;
-    if (clientConfiguration.trustManagerFactory().isPresent()) {
-      try {
-        finalSslContext = SslContextBuilder.forClient()
-            .trustManager(clientConfiguration.trustManagerFactory().get())
-            .build();
-      } catch (SSLException e) {
-        throw new RuntimeException(e);
-      }
-    } else {
-      finalSslContext = sslContext;
-    }
+    Supplier<SslContext> sslContextSupplier = Suppliers.memoize(() -> getSslContext(clientConfiguration));
+    boolean useSsl = clientConfiguration.useSsl() && !clientConfiguration.proxyConfig().isPresent();
 
     Bootstrap bootstrap = new Bootstrap().group(configuration.eventLoopGroup())
         .option(ChannelOption.SO_LINGER, clientConfiguration.soLinger())
@@ -75,15 +69,18 @@ public class ImapClientFactory implements Closeable {
         .option(ChannelOption.SO_KEEPALIVE, false)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .channel(configuration.channelClass())
-        .handler(clientConfiguration.useSsl() ? new ImapChannelInitializer(finalSslContext, clientConfiguration) : new ImapChannelInitializer(clientConfiguration));
+        .handler(useSsl ? new ImapChannelInitializer(sslContextSupplier.get(), clientConfiguration) : new ImapChannelInitializer(clientConfiguration));
+
+    HostAndPort connectHost = getConnectHost(clientConfiguration);
 
     CompletableFuture<ImapClient> connectFuture = new CompletableFuture<>();
 
-    bootstrap.connect(clientConfiguration.hostAndPort().getHost(), clientConfiguration.hostAndPort().getPort()).addListener(f -> {
+
+    bootstrap.connect(connectHost.getHost(), connectHost.getPort()).addListener(f -> {
       if (f.isSuccess()) {
         Channel channel = ((ChannelFuture) f).channel();
 
-        ImapClient client = new ImapClient(clientConfiguration, channel, finalSslContext, configuration.executor(), clientName);
+        ImapClient client = new ImapClient(clientConfiguration, channel, sslContextSupplier, configuration.executor(), clientName);
         configuration.executor().execute(() -> {
           connectFuture.complete(client);
         });
@@ -92,7 +89,48 @@ public class ImapClientFactory implements Closeable {
       }
     });
 
-    return connectFuture;
+    return handleProxyConnect(clientConfiguration, connectFuture);
+  }
+
+  private SslContext getSslContext(ImapClientConfiguration clientConfiguration) {
+    if (!clientConfiguration.trustManagerFactory().isPresent()) {
+      return sslContext;
+    }
+    try {
+      return SslContextBuilder.forClient()
+          .trustManager(clientConfiguration.trustManagerFactory().get())
+          .build();
+    } catch (SSLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private CompletableFuture<ImapClient> handleProxyConnect(ImapClientConfiguration clientConfiguration,
+                                                           CompletableFuture<ImapClient> connectFuture) {
+    if (!clientConfiguration.proxyConfig().isPresent()) {
+      return connectFuture;
+    }
+    ProxyCommand proxyCommand = new ProxyCommand(
+        clientConfiguration.hostAndPort(),
+        clientConfiguration.proxyConfig().get().proxyLocalIpAddress()
+    );
+    return connectFuture.thenCompose(imapClient ->
+        imapClient.send(proxyCommand)
+            .thenApply(ignored -> {
+              if (clientConfiguration.useSsl()) {
+                imapClient.addTlsToChannel();
+              }
+              return imapClient;
+            })
+    );
+  }
+
+  private HostAndPort getConnectHost(ImapClientConfiguration clientConfiguration) {
+    if (clientConfiguration.proxyConfig().isPresent()) {
+      return clientConfiguration.proxyConfig().get().proxyHost();
+    } else {
+      return clientConfiguration.hostAndPort();
+    }
   }
 
   @Override

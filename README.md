@@ -3,9 +3,15 @@ NioImapClient [![Build Status](https://travis-ci.org/HubSpot/NioImapClient.svg?b
 
 High performance IMAP client in Java based on [Netty](https://netty.io/)
 
-## Beta
+## Maven Dependency
 
-This client is well tested and heavily used at HubSpot, but it is still under active development and its public API is not guaranteed to be stable.
+```xml
+<dependency>
+  <groupId>com.hubspot</groupId>
+  <artifactId>NioImapClient</artifactId>
+  <version>0.4</version>
+</dependency>
+```
 
 ### Features
 

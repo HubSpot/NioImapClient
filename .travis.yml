@@ -1,25 +1,11 @@
-
-language: java
-jdk:
-  - oraclejdk8
-
-git:
-  depth: 100
-
 sudo: false
-addons:
-  apt:
-    packages:
-      - oracle-java8-installer
-
-before_install:
-  - wget https://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.zip
-  - unzip -qq apache-maven-3.3.9-bin.zip
-  - export M2_HOME=$PWD/apache-maven-3.3.9
-  - export PATH=$M2_HOME/bin:$PATH
-
-script: mvn -B -q clean install
-
+language: java
 cache:
   directories:
-  - $HOME/.m2
+    - $HOME/.m2
+
+jdk:
+  - openjdk8
+  - openjdk11
+
+script: mvn -B clean verify

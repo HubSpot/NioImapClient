@@ -349,7 +349,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         fetchCommand = ((StreamingFetchCommand) clientState.getCurrentCommand());
       }
 
-      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> fetchCommand.handle(message), executorGroup);
+      CompletableFuture<?> future = fetchCommand.invokeListener(message);
 
       untaggedResponses.add(future);
     } else {

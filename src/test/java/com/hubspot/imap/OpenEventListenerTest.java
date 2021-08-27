@@ -17,12 +17,7 @@ import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.response.ResponseCode;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 
-/***
- * @implNote Greenmail doesn't appear to support the EXISTS untagged response so we can't test
- * when MessageAddListeners completely.
- */
-public class MessageAddListenerTest extends BaseGreenMailServerTest {
-
+public class OpenEventListenerTest extends BaseGreenMailServerTest {
   private ImapClient client;
   private ExecutorService executorService;
 
@@ -40,32 +35,15 @@ public class MessageAddListenerTest extends BaseGreenMailServerTest {
   }
 
   @Test
-  public void testOnOpen_doesNotCallMessageCountListener() throws Exception {
-    CountDownLatch countDownLatch = new CountDownLatch(1);
-
-    client.getState().onMessageAdd((o, n) -> countDownLatch.countDown(), executorService);
-    client.list("", "%");
-    CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
-    openFuture.get(30, TimeUnit.SECONDS);
-
-    assertThat(openFuture.isDone()).isTrue();
-    assertThat(openFuture.isCompletedExceptionally()).isFalse();
-    assertThat(openFuture.get().getCode()).isEqualTo(ResponseCode.OK);
-    assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isFalse();
-  }
-
-  @Test
-  public void testOnOpen_doesUpdateMessageCount() throws Exception {
+  public void testOnOpen_doesCallOpenListener() throws Exception {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     client.getState().addOpenEventListener((e) -> countDownLatch.countDown(), executorService);
     CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
     openFuture.get(30, TimeUnit.SECONDS);
-
     assertThat(openFuture.isDone()).isTrue();
     assertThat(openFuture.isCompletedExceptionally()).isFalse();
     assertThat(openFuture.get().getCode()).isEqualTo(ResponseCode.OK);
     assertThat(countDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
-    assertThat(client.getState().getMessageNumber()).isEqualTo(openFuture.get().getExists());
   }
 }

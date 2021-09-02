@@ -21,14 +21,12 @@ import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 public class MessageAddListenerTest extends BaseGreenMailServerTest {
 
   private ImapClient client;
-  private ExecutorService executorService;
 
   @Before
   public void setUp() throws Exception {
     super.setUp();
     deliverRandomMessage();
     client = getLoggedInClient();
-    executorService = Executors.newSingleThreadExecutor();
   }
 
   @After
@@ -40,7 +38,7 @@ public class MessageAddListenerTest extends BaseGreenMailServerTest {
   public void testOnKeepAlive_doesCallMessageListener() throws Exception {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    client.getState().onMessageAdd((o, n) -> countDownLatch.countDown(), executorService);
+    client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
 
     CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
     openFuture.get(30, TimeUnit.SECONDS);
@@ -53,7 +51,7 @@ public class MessageAddListenerTest extends BaseGreenMailServerTest {
   public void testOnOpen_doesNotCallMessageCountListener() throws Exception {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    client.getState().onMessageAdd((o, n) -> countDownLatch.countDown(), executorService);
+    client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
     client.list("", "%");
     CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
     openFuture.get(30, TimeUnit.SECONDS);
@@ -68,7 +66,7 @@ public class MessageAddListenerTest extends BaseGreenMailServerTest {
   public void testOnOpen_doesUpdateMessageCount() throws Exception {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    client.getState().addOpenEventListener((e) -> countDownLatch.countDown(), executorService);
+    client.getState().addOpenEventListener((e) -> countDownLatch.countDown());
     CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
     openFuture.get(30, TimeUnit.SECONDS);
 

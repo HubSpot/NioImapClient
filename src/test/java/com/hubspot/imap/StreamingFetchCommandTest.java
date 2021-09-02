@@ -25,7 +25,6 @@ import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 public class StreamingFetchCommandTest extends BaseGreenMailServerTest {
 
   private ImapClient client;
-  private ExecutorService executorService;
   private long uidNext;
 
   @After
@@ -40,8 +39,6 @@ public class StreamingFetchCommandTest extends BaseGreenMailServerTest {
     deliverRandomMessage();
     CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
     uidNext = openFuture.get(30, TimeUnit.SECONDS).getUidNext();
-
-    executorService = Executors.newSingleThreadExecutor();
   }
 
   @Test
@@ -55,7 +52,6 @@ public class StreamingFetchCommandTest extends BaseGreenMailServerTest {
           countDownLatch.countDown();
           return null;
         },
-        executorService,
         FetchDataItemType.ENVELOPE);
     fetchFuture.get(10, TimeUnit.SECONDS);
     assertThat(fetchFuture.isDone()).isTrue();

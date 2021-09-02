@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +23,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.ImapClientConfiguration;
-import com.hubspot.imap.client.listener.ListenerReference;
 import com.hubspot.imap.protocol.ResponseDecoder;
 import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 import com.hubspot.imap.protocol.capabilities.Capabilities;
@@ -269,61 +267,29 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new FetchCommand(startId, stopId, fetchItems));
   }
 
-  @Deprecated
   public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(long startId,
                                                                    Optional<Long> stopId,
                                                                    Function<ImapMessage, R> messageFunction,
                                                                    FetchDataItem item,
                                                                    FetchDataItem... otherItems) {
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, listener(messageFunction), item, otherItems)));
+    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems)));
   }
 
-  public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(long startId,
-                                                                   Optional<Long> stopId,
-                                                                   Function<ImapMessage, R> messageFunction,
-                                                                   ExecutorService executorService,
-                                                                   FetchDataItem item,
-                                                                   FetchDataItem... otherItems) {
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, listener(messageFunction, executorService), item, otherItems)));
-  }
-
-  @Deprecated
   public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(long startId,
                                                                 Optional<Long> stopId,
                                                                 Function<ImapMessage, R> messageFunction,
                                                                 FetchDataItem item,
                                                                 FetchDataItem... otherItems) {
-    return send(new StreamingFetchCommand<>(startId, stopId, listener(messageFunction), item, otherItems));
+    return send(new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems));
   }
 
-  public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(long startId,
-                                                                Optional<Long> stopId,
-                                                                Function<ImapMessage, R> messageFunction,
-                                                                ExecutorService executorService,
-                                                                FetchDataItem item,
-                                                                FetchDataItem... otherItems) {
-    return send(new StreamingFetchCommand<>(startId, stopId, listener(messageFunction, executorService), item, otherItems));
-  }
-
-  @Deprecated
   public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(long startId,
                                                                 Optional<Long> stopId,
                                                                 Function<ImapMessage, R> messageFunction,
                                                                 List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new StreamingFetchCommand<>(startId, stopId, listener(messageFunction), fetchDataItems));
+    return send(new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems));
   }
-
-
-  public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(long startId,
-                                                                Optional<Long> stopId,
-                                                                Function<ImapMessage, R> messageFunction,
-                                                                ExecutorService executorService,
-                                                                List<FetchDataItem> fetchDataItems) {
-    Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new StreamingFetchCommand<>(startId, stopId, listener(messageFunction, executorService), fetchDataItems));
-  }
-
 
   public CompletableFuture<FetchResponse> uidfetch(long startId,
                                                    Optional<Long> stopId,
@@ -347,22 +313,12 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchItems)));
   }
 
-  @Deprecated
   public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(long startId,
                                                                    Optional<Long> stopId,
                                                                    Function<ImapMessage, R> messageFunction,
                                                                    List<FetchDataItem> fetchDataItems) {
     Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, listener(messageFunction), fetchDataItems)));
-  }
-
-  public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(long startId,
-                                                                   Optional<Long> stopId,
-                                                                   Function<ImapMessage, R> messageFunction,
-                                                                   ExecutorService executorService,
-                                                                   List<FetchDataItem> fetchDataItems) {
-    Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, listener(messageFunction, executorService), fetchDataItems)));
+    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems)));
   }
 
   public CompletableFuture<TaggedResponse> uidstore(StoreAction action,
@@ -618,14 +574,6 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public ImapClientConfiguration getConfiguration() {
     return configuration;
-  }
-
-  private <R> ListenerReference<Function<ImapMessage, R>> listener(Function<ImapMessage, R> messageFunction) {
-    return new ListenerReference<>(messageFunction, promiseExecutor);
-  }
-
-  private <R> ListenerReference<Function<ImapMessage, R>> listener(Function<ImapMessage, R> messageFunction, ExecutorService executorService) {
-    return new ListenerReference<>(messageFunction, executorService);
   }
 
   private static final class PendingCommand {

@@ -19,14 +19,12 @@ import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 
 public class OpenEventListenerTest extends BaseGreenMailServerTest {
   private ImapClient client;
-  private ExecutorService executorService;
 
   @Before
   public void setUp() throws Exception {
     super.setUp();
     deliverRandomMessage();
     client = getLoggedInClient();
-    executorService = Executors.newSingleThreadExecutor();
   }
 
   @After
@@ -38,7 +36,7 @@ public class OpenEventListenerTest extends BaseGreenMailServerTest {
   public void testOnOpen_doesCallOpenListener() throws Exception {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    client.getState().addOpenEventListener((e) -> countDownLatch.countDown(), executorService);
+    client.getState().addOpenEventListener((e) -> countDownLatch.countDown());
     CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
     openFuture.get(30, TimeUnit.SECONDS);
     assertThat(openFuture.isDone()).isTrue();

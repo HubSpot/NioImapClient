@@ -2,15 +2,12 @@ package com.hubspot.imap.client;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.hubspot.imap.client.listener.ConnectionListener;
-import com.hubspot.imap.client.listener.ListenerReference;
 import com.hubspot.imap.client.listener.MessageAddConsumer;
 import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.response.events.ExistsEvent;
@@ -32,8 +29,8 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final AtomicLong commandCount;
   private final AtomicLong messageNumber;
 
-  private final List<ListenerReference<MessageAddConsumer>> messageAddListeners;
-  private final List<ListenerReference<Consumer<OpenEvent>>> openEventListeners;
+  private final List<MessageAddConsumer> messageAddListeners;
+  private final List<Consumer<OpenEvent>> openEventListeners;
   private final List<ConnectionListener> connectionListeners;
   private final List<ChannelHandler> handlers;
 
@@ -71,9 +68,8 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       long lastMessageCount = messageNumber.getAndSet(exists.getValue());
       long currentCount = messageNumber.get();
       if (currentCount > lastMessageCount) {
-        for (ListenerReference<MessageAddConsumer> listenerReference: messageAddListeners) {
-          MessageAddConsumer listener = listenerReference.getListener();
-          listenerReference.getExecutorService().submit(() -> listener.accept(lastMessageCount, currentCount));
+        for (BiConsumer<Long, Long> listener: messageAddListeners) {
+          executorGroup.submit(() -> listener.accept(lastMessageCount, currentCount));
         }
       }
     } else if (evt instanceof OpenEvent) {
@@ -81,30 +77,20 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       OpenResponse response = event.getOpenResponse();
       messageNumber.set(response.getExists());
 
-      for (ListenerReference<Consumer<OpenEvent>> listenerReference : openEventListeners) {
-        listenerReference.getExecutorService().submit(() -> listenerReference.getListener().accept(event));
+      for (Consumer<OpenEvent> listener: openEventListeners) {
+        executorGroup.submit(() -> listener.accept(event));
       }
     }
 
     super.userEventTriggered(ctx, evt);
   }
 
-  @Deprecated
   public void onMessageAdd(MessageAddConsumer consumer) {
-    this.messageAddListeners.add(new ListenerReference<>(consumer, executorGroup));
+    this.messageAddListeners.add(consumer);
   }
 
-  public void onMessageAdd(MessageAddConsumer consumer, ExecutorService executorService) {
-    this.messageAddListeners.add(new ListenerReference<>(consumer, executorService));
-  }
-
-  @Deprecated
   public void addOpenEventListener(Consumer<OpenEvent> consumer) {
-    this.openEventListeners.add(new ListenerReference<>(consumer, executorGroup));
-  }
-
-  public void addOpenEventListener(Consumer<OpenEvent> consumer, ExecutorService executorService) {
-    this.openEventListeners.add(new ListenerReference<>(consumer, executorService));
+    this.openEventListeners.add(consumer);
   }
 
   public void addHandler(ChannelHandler handler) {

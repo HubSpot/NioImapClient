@@ -15,12 +15,9 @@ import org.junit.Test;
 import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.response.ResponseCode;
+import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 
-/***
- * @implNote Greenmail doesn't appear to support the EXISTS untagged response so we can't test
- * when MessageAddListeners fire completely.
- */
 public class MessageAddListenerTest extends BaseGreenMailServerTest {
 
   private ImapClient client;
@@ -37,6 +34,19 @@ public class MessageAddListenerTest extends BaseGreenMailServerTest {
   @After
   public void closeClient() throws Exception {
     client.close();
+  }
+
+  @Test
+  public void testOnKeepAlive_doesCallMessageListener() throws Exception {
+    CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    client.getState().onMessageAdd((o, n) -> countDownLatch.countDown(), executorService);
+
+    CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
+    openFuture.get(30, TimeUnit.SECONDS);
+
+    deliverRandomMessage();
+    assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
   @Test

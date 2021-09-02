@@ -19,7 +19,7 @@ import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 
 /***
  * @implNote Greenmail doesn't appear to support the EXISTS untagged response so we can't test
- * when MessageAddListeners completely.
+ * when MessageAddListeners fire completely.
  */
 public class MessageAddListenerTest extends BaseGreenMailServerTest {
 

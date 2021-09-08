@@ -38,7 +38,7 @@ public class StreamingFetchCommandTest extends BaseGreenMailServerTest {
     client = getLoggedInClient();
     deliverRandomMessage();
     CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
-    uidNext = openFuture.get(30, TimeUnit.SECONDS).getUidNext();
+    uidNext = openFuture.join().getUidNext();
   }
 
   @Test
@@ -53,7 +53,7 @@ public class StreamingFetchCommandTest extends BaseGreenMailServerTest {
           return null;
         },
         FetchDataItemType.ENVELOPE);
-    fetchFuture.get(10, TimeUnit.SECONDS);
+    fetchFuture.join();
     assertThat(fetchFuture.isDone()).isTrue();
     assertThat(fetchFuture.isCompletedExceptionally()).isFalse();
     assertThat(fetchFuture.get().getCode()).isEqualTo(ResponseCode.OK);

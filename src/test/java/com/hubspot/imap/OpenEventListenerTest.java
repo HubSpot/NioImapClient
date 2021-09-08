@@ -38,7 +38,7 @@ public class OpenEventListenerTest extends BaseGreenMailServerTest {
 
     client.getState().addOpenEventListener((e) -> countDownLatch.countDown());
     CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
-    openFuture.get(30, TimeUnit.SECONDS);
+    openFuture.join();
     assertThat(openFuture.isDone()).isTrue();
     assertThat(openFuture.isCompletedExceptionally()).isFalse();
     assertThat(openFuture.get().getCode()).isEqualTo(ResponseCode.OK);

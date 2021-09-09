@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
@@ -13,6 +15,7 @@ import org.junit.Test;
 import com.hubspot.imap.client.FolderOpenMode;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.response.ResponseCode;
+import com.hubspot.imap.protocol.response.tagged.NoopResponse;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 
 public class MessageAddListenerTest extends BaseGreenMailServerTest {
@@ -29,6 +32,19 @@ public class MessageAddListenerTest extends BaseGreenMailServerTest {
   @After
   public void closeClient() throws Exception {
     client.close();
+  }
+
+  @Test
+  public void testOnKeepAlive_doesCallMessageListener() throws Exception {
+    CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    client.getState().onMessageAdd((o, n) -> countDownLatch.countDown());
+
+    CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
+    openFuture.get(30, TimeUnit.SECONDS);
+
+    deliverRandomMessage();
+    assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
   @Test

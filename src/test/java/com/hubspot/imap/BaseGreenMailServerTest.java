@@ -32,6 +32,7 @@ public class BaseGreenMailServerTest {
         .useSsl(false)
         .connectTimeoutMillis(1000)
         .tracingEnabled(true)
+        .noopKeepAliveIntervalSec(1)
         .build();
   }
 

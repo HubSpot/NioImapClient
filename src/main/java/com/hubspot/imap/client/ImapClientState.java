@@ -28,6 +28,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   private final AtomicReference<ImapCommand> currentCommand;
   private final AtomicLong commandCount;
   private final AtomicLong messageNumber;
+  private final AtomicLong uidValidity;
 
   private final List<MessageAddConsumer> messageAddListeners;
   private final List<Consumer<OpenEvent>> openEventListeners;
@@ -43,6 +44,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     this.currentCommand = new AtomicReference<>();
     this.commandCount = new AtomicLong(0);
     this.messageNumber = new AtomicLong(0);
+    this.uidValidity = new AtomicLong(0);
 
     this.messageAddListeners = new CopyOnWriteArrayList<>();
     this.openEventListeners = new CopyOnWriteArrayList<>();
@@ -76,6 +78,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       OpenEvent event = ((OpenEvent) evt);
       OpenResponse response = event.getOpenResponse();
       messageNumber.set(response.getExists());
+      uidValidity.set(response.getUidValidity());
 
       for (Consumer<OpenEvent> listener: openEventListeners) {
         executorGroup.submit(() -> listener.accept(event));
@@ -128,4 +131,6 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
   public String getClientName() {
     return clientName;
   }
+
+  public long getUidValidity() {return uidValidity.get(); }
 }

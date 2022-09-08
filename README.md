@@ -46,7 +46,7 @@ High performance IMAP client in Java based on [Netty](https://netty.io/)
 - NEVER execute blocking commands on an eventloop thread (i.e. `CountDownLatch.await` or `Future.get`)
   - Calls out to unknown functions (i.e. callbacks or event listeners) should always be done on isolated thread pools.
   - Slow but not necessarily blocking operations should also be avoided
-- Attempt to avoid doing long running tasks on event loop threads
+- Attempt to avoid doing long-running tasks on event loop threads
 - Use `new` as sparingly as possible to avoid creating garbage:
   - Share objects when possible
   - Use netty bytebuf allocators when possible

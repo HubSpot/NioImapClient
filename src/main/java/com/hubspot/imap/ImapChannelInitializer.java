@@ -1,12 +1,16 @@
 package com.hubspot.imap;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+
+import com.google.common.net.HostAndPort;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.proxy.Socks4ProxyHandler;
 import io.netty.handler.ssl.SslContext;
 
 @Sharable
@@ -28,6 +32,12 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
   @Override
   protected void initChannel(SocketChannel socketChannel) throws Exception {
     ChannelPipeline channelPipeline = socketChannel.pipeline();
+
+    if (configuration.socksProxyConfig().isPresent()) {
+      HostAndPort proxyHost = configuration.socksProxyConfig().get().proxyHost();
+      channelPipeline.addFirst(new Socks4ProxyHandler(
+          new InetSocketAddress(proxyHost.getHost(), proxyHost.getPort())));
+    }
 
     if (sslContext != null) {
       channelPipeline.addLast(sslContext.newHandler(socketChannel.alloc(),

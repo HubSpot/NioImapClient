@@ -102,6 +102,9 @@ public interface ImapClientConfigurationIF {
   }
 
   @Default
+  default Optional<SocksProxyConfig> socksProxyConfig() { return Optional.empty(); }
+
+  @Default
   default List<AuthMechanism> allowedAuthMechanisms() {
     return ConfigDefaults.DEFAULT_ALLOWED_AUTH_MECHANISMS;
   }

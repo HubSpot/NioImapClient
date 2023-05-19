@@ -22,6 +22,6 @@ public class SocksProxyLogger extends ChannelInboundHandlerAdapter {
     Socks4ProxyHandler proxyHandler = ctx.channel().pipeline().get(Socks4ProxyHandler.class);
     InetSocketAddress proxyAddress = proxyHandler.proxyAddress();
     String hostAddress = proxyAddress.getAddress().getHostAddress();
-    logger.info("Using SOCKS proxy address {}", hostAddress);
+    logger.info("Using SOCKS proxy at {}", hostAddress);
   }
 }

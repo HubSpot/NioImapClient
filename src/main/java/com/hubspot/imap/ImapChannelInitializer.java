@@ -1,11 +1,18 @@
 package com.hubspot.imap;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.Charset;
 
+import org.slf4j.Logger;
+
 import com.google.common.net.HostAndPort;
+import com.hubspot.imap.utils.LogUtils;
+import com.hubspot.imap.utils.SocksProxyLogger;
 
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -18,15 +25,17 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
   private static final StringEncoder STRING_ENCODER = new StringEncoder(Charset.forName("UTF-8"));
 
   private final SslContext sslContext;
+  private final String clientName;
   private final ImapClientConfiguration configuration;
 
-  public ImapChannelInitializer(SslContext sslContext, ImapClientConfiguration configuration) {
+  public ImapChannelInitializer(SslContext sslContext, String clientName, ImapClientConfiguration configuration) {
     this.sslContext = sslContext;
+    this.clientName = clientName;
     this.configuration = configuration;
   }
 
-  public ImapChannelInitializer(ImapClientConfiguration configuration) {
-    this(null, configuration);
+  public ImapChannelInitializer(String clientName, ImapClientConfiguration configuration) {
+    this(null, clientName, configuration);
   }
 
   @Override
@@ -35,8 +44,9 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     if (configuration.socksProxyConfig().isPresent()) {
       HostAndPort proxyHost = configuration.socksProxyConfig().get().proxyHost();
-      channelPipeline.addFirst(new Socks4ProxyHandler(
+      channelPipeline.addLast(new Socks4ProxyHandler(
           new InetSocketAddress(proxyHost.getHost(), proxyHost.getPort())));
+      channelPipeline.addLast(new SocksProxyLogger(clientName));
     }
 
     if (sslContext != null) {

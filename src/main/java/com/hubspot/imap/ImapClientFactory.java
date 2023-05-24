@@ -69,7 +69,9 @@ public class ImapClientFactory implements Closeable {
         .option(ChannelOption.SO_KEEPALIVE, false)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .channel(configuration.channelClass())
-        .handler(useSsl ? new ImapChannelInitializer(sslContextSupplier.get(), clientConfiguration) : new ImapChannelInitializer(clientConfiguration));
+        .handler(useSsl
+            ? new ImapChannelInitializer(sslContextSupplier.get(), clientName, clientConfiguration)
+            : new ImapChannelInitializer(clientName, clientConfiguration));
 
     HostAndPort connectHost = getConnectHost(clientConfiguration);
 

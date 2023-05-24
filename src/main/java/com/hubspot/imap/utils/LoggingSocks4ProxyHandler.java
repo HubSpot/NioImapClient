@@ -4,7 +4,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -17,6 +16,14 @@ import io.netty.handler.codec.socksx.v4.Socks4CommandType;
 import io.netty.handler.proxy.ProxyConnectException;
 import io.netty.handler.proxy.ProxyHandler;
 
+/**
+ * This is basically a copy of the netty Socks4ProxyHandler that simply logs the IP address
+ * that the socks proxy server responds with upon connection.  This allows us to log
+ * the IP address of the server that is performing the connection, rather than simply the
+ * cluster IP in the case of a socks proxy cluster. Admittedly, the netty socks proxy
+ * implementation is broken here since it doesn't make this important information more readily
+ * available.
+ */
 public final class LoggingSocks4ProxyHandler extends ProxyHandler {
   static final String AUTH_NONE = "none";
 

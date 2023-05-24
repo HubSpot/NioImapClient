@@ -105,9 +105,9 @@ public final class LoggingSocks4ProxyHandler extends ProxyHandler {
   @Override
   protected boolean handleResponse(ChannelHandlerContext ctx, Object response) throws Exception {
     final Socks4CommandResponse res = (Socks4CommandResponse) response;
-    logger.info("Connected to SOCKS proxy with IP address {}", res.dstAddr());
     final Socks4CommandStatus status = res.status();
     if (status == Socks4CommandStatus.SUCCESS) {
+      logger.info("Connected to SOCKS proxy with IP address {}", res.dstAddr());
       return true;
     }
 

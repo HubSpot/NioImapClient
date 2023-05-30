@@ -1,23 +1,16 @@
 package com.hubspot.imap;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.charset.Charset;
 
-import org.slf4j.Logger;
-
 import com.google.common.net.HostAndPort;
-import com.hubspot.imap.utils.LogUtils;
-import com.hubspot.imap.utils.SocksProxyLogger;
+import com.hubspot.imap.utils.LoggingSocks4ProxyHandler;
 
 import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.string.StringEncoder;
-import io.netty.handler.proxy.Socks4ProxyHandler;
 import io.netty.handler.ssl.SslContext;
 
 @Sharable
@@ -44,9 +37,8 @@ public class ImapChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     if (configuration.socksProxyConfig().isPresent()) {
       HostAndPort proxyHost = configuration.socksProxyConfig().get().proxyHost();
-      channelPipeline.addLast(new Socks4ProxyHandler(
+      channelPipeline.addLast(new LoggingSocks4ProxyHandler(clientName,
           new InetSocketAddress(proxyHost.getHost(), proxyHost.getPort())));
-      channelPipeline.addLast(new SocksProxyLogger(clientName));
     }
 
     if (sslContext != null) {

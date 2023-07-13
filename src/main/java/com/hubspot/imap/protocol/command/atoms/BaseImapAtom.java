@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import java.util.List;
 
 public abstract class BaseImapAtom implements ImapAtom {
+
   protected static final Joiner SPACE_JOINER = Joiner.on(" ").skipNulls();
 
   protected final List<String> args;

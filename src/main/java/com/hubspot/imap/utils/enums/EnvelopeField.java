@@ -18,7 +18,9 @@ public enum EnvelopeField {
   MESSAGE_ID("message-id");
 
   private final String fieldName;
-  public static final Map<String, EnvelopeField> NAME_INDEX = Arrays.stream(EnvelopeField.values()).collect(Collectors.toMap(EnvelopeField::getFieldName, Function.identity()));
+  public static final Map<String, EnvelopeField> NAME_INDEX = Arrays
+    .stream(EnvelopeField.values())
+    .collect(Collectors.toMap(EnvelopeField::getFieldName, Function.identity()));
 
   EnvelopeField(String fieldName) {
     this.fieldName = fieldName;

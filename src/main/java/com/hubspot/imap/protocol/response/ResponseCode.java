@@ -4,5 +4,5 @@ public enum ResponseCode {
   NONE,
   OK,
   NO,
-  BAD;
+  BAD,
 }

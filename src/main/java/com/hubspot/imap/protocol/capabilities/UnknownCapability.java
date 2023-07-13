@@ -1,6 +1,7 @@
 package com.hubspot.imap.protocol.capabilities;
 
 public class UnknownCapability implements Capability {
+
   private final String capability;
 
   public UnknownCapability(String capability) {

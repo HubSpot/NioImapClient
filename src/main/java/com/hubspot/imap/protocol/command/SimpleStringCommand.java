@@ -1,6 +1,7 @@
 package com.hubspot.imap.protocol.command;
 
 public class SimpleStringCommand extends BaseImapCommand {
+
   private final String string;
 
   public SimpleStringCommand(String string) {

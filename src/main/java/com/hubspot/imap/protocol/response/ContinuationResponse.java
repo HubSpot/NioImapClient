@@ -5,6 +5,7 @@ import com.google.common.base.Objects;
 
 public interface ContinuationResponse extends ImapResponse {
   class Builder implements ContinuationResponse {
+
     private String message;
 
     public String getMessage() {
@@ -22,9 +23,7 @@ public interface ContinuationResponse extends ImapResponse {
 
     @Override
     public String toString() {
-      return MoreObjects.toStringHelper(this)
-          .add("message", message)
-          .toString();
+      return MoreObjects.toStringHelper(this).add("message", message).toString();
     }
 
     @Override

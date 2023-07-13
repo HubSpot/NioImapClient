@@ -6,11 +6,15 @@ import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class FetchResponseTypeParser implements ByteBufParser<String> {
+
   private final SoftReferencedAppendableCharSequence sequenceRef;
   private final int maxWordLength;
   private int size = 0;
 
-  public FetchResponseTypeParser(SoftReferencedAppendableCharSequence sequenceRef, int maxWordLength) {
+  public FetchResponseTypeParser(
+    SoftReferencedAppendableCharSequence sequenceRef,
+    int maxWordLength
+  ) {
     this.sequenceRef = sequenceRef;
     this.maxWordLength = maxWordLength;
   }
@@ -27,14 +31,16 @@ public class FetchResponseTypeParser implements ByteBufParser<String> {
         if (size > 0) {
           break;
         }
-      } else if (!Character.isLetterOrDigit(nextByte) && nextByte != '.' && nextByte != '-') {
+      } else if (
+        !Character.isLetterOrDigit(nextByte) && nextByte != '.' && nextByte != '-'
+      ) {
         in.readerIndex(in.readerIndex() - 1);
         break;
       } else {
         if (size >= maxWordLength) {
           throw new TooLongFrameException(
-              "Word is larger than " + maxWordLength +
-                  " bytes.");
+            "Word is larger than " + maxWordLength + " bytes."
+          );
         }
         size++;
         seq.append(nextByte);

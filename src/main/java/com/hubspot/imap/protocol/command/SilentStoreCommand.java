@@ -4,7 +4,12 @@ import com.hubspot.imap.protocol.message.MessageFlag;
 
 public class SilentStoreCommand extends StoreCommand {
 
-  public SilentStoreCommand(StoreAction action, long startId, long stopId, MessageFlag... args) {
+  public SilentStoreCommand(
+    StoreAction action,
+    long startId,
+    long stopId,
+    MessageFlag... args
+  ) {
     super(action, startId, stopId, args);
   }
 

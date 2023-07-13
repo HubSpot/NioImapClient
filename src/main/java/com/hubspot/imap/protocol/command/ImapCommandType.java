@@ -18,6 +18,5 @@ public enum ImapCommandType {
   COPY,
   STARTTLS,
   APPEND,
-  PROXY
-  ;
+  PROXY,
 }

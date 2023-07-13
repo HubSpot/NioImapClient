@@ -2,16 +2,14 @@ package com.hubspot.imap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.protocol.response.ResponseCode;
+import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import java.util.concurrent.CompletableFuture;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
-
-import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.protocol.response.ResponseCode;
-import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 
 @RunWith(Parameterized.class)
 public class StartTlsTest extends ImapMultiServerTest {

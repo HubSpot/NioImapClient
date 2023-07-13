@@ -1,7 +1,6 @@
 package com.hubspot.imap.protocol.response.tagged;
 
 import com.hubspot.imap.protocol.message.ImapMessage;
-
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -9,6 +8,7 @@ public interface FetchResponse extends TaggedResponse {
   Set<ImapMessage> getMessages();
 
   class Builder extends TaggedResponse.Builder implements FetchResponse {
+
     private Set<ImapMessage> messages;
 
     public FetchResponse fromResponse(TaggedResponse response) {
@@ -22,10 +22,12 @@ public interface FetchResponse extends TaggedResponse {
     }
 
     private static Set<ImapMessage> filterFetchedMessages(TaggedResponse response) {
-      return response.getUntagged().stream()
-          .filter(m -> m instanceof ImapMessage)
-          .map(m -> ((ImapMessage) m))
-          .collect(Collectors.toSet());
+      return response
+        .getUntagged()
+        .stream()
+        .filter(m -> m instanceof ImapMessage)
+        .map(m -> ((ImapMessage) m))
+        .collect(Collectors.toSet());
     }
 
     @Override

@@ -1,14 +1,14 @@
 package com.hubspot.imap.protocol.folder;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
-
 public class FolderFlags {
+
   public enum Flag {
     ANSWERED,
     FLAGGED,
@@ -17,7 +17,7 @@ public class FolderFlags {
     SEEN,
     NOTPHISHING,
     STAR,
-    PHISHING;
+    PHISHING,
   }
 
   private final Set<Flag> flags;
@@ -54,12 +54,13 @@ public class FolderFlags {
 
   public static FolderFlags fromStrings(Collection<String> input, boolean permanent) {
     return new FolderFlags(
-        input.stream()
-            .map(FolderFlags::getFlag)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toSet()),
-        permanent
+      input
+        .stream()
+        .map(FolderFlags::getFlag)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toSet()),
+      permanent
     );
   }
 
@@ -72,8 +73,10 @@ public class FolderFlags {
       return false;
     }
     FolderFlags that = (FolderFlags) o;
-    return Objects.equal(isPermanent(), that.isPermanent()) &&
-        Objects.equal(getFlags(), that.getFlags());
+    return (
+      Objects.equal(isPermanent(), that.isPermanent()) &&
+      Objects.equal(getFlags(), that.getFlags())
+    );
   }
 
   @Override
@@ -83,9 +86,10 @@ public class FolderFlags {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("flags", flags)
-        .add("permanent", permanent)
-        .toString();
+    return MoreObjects
+      .toStringHelper(this)
+      .add("flags", flags)
+      .add("permanent", permanent)
+      .toString();
   }
 }

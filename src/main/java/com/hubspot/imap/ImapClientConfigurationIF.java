@@ -1,30 +1,23 @@
 package com.hubspot.imap;
 
-import java.util.List;
-import java.util.Optional;
-
-import javax.net.ssl.TrustManagerFactory;
-
-import org.immutables.value.Value.Default;
-import org.immutables.value.Value.Derived;
-import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Style;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.net.HostAndPort;
 import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 import com.hubspot.imap.utils.ConfigDefaults;
+import java.util.List;
+import java.util.Optional;
+import javax.net.ssl.TrustManagerFactory;
+import org.immutables.value.Value.Default;
+import org.immutables.value.Value.Derived;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Style;
 
 @Immutable
-@Style(
-    typeAbstract = {"*IF"},
-    typeImmutable = "*"
-)
+@Style(typeAbstract = { "*IF" }, typeImmutable = "*")
 @JsonDeserialize(as = ImapClientConfiguration.class)
 @JsonSerialize(as = ImapClientConfiguration.class)
 public interface ImapClientConfigurationIF {
-
   HostAndPort hostAndPort();
 
   /**
@@ -33,7 +26,9 @@ public interface ImapClientConfigurationIF {
   @Derived
   @Deprecated
   default AuthMechanism authType() {
-    return allowedAuthMechanisms().size() > 0 ? allowedAuthMechanisms().get(0) : AuthMechanism.UNKNOWN;
+    return allowedAuthMechanisms().size() > 0
+      ? allowedAuthMechanisms().get(0)
+      : AuthMechanism.UNKNOWN;
   }
 
   @Default
@@ -102,7 +97,9 @@ public interface ImapClientConfigurationIF {
   }
 
   @Default
-  default Optional<SocksProxyConfig> socksProxyConfig() { return Optional.empty(); }
+  default Optional<SocksProxyConfig> socksProxyConfig() {
+    return Optional.empty();
+  }
 
   @Default
   default List<AuthMechanism> allowedAuthMechanisms() {

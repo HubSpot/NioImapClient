@@ -4,7 +4,6 @@ import com.googlecode.concurrenttrees.common.KeyValuePair;
 import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;
 import com.googlecode.concurrenttrees.radix.RadixTree;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultByteArrayNodeFactory;
-
 import java.util.Iterator;
 
 public enum UntaggedResponseType {
@@ -32,7 +31,9 @@ public enum UntaggedResponseType {
 
   public static UntaggedResponseType getResponseType(String word) {
     TREE.getKeyValuePairsForClosestKeys(word);
-    Iterator<KeyValuePair<UntaggedResponseType>> responseType = TREE.getKeyValuePairsForClosestKeys(word).iterator();
+    Iterator<KeyValuePair<UntaggedResponseType>> responseType = TREE
+      .getKeyValuePairsForClosestKeys(word)
+      .iterator();
     if (!responseType.hasNext()) {
       return INVALID;
     }
@@ -59,7 +60,7 @@ public enum UntaggedResponseType {
   static {
     int maxLength = -1;
     TREE = new ConcurrentRadixTree<>(new DefaultByteArrayNodeFactory());
-    for (UntaggedResponseType type: UntaggedResponseType.values()) {
+    for (UntaggedResponseType type : UntaggedResponseType.values()) {
       TREE.put(type.prefix, type);
       maxLength = Math.max(maxLength, type.prefix.length());
     }

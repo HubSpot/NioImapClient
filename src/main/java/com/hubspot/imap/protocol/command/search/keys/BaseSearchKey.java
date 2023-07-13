@@ -3,6 +3,7 @@ package com.hubspot.imap.protocol.command.search.keys;
 import com.hubspot.imap.protocol.command.atoms.BaseImapAtom;
 
 public class BaseSearchKey extends BaseImapAtom implements SearchKey {
+
   private final SearchKeyType keyType;
 
   public BaseSearchKey(SearchKeyType type, String... args) {

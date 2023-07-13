@@ -3,7 +3,6 @@ package com.hubspot.imap.protocol.response.tagged;
 import com.hubspot.imap.protocol.folder.FolderFlags;
 import com.hubspot.imap.protocol.folder.FolderFlags.Flag;
 import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
-
 import java.util.Set;
 
 public interface OpenResponse extends TaggedResponse {
@@ -16,6 +15,7 @@ public interface OpenResponse extends TaggedResponse {
   Set<Flag> getPermanentFlags();
 
   class Builder extends TaggedResponse.Builder implements OpenResponse {
+
     private long exists;
     private long recent;
     private long uidNext;
@@ -126,6 +126,5 @@ public interface OpenResponse extends TaggedResponse {
       this.permanentFlags = permanentFlags;
       return this;
     }
-
   }
 }

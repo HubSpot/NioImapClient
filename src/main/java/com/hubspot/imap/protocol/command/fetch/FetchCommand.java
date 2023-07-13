@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class FetchCommand extends BaseImapCommand {
+
   private static final String STAR = "*";
 
   private final long startId;
@@ -17,7 +18,11 @@ public class FetchCommand extends BaseImapCommand {
   private final List<FetchDataItem> fetchDataItems;
 
   // The IDs here should be sequence numbers, unless you intend to wrap this command with a UidCommand
-  public FetchCommand(long startId, Optional<Long> stopId, List<FetchDataItem> fetchDataItems) {
+  public FetchCommand(
+    long startId,
+    Optional<Long> stopId,
+    List<FetchDataItem> fetchDataItems
+  ) {
     super(ImapCommandType.FETCH);
     Preconditions.checkState(startId >= 1, "Start ID must be 1 or greater.");
 
@@ -26,7 +31,12 @@ public class FetchCommand extends BaseImapCommand {
     this.fetchDataItems = fetchDataItems;
   }
 
-  public FetchCommand(long startId, Optional<Long> stopId, FetchDataItem fetchItem, FetchDataItem... otherFetchItems) {
+  public FetchCommand(
+    long startId,
+    Optional<Long> stopId,
+    FetchDataItem fetchItem,
+    FetchDataItem... otherFetchItems
+  ) {
     this(startId, stopId, Lists.asList(fetchItem, otherFetchItems));
   }
 
@@ -50,8 +60,12 @@ public class FetchCommand extends BaseImapCommand {
       return fetchDataItems.get(0).toString();
     }
 
-    return String.format("(%s)",
-        SPACE_JOINER.join(fetchDataItems.stream().map(FetchDataItem::toString).collect(Collectors.toList())));
+    return String.format(
+      "(%s)",
+      SPACE_JOINER.join(
+        fetchDataItems.stream().map(FetchDataItem::toString).collect(Collectors.toList())
+      )
+    );
   }
 
   public long getStartId() {

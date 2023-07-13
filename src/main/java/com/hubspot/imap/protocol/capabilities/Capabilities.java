@@ -1,13 +1,16 @@
 package com.hubspot.imap.protocol.capabilities;
 
+import com.google.common.base.Splitter;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Splitter;
-
 public class Capabilities {
-  private static final Splitter SPACE_SPLITTER = Splitter.on(" ").omitEmptyStrings().trimResults();
+
+  private static final Splitter SPACE_SPLITTER = Splitter
+    .on(" ")
+    .omitEmptyStrings()
+    .trimResults();
 
   private final List<Capability> capabilities;
   private final List<AuthMechanism> authMechanisms;
@@ -18,7 +21,9 @@ public class Capabilities {
 
   public Capabilities(List<Capability> capabilities) {
     this.capabilities = capabilities;
-    this.authMechanisms = capabilities.stream()
+    this.authMechanisms =
+      capabilities
+        .stream()
         .filter(capability -> capability instanceof AuthCapability)
         .map(capability -> ((AuthCapability) capability))
         .map(authCapability -> authCapability.getMechanism())
@@ -34,9 +39,11 @@ public class Capabilities {
   }
 
   public static Capabilities parseFrom(String input) {
-    List<Capability> capabilities = SPACE_SPLITTER.splitToList(input).stream()
-        .map(Capabilities::parseSingle)
-        .collect(Collectors.toList());
+    List<Capability> capabilities = SPACE_SPLITTER
+      .splitToList(input)
+      .stream()
+      .map(Capabilities::parseSingle)
+      .collect(Collectors.toList());
 
     return new Capabilities(capabilities);
   }
@@ -52,6 +59,8 @@ public class Capabilities {
       return new AuthCapability(parts[1]);
     }
 
-    return StandardCapabilities.fromString(capability).orElse(new UnknownCapability(capability));
+    return StandardCapabilities
+      .fromString(capability)
+      .orElse(new UnknownCapability(capability));
   }
 }

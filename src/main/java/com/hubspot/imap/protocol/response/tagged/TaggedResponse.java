@@ -1,11 +1,10 @@
 package com.hubspot.imap.protocol.response.tagged;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.google.common.base.MoreObjects;
 import com.hubspot.imap.protocol.response.ImapResponse;
 import com.hubspot.imap.protocol.response.ResponseCode;
+import java.util.ArrayList;
+import java.util.List;
 
 public interface TaggedResponse extends ImapResponse {
   String getTag();
@@ -13,6 +12,7 @@ public interface TaggedResponse extends ImapResponse {
   ResponseCode getCode();
 
   class Builder implements TaggedResponse {
+
     private String tag;
     private String message;
     private List<Object> untagged = new ArrayList<>();
@@ -71,12 +71,13 @@ public interface TaggedResponse extends ImapResponse {
 
     @Override
     public String toString() {
-      return MoreObjects.toStringHelper(this)
-          .add("tag", tag)
-          .add("message", message)
-          .add("untagged", untagged)
-          .add("code", code)
-          .toString();
+      return MoreObjects
+        .toStringHelper(this)
+        .add("tag", tag)
+        .add("message", message)
+        .add("untagged", untagged)
+        .add("code", code)
+        .toString();
     }
   }
 }

@@ -8,7 +8,10 @@ public interface ConnectionListener extends ChannelInboundHandler {
   void connected();
   void disconnected();
 
-  abstract class ConnectionListenerAdapter extends ChannelInboundHandlerAdapter implements ConnectionListener {
+  abstract class ConnectionListenerAdapter
+    extends ChannelInboundHandlerAdapter
+    implements ConnectionListener {
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
       connected();

@@ -1,12 +1,12 @@
 package com.hubspot.imap.protocol.command;
 
+import com.hubspot.imap.protocol.command.atoms.BaseImapAtom;
+import com.hubspot.imap.protocol.message.MessageFlag;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import com.hubspot.imap.protocol.command.atoms.BaseImapAtom;
-import com.hubspot.imap.protocol.message.MessageFlag;
-
 public class BaseImapCommand extends BaseImapAtom implements ImapCommand {
+
   protected final ImapCommandType type;
   private final boolean tagged;
 
@@ -39,6 +39,12 @@ public class BaseImapCommand extends BaseImapAtom implements ImapCommand {
   }
 
   String getFlagString(Collection<MessageFlag> flags) {
-    return "(" + SPACE_JOINER.join(flags.stream().map(MessageFlag::getString).collect(Collectors.toList())) + ")";
+    return (
+      "(" +
+      SPACE_JOINER.join(
+        flags.stream().map(MessageFlag::getString).collect(Collectors.toList())
+      ) +
+      ")"
+    );
   }
 }

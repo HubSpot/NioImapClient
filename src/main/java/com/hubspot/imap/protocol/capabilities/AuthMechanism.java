@@ -1,9 +1,8 @@
 package com.hubspot.imap.protocol.capabilities;
 
+import com.google.common.collect.Maps;
 import java.util.Arrays;
 import java.util.Map;
-
-import com.google.common.collect.Maps;
 
 public enum AuthMechanism {
   LOGIN,
@@ -11,10 +10,12 @@ public enum AuthMechanism {
   XOAUTH2,
   NTLM,
   GSSAPI,
-  UNKNOWN,
-  ;
+  UNKNOWN;
 
-  private static final Map<String, AuthMechanism> INDEX = Maps.uniqueIndex(Arrays.asList(AuthMechanism.values()), authMechanism -> authMechanism.name().toLowerCase());
+  private static final Map<String, AuthMechanism> INDEX = Maps.uniqueIndex(
+    Arrays.asList(AuthMechanism.values()),
+    authMechanism -> authMechanism.name().toLowerCase()
+  );
 
   public static AuthMechanism fromString(String name) {
     return INDEX.getOrDefault(name.toLowerCase(), AuthMechanism.UNKNOWN);

@@ -1,22 +1,5 @@
 package com.hubspot.imap.client;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
@@ -66,7 +49,6 @@ import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.utils.LogUtils;
 import com.hubspot.imap.utils.NettyCompletableFuture;
 import com.spotify.futures.CompletableFutures;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -80,6 +62,21 @@ import io.netty.util.Recycler.Handle;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
+import java.io.Closeable;
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import org.slf4j.Logger;
 
 public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, Closeable {
 
@@ -99,11 +96,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private volatile Promise currentCommandPromise;
 
-  public ImapClient(ImapClientConfiguration configuration,
-                    Channel channel,
-                    Supplier<SslContext> sslContextSupplier,
-                    EventExecutorGroup promiseExecutor,
-                    String clientName) {
+  public ImapClient(
+    ImapClientConfiguration configuration,
+    Channel channel,
+    Supplier<SslContext> sslContextSupplier,
+    EventExecutorGroup promiseExecutor,
+    String clientName
+  ) {
     this.logger = LogUtils.loggerWithName(ImapClient.class, clientName);
     this.configuration = configuration;
     this.channel = channel;
@@ -121,11 +120,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private void configureChannel() {
     this.channel.pipeline()
-        .addLast(new ReadTimeoutHandler(configuration.socketTimeoutMs(), TimeUnit.MILLISECONDS))
-        .addLast(new ResponseDecoder(configuration, clientState, promiseExecutor))
-        .addLast(codec)
-        .addLast(promiseExecutor, this)
-        .addLast(promiseExecutor, this.clientState);
+      .addLast(
+        new ReadTimeoutHandler(configuration.socketTimeoutMs(), TimeUnit.MILLISECONDS)
+      )
+      .addLast(new ResponseDecoder(configuration, clientState, promiseExecutor))
+      .addLast(codec)
+      .addLast(promiseExecutor, this)
+      .addLast(promiseExecutor, this.clientState);
 
     this.channel.attr(ImapChannelAttrs.CONFIGURATION).set(configuration);
   }
@@ -136,31 +137,44 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   public CompletableFuture<Capabilities> capability() {
     if (capabilities.get() == null) {
-      return this.<CapabilityResponse>send(ImapCommandType.CAPABILITY).thenApply(CapabilityResponse::getCapabilities).whenComplete((newCapabilities, throwable) -> {
-        if (throwable != null) {
-          capabilities.getAndSet(newCapabilities);
-        }
-      });
+      return this.<CapabilityResponse>send(ImapCommandType.CAPABILITY)
+        .thenApply(CapabilityResponse::getCapabilities)
+        .whenComplete((newCapabilities, throwable) -> {
+          if (throwable != null) {
+            capabilities.getAndSet(newCapabilities);
+          }
+        });
     }
 
     return CompletableFuture.completedFuture(capabilities.get());
   }
 
   public CompletableFuture<TaggedResponse> login(String userName, String authToken) {
-    return capability().thenCompose(cpb -> {
-      Optional<AuthMechanism> firstSupportedMechanism = configuration.allowedAuthMechanisms().stream()
+    return capability()
+      .thenCompose(cpb -> {
+        Optional<AuthMechanism> firstSupportedMechanism = configuration
+          .allowedAuthMechanisms()
+          .stream()
           .filter(authMechanism -> cpb.getAuthMechanisms().contains(authMechanism))
           .findFirst();
 
-      if (!firstSupportedMechanism.isPresent()) {
-        logger.warn("No supported auth mechanism found, falling back to LOGIN");
-      }
+        if (!firstSupportedMechanism.isPresent()) {
+          logger.warn("No supported auth mechanism found, falling back to LOGIN");
+        }
 
-      return login(userName, authToken, firstSupportedMechanism.orElse(AuthMechanism.LOGIN));
-    });
+        return login(
+          userName,
+          authToken,
+          firstSupportedMechanism.orElse(AuthMechanism.LOGIN)
+        );
+      });
   }
 
-  public CompletableFuture<TaggedResponse> login(String userName, String authToken, AuthMechanism authMechanism) {
+  public CompletableFuture<TaggedResponse> login(
+    String userName,
+    String authToken,
+    AuthMechanism authMechanism
+  ) {
     CompletableFuture<? extends ImapResponse> loginFuture;
     switch (authMechanism) {
       case XOAUTH2:
@@ -177,9 +191,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return loginFuture.thenCompose(response -> {
       if (response instanceof ContinuationResponse) {
         ContinuationResponse continuationResponse = ((ContinuationResponse) response);
-        return this.<TaggedResponse>send(ImapCommandType.BLANK).thenApply(blankResponse -> {
-          throw AuthenticationFailedException.fromContinuation(blankResponse.getMessage(), continuationResponse.getMessage());
-        });
+        return this.<TaggedResponse>send(ImapCommandType.BLANK)
+          .thenApply(blankResponse -> {
+            throw AuthenticationFailedException.fromContinuation(
+              blankResponse.getMessage(),
+              continuationResponse.getMessage()
+            );
+          });
       }
 
       TaggedResponse taggedResponse = ((TaggedResponse) response);
@@ -190,32 +208,45 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
       }
 
       CompletableFuture<TaggedResponse> future = new CompletableFuture<>();
-      future.completeExceptionally(new AuthenticationFailedException(response.getMessage()));
+      future.completeExceptionally(
+        new AuthenticationFailedException(response.getMessage())
+      );
       return future;
     });
   }
 
   public CompletableFuture<TaggedResponse> startTls() {
-    return this.<TaggedResponse>send(ImapCommandType.STARTTLS).thenApply(response -> {
-      if (response.getCode() != ResponseCode.OK) {
-        throw new StartTlsFailedException(response.getMessage());
-      }
+    return this.<TaggedResponse>send(ImapCommandType.STARTTLS)
+      .thenApply(response -> {
+        if (response.getCode() != ResponseCode.OK) {
+          throw new StartTlsFailedException(response.getMessage());
+        }
 
-      addTlsToChannel();
+        addTlsToChannel();
 
-      return response;
-    });
+        return response;
+      });
   }
 
   public void addTlsToChannel() {
-    channel.pipeline().addFirst(new SslHandler(sslContextSupplier.get().newEngine(channel.alloc()), false));
+    channel
+      .pipeline()
+      .addFirst(
+        new SslHandler(sslContextSupplier.get().newEngine(channel.alloc()), false)
+      );
   }
 
   private void startKeepAlive() {
     int keepAliveInterval = configuration.noopKeepAliveIntervalSec();
     if (keepAliveInterval > 0) {
-      if (!connectionShutdown.get() && channel.pipeline().get(KEEP_ALIVE_HANDLER) == null) {
-        this.channel.pipeline().addFirst(KEEP_ALIVE_HANDLER, new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval));
+      if (
+        !connectionShutdown.get() && channel.pipeline().get(KEEP_ALIVE_HANDLER) == null
+      ) {
+        this.channel.pipeline()
+          .addFirst(
+            KEEP_ALIVE_HANDLER,
+            new IdleStateHandler(keepAliveInterval, keepAliveInterval, keepAliveInterval)
+          );
       }
     }
   }
@@ -226,15 +257,24 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     }
   }
 
-  private CompletableFuture<? extends ImapResponse> passwordLogin(String userName, String authToken) {
+  private CompletableFuture<? extends ImapResponse> passwordLogin(
+    String userName,
+    String authToken
+  ) {
     return sendRaw(new QuotedImapCommand(ImapCommandType.LOGIN, userName, authToken));
   }
 
-  private CompletableFuture<? extends ImapResponse> oauthLogin(String userName, String authToken) {
+  private CompletableFuture<? extends ImapResponse> oauthLogin(
+    String userName,
+    String authToken
+  ) {
     return sendRaw(new XOAuth2Command(userName, authToken));
   }
 
-  private CompletableFuture<? extends ImapResponse> authPlain(String userName, String authToken) {
+  private CompletableFuture<? extends ImapResponse> authPlain(
+    String userName,
+    String authToken
+  ) {
     return send(new AuthenticatePlainCommand(this, userName, authToken));
   }
 
@@ -246,86 +286,165 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return send(new ListCommand(context, query));
   }
 
-  public CompletableFuture<OpenResponse> open(String folderName, FolderOpenMode openMode) {
+  public CompletableFuture<OpenResponse> open(
+    String folderName,
+    FolderOpenMode openMode
+  ) {
     return send(new OpenCommand(folderName, openMode));
   }
 
-  public CompletableFuture<TaggedResponse> append(String folderName, Set<MessageFlag> flags, Optional<ZonedDateTime> dateTime, ImapMessage message) throws UnfetchedFieldException, IOException {
-    AppendCommand appendCommand = new AppendCommand(this, folderName, flags, dateTime, message);
+  public CompletableFuture<TaggedResponse> append(
+    String folderName,
+    Set<MessageFlag> flags,
+    Optional<ZonedDateTime> dateTime,
+    ImapMessage message
+  ) throws UnfetchedFieldException, IOException {
+    AppendCommand appendCommand = new AppendCommand(
+      this,
+      folderName,
+      flags,
+      dateTime,
+      message
+    );
     return send(appendCommand);
   }
 
-  public CompletableFuture<FetchResponse> fetch(long startId,
-                                                Optional<Long> stopId,
-                                                FetchDataItem fetchDataItem,
-                                                FetchDataItem... otherFetchDataItems) {
+  public CompletableFuture<FetchResponse> fetch(
+    long startId,
+    Optional<Long> stopId,
+    FetchDataItem fetchDataItem,
+    FetchDataItem... otherFetchDataItems
+  ) {
     return send(new FetchCommand(startId, stopId, fetchDataItem, otherFetchDataItems));
   }
 
-  public CompletableFuture<FetchResponse> fetch(long startId, Optional<Long> stopId, List<FetchDataItem> fetchItems) {
-    Preconditions.checkArgument(fetchItems.size() > 0, "Must have at least one FETCH item.");
+  public CompletableFuture<FetchResponse> fetch(
+    long startId,
+    Optional<Long> stopId,
+    List<FetchDataItem> fetchItems
+  ) {
+    Preconditions.checkArgument(
+      fetchItems.size() > 0,
+      "Must have at least one FETCH item."
+    );
     return send(new FetchCommand(startId, stopId, fetchItems));
   }
 
-  public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(long startId,
-                                                                   Optional<Long> stopId,
-                                                                   Function<ImapMessage, R> messageFunction,
-                                                                   FetchDataItem item,
-                                                                   FetchDataItem... otherItems) {
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems)));
+  public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(
+    long startId,
+    Optional<Long> stopId,
+    Function<ImapMessage, R> messageFunction,
+    FetchDataItem item,
+    FetchDataItem... otherItems
+  ) {
+    return send(
+      new UidCommand(
+        ImapCommandType.FETCH,
+        new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems)
+      )
+    );
   }
 
-  public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(long startId,
-                                                                Optional<Long> stopId,
-                                                                Function<ImapMessage, R> messageFunction,
-                                                                FetchDataItem item,
-                                                                FetchDataItem... otherItems) {
-    return send(new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems));
+  public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(
+    long startId,
+    Optional<Long> stopId,
+    Function<ImapMessage, R> messageFunction,
+    FetchDataItem item,
+    FetchDataItem... otherItems
+  ) {
+    return send(
+      new StreamingFetchCommand<>(startId, stopId, messageFunction, item, otherItems)
+    );
   }
 
-  public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(long startId,
-                                                                Optional<Long> stopId,
-                                                                Function<ImapMessage, R> messageFunction,
-                                                                List<FetchDataItem> fetchDataItems) {
-    Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems));
+  public <R> CompletableFuture<StreamingFetchResponse<R>> fetch(
+    long startId,
+    Optional<Long> stopId,
+    Function<ImapMessage, R> messageFunction,
+    List<FetchDataItem> fetchDataItems
+  ) {
+    Preconditions.checkArgument(
+      fetchDataItems.size() > 0,
+      "Must have at least one FETCH item."
+    );
+    return send(
+      new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems)
+    );
   }
 
-  public CompletableFuture<FetchResponse> uidfetch(long startId,
-                                                   Optional<Long> stopId,
-                                                   FetchDataItem item,
-                                                   FetchDataItem... otherItems) {
-    return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, item, otherItems)));
+  public CompletableFuture<FetchResponse> uidfetch(
+    long startId,
+    Optional<Long> stopId,
+    FetchDataItem item,
+    FetchDataItem... otherItems
+  ) {
+    return send(
+      new UidCommand(
+        ImapCommandType.FETCH,
+        new FetchCommand(startId, stopId, item, otherItems)
+      )
+    );
   }
 
-  public CompletableFuture<FetchResponse> uidfetch(Set<Long> uids, FetchDataItem first, FetchDataItem... others) {
+  public CompletableFuture<FetchResponse> uidfetch(
+    Set<Long> uids,
+    FetchDataItem first,
+    FetchDataItem... others
+  ) {
     return uidfetch(uids, Lists.asList(first, others));
   }
 
-  public CompletableFuture<FetchResponse> uidfetch(Set<Long> uids, List<FetchDataItem> items) {
+  public CompletableFuture<FetchResponse> uidfetch(
+    Set<Long> uids,
+    List<FetchDataItem> items
+  ) {
     return send(new UidCommand(ImapCommandType.FETCH, new SetFetchCommand(uids, items)));
   }
 
-  public CompletableFuture<FetchResponse> uidfetch(long startId,
-                                                   Optional<Long> stopId,
-                                                   List<FetchDataItem> fetchItems) {
-    Preconditions.checkArgument(fetchItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchItems)));
+  public CompletableFuture<FetchResponse> uidfetch(
+    long startId,
+    Optional<Long> stopId,
+    List<FetchDataItem> fetchItems
+  ) {
+    Preconditions.checkArgument(
+      fetchItems.size() > 0,
+      "Must have at least one FETCH item."
+    );
+    return send(
+      new UidCommand(ImapCommandType.FETCH, new FetchCommand(startId, stopId, fetchItems))
+    );
   }
 
-  public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(long startId,
-                                                                   Optional<Long> stopId,
-                                                                   Function<ImapMessage, R> messageFunction,
-                                                                   List<FetchDataItem> fetchDataItems) {
-    Preconditions.checkArgument(fetchDataItems.size() > 0, "Must have at least one FETCH item.");
-    return send(new UidCommand(ImapCommandType.FETCH, new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems)));
+  public <R> CompletableFuture<StreamingFetchResponse<R>> uidfetch(
+    long startId,
+    Optional<Long> stopId,
+    Function<ImapMessage, R> messageFunction,
+    List<FetchDataItem> fetchDataItems
+  ) {
+    Preconditions.checkArgument(
+      fetchDataItems.size() > 0,
+      "Must have at least one FETCH item."
+    );
+    return send(
+      new UidCommand(
+        ImapCommandType.FETCH,
+        new StreamingFetchCommand<>(startId, stopId, messageFunction, fetchDataItems)
+      )
+    );
   }
 
-  public CompletableFuture<TaggedResponse> uidstore(StoreAction action,
-                                                    long startId,
-                                                    Optional<Long> stopId,
-                                                    MessageFlag... flags) {
-    return send(new UidCommand(ImapCommandType.STORE, new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)));
+  public CompletableFuture<TaggedResponse> uidstore(
+    StoreAction action,
+    long startId,
+    Optional<Long> stopId,
+    MessageFlag... flags
+  ) {
+    return send(
+      new UidCommand(
+        ImapCommandType.STORE,
+        new SilentStoreCommand(action, startId, stopId.orElse(startId), flags)
+      )
+    );
   }
 
   public CompletableFuture<SearchResponse> uidsearch(SearchKey... keys) {
@@ -360,18 +479,26 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     return connectionClosed.get();
   }
 
-  public <T extends TaggedResponse> CompletableFuture<T> send(ImapCommandType imapCommandType, String... args) {
+  public <T extends TaggedResponse> CompletableFuture<T> send(
+    ImapCommandType imapCommandType,
+    String... args
+  ) {
     BaseImapCommand baseImapCommand = new BaseImapCommand(imapCommandType, args);
     return send(baseImapCommand);
   }
 
-
-  public synchronized <T extends TaggedResponse> CompletableFuture<T> send(ImapCommand imapCommand) {
+  public synchronized <T extends TaggedResponse> CompletableFuture<T> send(
+    ImapCommand imapCommand
+  ) {
     return sendRaw(imapCommand);
   }
 
-  public synchronized <T extends TaggedResponse, A extends ContinuableCommand<T>> CompletableFuture<T> send(A imapCommand) {
-    return CompletableFutures.handleCompose(sendRaw(imapCommand), imapCommand::continueAfterResponse).toCompletableFuture();
+  public synchronized <T extends TaggedResponse, A extends ContinuableCommand<T>> CompletableFuture<T> send(
+    A imapCommand
+  ) {
+    return CompletableFutures
+      .handleCompose(sendRaw(imapCommand), imapCommand::continueAfterResponse)
+      .toCompletableFuture();
   }
 
   /**
@@ -382,9 +509,11 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
    * @param <T>         Response type
    * @return Response future. Will be completed when a tagged response is received for this command.
    */
-  public synchronized <T extends ImapResponse> CompletableFuture<T> sendRaw(ImapCommand imapCommand) {
+  public synchronized <T extends ImapResponse> CompletableFuture<T> sendRaw(
+    ImapCommand imapCommand
+  ) {
     final Promise<T> commandPromise = promiseExecutor.next().newPromise();
-    commandPromise.addListener((f) -> {
+    commandPromise.addListener(f -> {
       writeNext();
     });
 
@@ -395,11 +524,15 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private synchronized void send(ImapCommand imapCommand, Promise promise) {
     if (connectionShutdown.get()) {
-      promise.tryFailure(new ConnectionClosedException("Cannot write to closed connection."));
+      promise.tryFailure(
+        new ConnectionClosedException("Cannot write to closed connection.")
+      );
       return;
     }
 
-    if ((currentCommandPromise != null && !currentCommandPromise.isDone()) || !isConnected()) {
+    if (
+      (currentCommandPromise != null && !currentCommandPromise.isDone()) || !isConnected()
+    ) {
       PendingCommand pendingCommand = PendingCommand.newInstance(imapCommand, promise);
       pendingWriteQueue.add(pendingCommand);
     } else {
@@ -426,10 +559,16 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
         pendingCommand.recycle();
       } else {
-        channel.eventLoop().schedule(() -> {
-          this.writeNext();
-          return null;
-        }, configuration.writeBackOffMs(), TimeUnit.MILLISECONDS);
+        channel
+          .eventLoop()
+          .schedule(
+            () -> {
+              this.writeNext();
+              return null;
+            },
+            configuration.writeBackOffMs(),
+            TimeUnit.MILLISECONDS
+          );
       }
     }
   }
@@ -477,7 +616,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
         });
       }
     } else if (evt instanceof ByeEvent) {
-      if (channel.isOpen() && (clientState.getCurrentCommand() == null || clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT)) {
+      if (
+        channel.isOpen() &&
+        (
+          clientState.getCurrentCommand() == null ||
+          clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT
+        )
+      ) {
         closeNow();
       }
     }
@@ -486,9 +631,14 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+    throws Exception {
     if (currentCommandPromise != null) {
-      logger.debug("Error while executing {}", clientState.getCurrentCommand().getCommandType(), cause);
+      logger.debug(
+        "Error while executing {}",
+        clientState.getCurrentCommand().getCommandType(),
+        cause
+      );
       currentCommandPromise.tryFailure(cause);
     } else {
       if (connectionShutdown.get()) {
@@ -556,9 +706,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   private void clearPendingWrites() {
-    pendingWriteQueue.iterator().forEachRemaining(pendingCommand -> {
-      pendingCommand.promise.tryFailure(new ConnectionClosedException("Connection is closed"));
-    });
+    pendingWriteQueue
+      .iterator()
+      .forEachRemaining(pendingCommand -> {
+        pendingCommand.promise.tryFailure(
+          new ConnectionClosedException("Connection is closed")
+        );
+      });
 
     pendingWriteQueue.clear(); // Just to be sure
   }
@@ -577,6 +731,7 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
   }
 
   private static final class PendingCommand {
+
     private static final Recycler<PendingCommand> RECYCLER = new Recycler<PendingCommand>() {
       @Override
       protected PendingCommand newObject(Handle<PendingCommand> handle) {

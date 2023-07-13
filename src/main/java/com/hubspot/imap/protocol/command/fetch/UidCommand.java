@@ -3,10 +3,10 @@ package com.hubspot.imap.protocol.command.fetch;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
-
 import java.util.List;
 
 public class UidCommand extends BaseImapCommand {
+
   private final BaseImapCommand wrappedCommand;
 
   public UidCommand(ImapCommandType type, BaseImapCommand wrappedCommand) {

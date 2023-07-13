@@ -5,5 +5,6 @@ package com.hubspot.imap.utils;
  * This could be a string or array, but it is not possible to tell without context.
  */
 public class NilMarker {
+
   public static final NilMarker INSTANCE = new NilMarker();
 }

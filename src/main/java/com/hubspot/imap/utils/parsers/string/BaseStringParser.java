@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBufProcessor;
 import io.netty.util.internal.AppendableCharSequence;
 
 public abstract class BaseStringParser implements ByteBufProcessor {
+
   protected final SoftReferencedAppendableCharSequence sequenceReference;
   protected int size;
 

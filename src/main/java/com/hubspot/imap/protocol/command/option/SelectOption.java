@@ -1,8 +1,7 @@
 package com.hubspot.imap.protocol.command.option;
 
 public enum SelectOption {
-  SPECIAL_USE("SPECIAL-USE"),
-  ;
+  SPECIAL_USE("SPECIAL-USE");
 
   String name;
 

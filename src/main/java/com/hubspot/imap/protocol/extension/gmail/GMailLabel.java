@@ -2,7 +2,6 @@ package com.hubspot.imap.protocol.extension.gmail;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-
 import java.util.Arrays;
 import java.util.Map;
 
@@ -14,7 +13,10 @@ public interface GMailLabel {
     INBOX("\\Inbox"),
     DRAFTS("\\Draft");
 
-    private static final Map<String, SystemLabel> INDEX = Maps.uniqueIndex(Arrays.asList(SystemLabel.values()), SystemLabel::getLabel);
+    private static final Map<String, SystemLabel> INDEX = Maps.uniqueIndex(
+      Arrays.asList(SystemLabel.values()),
+      SystemLabel::getLabel
+    );
 
     private final String label;
 
@@ -28,6 +30,7 @@ public interface GMailLabel {
   }
 
   class StringLabel implements GMailLabel {
+
     private final String label;
 
     public StringLabel(String label) {

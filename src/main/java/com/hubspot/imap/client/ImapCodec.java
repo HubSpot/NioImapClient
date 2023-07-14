@@ -1,9 +1,5 @@
 package com.hubspot.imap.client;
 
-import java.util.List;
-
-import org.slf4j.Logger;
-
 import com.hubspot.imap.ImapChannelAttrs;
 import com.hubspot.imap.protocol.command.BaseImapCommand;
 import com.hubspot.imap.protocol.command.ImapCommandType;
@@ -23,11 +19,13 @@ import com.hubspot.imap.protocol.response.untagged.UntaggedIntResponse;
 import com.hubspot.imap.protocol.response.untagged.UntaggedResponseType;
 import com.hubspot.imap.utils.CommandUtils;
 import com.hubspot.imap.utils.LogUtils;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import java.util.List;
+import org.slf4j.Logger;
 
 public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
+
   private final Logger logger;
   private final ImapClientState clientState;
 
@@ -37,7 +35,8 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
   }
 
   @Override
-  protected void encode(ChannelHandlerContext ctx, BaseImapCommand msg, List<Object> out) throws Exception {
+  protected void encode(ChannelHandlerContext ctx, BaseImapCommand msg, List<Object> out)
+    throws Exception {
     String data = msg.commandString();
     String tag = msg.isTagged() ? clientState.getNextTag() : "";
 
@@ -47,7 +46,8 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
   }
 
   @Override
-  protected void decode(ChannelHandlerContext ctx, Object msg, List<Object> out) throws Exception {
+  protected void decode(ChannelHandlerContext ctx, Object msg, List<Object> out)
+    throws Exception {
     if (msg instanceof ContinuationResponse) {
       out.add(msg);
     } else if (msg instanceof TaggedResponse) {
@@ -68,7 +68,8 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
           break;
         case FETCH:
           if (CommandUtils.isStreamingFetch(clientState.getCurrentCommand())) {
-            taggedResponse = new StreamingFetchResponse.Builder().fromResponse(taggedResponse);
+            taggedResponse =
+              new StreamingFetchResponse.Builder().fromResponse(taggedResponse);
           } else {
             taggedResponse = new FetchResponse.Builder().fromResponse(taggedResponse);
           }
@@ -92,16 +93,27 @@ public class ImapCodec extends MessageToMessageCodec<Object, BaseImapCommand> {
     fireMessageNumberEvents(ctx, response);
   }
 
-  private void fireMessageNumberEvents(ChannelHandlerContext ctx, TaggedResponse response) {
+  private void fireMessageNumberEvents(
+    ChannelHandlerContext ctx,
+    TaggedResponse response
+  ) {
     ImapCommandType imapCommandType = clientState.getCurrentCommand().getCommandType();
-    if (imapCommandType != ImapCommandType.EXAMINE && imapCommandType != ImapCommandType.SELECT) { // Don't fire these events during folder open, they have different meaning here
-      response.getUntagged().stream().filter(r -> r instanceof UntaggedIntResponse).map(i -> ((UntaggedIntResponse) i)).forEach((i) -> {
-        if (i.getType() == UntaggedResponseType.EXPUNGE) {
-          ctx.fireUserEventTriggered(new ExpungeEvent(i.getValue()));
-        } else if (i.getType() == UntaggedResponseType.EXISTS) {
-          ctx.fireUserEventTriggered(new ExistsEvent(i.getValue()));
-        }
-      });
+    if (
+      imapCommandType != ImapCommandType.EXAMINE &&
+      imapCommandType != ImapCommandType.SELECT
+    ) { // Don't fire these events during folder open, they have different meaning here
+      response
+        .getUntagged()
+        .stream()
+        .filter(r -> r instanceof UntaggedIntResponse)
+        .map(i -> ((UntaggedIntResponse) i))
+        .forEach(i -> {
+          if (i.getType() == UntaggedResponseType.EXPUNGE) {
+            ctx.fireUserEventTriggered(new ExpungeEvent(i.getValue()));
+          } else if (i.getType() == UntaggedResponseType.EXISTS) {
+            ctx.fireUserEventTriggered(new ExistsEvent(i.getValue()));
+          }
+        });
     }
   }
 

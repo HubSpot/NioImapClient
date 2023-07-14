@@ -1,26 +1,5 @@
 package com.hubspot.imap.protocol;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
-import org.apache.james.mime4j.MimeException;
-import org.apache.james.mime4j.dom.Body;
-import org.apache.james.mime4j.dom.Message;
-import org.apache.james.mime4j.dom.MessageServiceFactory;
-import org.apache.james.mime4j.message.AbstractEntity;
-import org.apache.james.mime4j.message.DefaultMessageBuilder;
-import org.apache.james.mime4j.stream.MimeConfig;
-import org.slf4j.Logger;
-
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -66,12 +45,30 @@ import com.hubspot.imap.utils.parsers.string.BufferedBodyParser;
 import com.hubspot.imap.utils.parsers.string.LineParser;
 import com.hubspot.imap.utils.parsers.string.LiteralStringParser;
 import com.hubspot.imap.utils.parsers.string.WordParser;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.apache.james.mime4j.MimeException;
+import org.apache.james.mime4j.dom.Body;
+import org.apache.james.mime4j.dom.Message;
+import org.apache.james.mime4j.dom.MessageServiceFactory;
+import org.apache.james.mime4j.message.AbstractEntity;
+import org.apache.james.mime4j.message.DefaultMessageBuilder;
+import org.apache.james.mime4j.stream.MimeConfig;
+import org.slf4j.Logger;
 
 /**
  * This class handles decoding of IMAP responses. It handles 3 main types of responses
@@ -89,6 +86,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
  * Unless the current command specifically requests notification of untagged responses (i.e. IDLE), untagged responses are collected and added to the body of the tagged response once the tag is received.
  */
 public class ResponseDecoder extends ReplayingDecoder<State> {
+
   private static final MessageServiceFactory MESSAGE_SERVICE_FACTORY;
 
   static {
@@ -129,38 +127,49 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private ImapMessage.Builder currentMessage;
 
-  public ResponseDecoder(ImapClientConfiguration configuration,
-                         ImapClientState clientState,
-                         EventExecutorGroup executorGroup) {
+  public ResponseDecoder(
+    ImapClientConfiguration configuration,
+    ImapClientState clientState,
+    EventExecutorGroup executorGroup
+  ) {
     super(State.SKIP_CONTROL_CHARS);
-    this.logger = LogUtils.loggerWithName(ResponseDecoder.class, clientState.getClientName());
+    this.logger =
+      LogUtils.loggerWithName(ResponseDecoder.class, clientState.getClientName());
     this.clientState = clientState;
     this.executorGroup = executorGroup;
 
-    this.charSeq = new SoftReferencedAppendableCharSequence(configuration.defaultResponseBufferSize());
+    this.charSeq =
+      new SoftReferencedAppendableCharSequence(configuration.defaultResponseBufferSize());
     this.lineParser = new LineParser(charSeq, configuration.maxLineLength());
     this.wordParser = new WordParser(charSeq, configuration.maxLineLength());
-    this.fetchResponseTypeParser = new FetchResponseTypeParser(charSeq, configuration.maxLineLength());
-    this.atomOrStringParser = new AtomOrStringParser(charSeq, configuration.maxLineLength());
-    this.literalStringParser = new LiteralStringParser(charSeq, configuration.maxLineLength());
+    this.fetchResponseTypeParser =
+      new FetchResponseTypeParser(charSeq, configuration.maxLineLength());
+    this.atomOrStringParser =
+      new AtomOrStringParser(charSeq, configuration.maxLineLength());
+    this.literalStringParser =
+      new LiteralStringParser(charSeq, configuration.maxLineLength());
     this.bufferedBodyParser = new BufferedBodyParser(charSeq);
     this.numberParser = new NumberParser(charSeq, 19);
     this.envelopeParser = new EnvelopeParser();
-    this.nestedArrayParserRecycler = new NestedArrayParser.Recycler<>(literalStringParser);
-    this.messageBuilder = ((DefaultMessageBuilder) MESSAGE_SERVICE_FACTORY.newMessageBuilder());
+    this.nestedArrayParserRecycler =
+      new NestedArrayParser.Recycler<>(literalStringParser);
+    this.messageBuilder =
+      ((DefaultMessageBuilder) MESSAGE_SERVICE_FACTORY.newMessageBuilder());
 
-    MimeConfig mimeConfig = MimeConfig.custom()
-        .setMaxLineLen(configuration.maxLineLength())
-        .setMaxHeaderLen(configuration.maxLineLength())
-        .setMaxHeaderCount(configuration.maxHeaderCount())
-        .build();
+    MimeConfig mimeConfig = MimeConfig
+      .custom()
+      .setMaxLineLen(configuration.maxLineLength())
+      .setMaxHeaderLen(configuration.maxLineLength())
+      .setMaxHeaderCount(configuration.maxHeaderCount())
+      .build();
 
     messageBuilder.setMimeEntityConfig(mimeConfig);
 
     this.untaggedResponses = new ArrayList<>();
     this.responseBuilder = new TaggedResponse.Builder();
 
-    this.allBytesParser = configuration.tracingEnabled() ? new AllBytesParser(charSeq) : null;
+    this.allBytesParser =
+      configuration.tracingEnabled() ? new AllBytesParser(charSeq) : null;
   }
 
   enum State {
@@ -172,7 +181,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     TAGGED,
     FETCH,
     FETCH_BODY,
-    RESET;
+    RESET,
   }
 
   @Override
@@ -182,7 +191,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   @Timed
   @Override
-  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out)
+    throws Exception {
     if (ctx.channel().attr(ImapChannelAttrs.CONFIGURATION).get().tracingEnabled()) {
       trace("RCV", in);
     }
@@ -210,7 +220,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         skipControlCharacters(in);
         String word = wordParser.parse(in);
         if (NumberUtils.isDigits(word)) {
-          UntaggedResponseType type = UntaggedResponseType.getResponseType(wordParser.parse(in));
+          UntaggedResponseType type = UntaggedResponseType.getResponseType(
+            wordParser.parse(in)
+          );
           handleUntaggedValue(type, word, ctx);
         } else {
           if (word.equalsIgnoreCase(ResponseCode.OK.name())) {
@@ -266,7 +278,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   @Timed
-  private void parseFetch(ByteBuf in) throws UnknownFetchItemTypeException, IOException, ResponseParseException {
+  private void parseFetch(ByteBuf in)
+    throws UnknownFetchItemTypeException, IOException, ResponseParseException {
     skipControlCharacters(in);
 
     char next = ((char) in.readUnsignedByte());
@@ -292,9 +305,12 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     FetchDataItemType fetchType = FetchDataItemType.getFetchType(fetchItemString);
     switch (fetchType) {
       case FLAGS:
-        List<String> flags = nestedArrayParserRecycler.get().parse(in).stream()
-            .map(o -> ((String) o))
-            .collect(Collectors.toList());
+        List<String> flags = nestedArrayParserRecycler
+          .get()
+          .parse(in)
+          .stream()
+          .map(o -> ((String) o))
+          .collect(Collectors.toList());
         currentMessage.setFlagStrings(flags);
         break;
       case INTERNALDATE:
@@ -321,11 +337,14 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         break;
       case X_GM_LABELS:
         currentMessage.setGMailLabels(
-            nestedArrayParserRecycler.get().parse(in).stream()
-                .filter(o -> !(o instanceof NilMarker))
-                .map(o -> ((String) o))
-                .map(GMailLabel::get)
-                .collect(Collectors.toSet())
+          nestedArrayParserRecycler
+            .get()
+            .parse(in)
+            .stream()
+            .filter(o -> !(o instanceof NilMarker))
+            .map(o -> ((String) o))
+            .map(GMailLabel::get)
+            .collect(Collectors.toSet())
         );
         break;
       case INVALID:
@@ -344,12 +363,20 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     if (CommandUtils.isStreamingFetch(clientState.getCurrentCommand())) {
       StreamingFetchCommand fetchCommand;
       if (clientState.getCurrentCommand() instanceof UidCommand) {
-        fetchCommand = ((StreamingFetchCommand) ((UidCommand) clientState.getCurrentCommand()).getWrappedCommand());
+        fetchCommand =
+          (
+            (StreamingFetchCommand) (
+              (UidCommand) clientState.getCurrentCommand()
+            ).getWrappedCommand()
+          );
       } else {
         fetchCommand = ((StreamingFetchCommand) clientState.getCurrentCommand());
       }
 
-      CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> fetchCommand.handle(message), executorGroup);
+      CompletableFuture<?> future = CompletableFuture.supplyAsync(
+        () -> fetchCommand.handle(message),
+        executorGroup
+      );
 
       untaggedResponses.add(future);
     } else {
@@ -384,7 +411,12 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       ResponseCode code = ResponseCode.valueOf(codeString);
       responseBuilder.setCode(code);
     } catch (IllegalArgumentException e) {
-      logger.warn("Invalid response code for message: tag - {}, codeString - {}, message - {}", tag, codeString, message);
+      logger.warn(
+        "Invalid response code for message: tag - {}, codeString - {}, message - {}",
+        tag,
+        codeString,
+        message
+      );
       throw e;
     }
 
@@ -397,11 +429,15 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     write(out);
   }
 
-  private void handleUntaggedValue(UntaggedResponseType type, String value, ChannelHandlerContext ctx) {
+  private void handleUntaggedValue(
+    UntaggedResponseType type,
+    String value,
+    ChannelHandlerContext ctx
+  ) {
     switch (type) {
       case FETCH:
-        currentMessage = new ImapMessage.Builder()
-            .setMessageNumber(Long.parseLong(value));
+        currentMessage =
+          new ImapMessage.Builder().setMessageNumber(Long.parseLong(value));
         checkpoint(State.FETCH);
         return;
       case RECENT:
@@ -422,7 +458,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   private void handleContinuation(ByteBuf in, List<Object> out) {
     String message = lineParser.parse(in);
 
-    ContinuationResponse response = new ContinuationResponse.Builder().setMessage(message).build();
+    ContinuationResponse response = new ContinuationResponse.Builder()
+      .setMessage(message)
+      .build();
     out.add(response);
 
     checkpoint(State.RESET);
@@ -434,7 +472,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     handleUntagged(type, in, ctx);
   }
 
-  private void handleUntagged(UntaggedResponseType type, ByteBuf in, ChannelHandlerContext ctx) {
+  private void handleUntagged(
+    UntaggedResponseType type,
+    ByteBuf in,
+    ChannelHandlerContext ctx
+  ) {
     switch (type) {
       case BYE:
         handleBye(in, ctx);
@@ -467,7 +509,11 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     checkpoint(State.RESET);
   }
 
-  private void handleMessageCountResponse(UntaggedResponseType type, String value, ChannelHandlerContext ctx) {
+  private void handleMessageCountResponse(
+    UntaggedResponseType type,
+    String value,
+    ChannelHandlerContext ctx
+  ) {
     UntaggedIntResponse intResponse = handleIntResponse(type, value);
     untaggedResponses.add(intResponse);
   }
@@ -476,9 +522,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     String message = lineParser.parse(in);
 
     UntaggedResponse response = new UntaggedResponse.Builder()
-        .setType(UntaggedResponseType.BYE)
-        .setMessage(message)
-        .build();
+      .setType(UntaggedResponseType.BYE)
+      .setMessage(message)
+      .build();
 
     untaggedResponses.add(response);
 
@@ -487,9 +533,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private UntaggedIntResponse handleIntResponse(UntaggedResponseType type, String value) {
     return new UntaggedIntResponse.Builder()
-        .setType(type)
-        .setValue(Long.parseLong(value))
-        .build();
+      .setType(type)
+      .setValue(Long.parseLong(value))
+      .build();
   }
 
   @Timed
@@ -523,7 +569,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
     try (InputStream inputStream = new ByteArrayInputStream(body.get())) {
       return Optional.of(messageBuilder.parseMessage(inputStream));
-    } catch (IOException|NullPointerException e) {
+    } catch (IOException | NullPointerException e) {
       throw new ResponseParseException(e);
     }
   }
@@ -538,9 +584,12 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private FolderFlags parseFlags(ByteBuf in, boolean permanent) {
     skipControlCharacters(in);
-    List<String> flags = nestedArrayParserRecycler.get().parse(in).stream()
-        .map(o -> ((String) o))
-        .collect(Collectors.toList());
+    List<String> flags = nestedArrayParserRecycler
+      .get()
+      .parse(in)
+      .stream()
+      .map(o -> ((String) o))
+      .collect(Collectors.toList());
 
     lineParser.parse(in);
 
@@ -549,7 +598,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
 
   private UntaggedSearchResponse parseSearch(ByteBuf in) {
     List<Long> ids = new ArrayList<>();
-    for (; ; ) {
+    for (;;) {
       char c = ((char) in.readUnsignedByte());
       in.readerIndex(in.readerIndex() - 1);
       if (c == HttpConstants.CR || c == HttpConstants.LF) {
@@ -580,29 +629,29 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     lineParser.parse(in);
 
     return new FolderMetadata.Builder()
-        .addAllAttributes(attributes)
-        .setContext(context)
-        .setName(name)
-        .build();
+      .addAllAttributes(attributes)
+      .setContext(context)
+      .setName(name)
+      .build();
   }
 
   private Set<FolderAttribute> parseFolderAttributes(ByteBuf in) {
-    return nestedArrayParserRecycler.get().parse(in).stream()
-        .map(o -> ((String) o))
-        .map(FolderAttribute::getAttribute)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .collect(Collectors.toSet());
+    return nestedArrayParserRecycler
+      .get()
+      .parse(in)
+      .stream()
+      .map(o -> ((String) o))
+      .map(FolderAttribute::getAttribute)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .collect(Collectors.toSet());
   }
 
   private UntaggedIntResponse parseIntResponse(UntaggedResponseType type, ByteBuf in) {
     long value = numberParser.parse(in);
     lineParser.parse(in);
 
-    return new Builder()
-        .setType(type)
-        .setValue(value)
-        .build();
+    return new Builder().setType(type).setValue(value).build();
   }
 
   private void write(List<Object> out) {
@@ -642,10 +691,9 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
   }
 
   private static void skipControlCharacters(ByteBuf buffer) {
-    for (; ; ) {
+    for (;;) {
       char c = (char) buffer.readUnsignedByte();
-      if (!Character.isISOControl(c) &&
-          !Character.isWhitespace(c)) {
+      if (!Character.isISOControl(c) && !Character.isWhitespace(c)) {
         buffer.readerIndex(buffer.readerIndex() - 1);
         break;
       }

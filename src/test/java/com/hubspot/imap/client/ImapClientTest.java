@@ -2,40 +2,6 @@ package com.hubspot.imap.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-
-import org.apache.james.mime4j.dom.Body;
-import org.apache.james.mime4j.dom.Entity;
-import org.apache.james.mime4j.dom.Header;
-import org.apache.james.mime4j.dom.Message;
-import org.apache.james.mime4j.dom.Multipart;
-import org.apache.james.mime4j.dom.SingleBody;
-import org.apache.james.mime4j.dom.TextBody;
-import org.apache.james.mime4j.field.DefaultFieldParser;
-import org.apache.james.mime4j.message.BasicBodyFactory;
-import org.apache.james.mime4j.message.HeaderImpl;
-import org.apache.james.mime4j.message.MessageImpl;
-import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
@@ -68,6 +34,38 @@ import com.hubspot.imap.protocol.response.tagged.OpenResponse;
 import com.hubspot.imap.protocol.response.tagged.SearchResponse;
 import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import org.apache.james.mime4j.dom.Body;
+import org.apache.james.mime4j.dom.Entity;
+import org.apache.james.mime4j.dom.Header;
+import org.apache.james.mime4j.dom.Message;
+import org.apache.james.mime4j.dom.Multipart;
+import org.apache.james.mime4j.dom.SingleBody;
+import org.apache.james.mime4j.dom.TextBody;
+import org.apache.james.mime4j.field.DefaultFieldParser;
+import org.apache.james.mime4j.message.BasicBodyFactory;
+import org.apache.james.mime4j.message.HeaderImpl;
+import org.apache.james.mime4j.message.MessageImpl;
+import org.assertj.core.api.Condition;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class ImapClientTest extends BaseGreenMailServerTest {
 
@@ -107,9 +105,10 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getFolders().size()).isGreaterThan(0);
-//    assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
-    assertThat(response.getFolders()).extracting(FolderMetadata::getName)
-                                     .contains(DEFAULT_FOLDER);
+    //    assertThat(response.getFolders()).have(new Condition<>(m -> m.getAttributes().size() > 0, "attributes"));
+    assertThat(response.getFolders())
+      .extracting(FolderMetadata::getName)
+      .contains(DEFAULT_FOLDER);
   }
 
   @Test
@@ -127,32 +126,50 @@ public class ImapClientTest extends BaseGreenMailServerTest {
   public void testFetch_doesReturnMessages() throws Exception {
     deliverRandomMessages(2);
 
-    FetchResponse response = client.fetch(1, Optional.of(2L), FetchDataItemType.FAST).get();
+    FetchResponse response = client
+      .fetch(1, Optional.of(2L), FetchDataItemType.FAST)
+      .get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getMessages().size()).isGreaterThan(0);
     assertThat(response.getMessages().size()).isEqualTo(2);
 
-    assertThat(response.getMessages()).have(new Condition<>(m -> {
-      try {
-        return m.getSize() > 0;
-      } catch (UnfetchedFieldException e) {
-        return false;
-      }
-    }, "size"));
+    assertThat(response.getMessages())
+      .have(
+        new Condition<>(
+          m -> {
+            try {
+              return m.getSize() > 0;
+            } catch (UnfetchedFieldException e) {
+              return false;
+            }
+          },
+          "size"
+        )
+      );
 
-    assertThat(response.getMessages()).have(new Condition<>(m -> {
-      try {
-        return m.getInternalDate().isAfter(ZonedDateTime.of(0, 1, 1, 1, 1, 1, 1, ZoneId.of("UTC")));
-      } catch (UnfetchedFieldException e) {
-        return false;
-      }
-    }, "internaldate"));
+    assertThat(response.getMessages())
+      .have(
+        new Condition<>(
+          m -> {
+            try {
+              return m
+                .getInternalDate()
+                .isAfter(ZonedDateTime.of(0, 1, 1, 1, 1, 1, 1, ZoneId.of("UTC")));
+            } catch (UnfetchedFieldException e) {
+              return false;
+            }
+          },
+          "internaldate"
+        )
+      );
   }
 
   @Test(expected = UnfetchedFieldException.class)
   public void testAccessingUnfetchedField_doesThrowException() throws Exception {
-    FetchResponse response = client.fetch(1, Optional.of(2L), FetchDataItemType.FLAGS).get();
+    FetchResponse response = client
+      .fetch(1, Optional.of(2L), FetchDataItemType.FLAGS)
+      .get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
     assertThat(response.getMessages().size()).isGreaterThan(0);
@@ -161,7 +178,9 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test
   public void testFetchUid_doesGetUid() throws Exception {
-    FetchResponse response = client.fetch(1, Optional.of(2L), FetchDataItemType.UID).get();
+    FetchResponse response = client
+      .fetch(1, Optional.of(2L), FetchDataItemType.UID)
+      .get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
 
@@ -173,7 +192,9 @@ public class ImapClientTest extends BaseGreenMailServerTest {
   public void testFetchEnvelope_doesFetchEnvelope() throws Exception {
     deliverRandomMessages(3);
 
-    FetchResponse response = client.fetch(1, Optional.of(3L), FetchDataItemType.ENVELOPE).get();
+    FetchResponse response = client
+      .fetch(1, Optional.of(3L), FetchDataItemType.ENVELOPE)
+      .get();
 
     assertThat(response.getCode()).isEqualTo(ResponseCode.OK);
 
@@ -198,85 +219,114 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test
   public void testFetchBodyHeaders_doesParseHeaders() throws Exception {
-    FetchResponse response = client.fetch(1, Optional.of(10L), new BodyPeekFetchDataItem("HEADER")).get();
-    assertThat(response.getMessages()).have(new Condition<>(m -> {
-      try {
-        return !Strings.isNullOrEmpty(m.getBody().getHeader().getField("Message-ID").getBody());
-      } catch (UnfetchedFieldException e) {
-        throw Throwables.propagate(e);
-      }
-    }, "message id"));
-
+    FetchResponse response = client
+      .fetch(1, Optional.of(10L), new BodyPeekFetchDataItem("HEADER"))
+      .get();
+    assertThat(response.getMessages())
+      .have(
+        new Condition<>(
+          m -> {
+            try {
+              return !Strings.isNullOrEmpty(
+                m.getBody().getHeader().getField("Message-ID").getBody()
+              );
+            } catch (UnfetchedFieldException e) {
+              throw Throwables.propagate(e);
+            }
+          },
+          "message id"
+        )
+      );
   }
 
   @Test
   public void testFetchBody_doesFetchTextBody() throws Exception {
-    FetchResponse response = client.fetch(1, Optional.of(2L), new BodyPeekFetchDataItem()).get();
-    assertThat(response.getMessages()).have(new Condition<>(m -> {
-      try {
-        SingleBody textBody = null;
-        String charset = null;
+    FetchResponse response = client
+      .fetch(1, Optional.of(2L), new BodyPeekFetchDataItem())
+      .get();
+    assertThat(response.getMessages())
+      .have(
+        new Condition<>(
+          m -> {
+            try {
+              SingleBody textBody = null;
+              String charset = null;
 
-        if (m.getBody().isMultipart()) {
-          Multipart multipart = (Multipart) m.getBody().getBody();
+              if (m.getBody().isMultipart()) {
+                Multipart multipart = (Multipart) m.getBody().getBody();
 
-          boolean hasTextBody = false;
-          for (Entity entity : multipart.getBodyParts()) {
-            if (entity.getMimeType().equalsIgnoreCase("text/plain")) {
-              textBody = (SingleBody) entity.getBody();
-              charset = entity.getCharset();
-              hasTextBody = true;
+                boolean hasTextBody = false;
+                for (Entity entity : multipart.getBodyParts()) {
+                  if (entity.getMimeType().equalsIgnoreCase("text/plain")) {
+                    textBody = (SingleBody) entity.getBody();
+                    charset = entity.getCharset();
+                    hasTextBody = true;
+                  }
+                }
+
+                if (!hasTextBody) {
+                  return false;
+                }
+              } else {
+                if (!(m.getBody().getBody() instanceof TextBody)) {
+                  return false;
+                }
+                textBody = (TextBody) m.getBody().getBody();
+                charset = m.getBody().getCharset();
+              }
+
+              ByteArrayOutputStream baos = new ByteArrayOutputStream();
+              textBody.writeTo(baos);
+              return !Strings.isNullOrEmpty(baos.toString(charset));
+            } catch (UnfetchedFieldException | IOException e) {
+              throw Throwables.propagate(e);
             }
-          }
-
-          if (!hasTextBody) {
-            return false;
-          }
-        } else {
-          if (!(m.getBody().getBody() instanceof TextBody)) {
-            return false;
-          }
-          textBody = (TextBody) m.getBody().getBody();
-          charset = m.getBody().getCharset();
-        }
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        textBody.writeTo(baos);
-        return !Strings.isNullOrEmpty(baos.toString(charset));
-      } catch (UnfetchedFieldException | IOException e) {
-        throw Throwables.propagate(e);
-      }
-    }, "text body"));
+          },
+          "text body"
+        )
+      );
   }
 
   @Test
   public void testUidFetch() throws Exception {
     deliverRandomMessages(5);
-    FetchResponse response = client.fetch(1, Optional.empty(), FetchDataItemType.UID, FetchDataItemType.ENVELOPE).get();
+    FetchResponse response = client
+      .fetch(1, Optional.empty(), FetchDataItemType.UID, FetchDataItemType.ENVELOPE)
+      .get();
 
     ImapMessage message = response.getMessages().iterator().next();
 
-    CompletableFuture<FetchResponse> uidfetchFuture = client.uidfetch(message.getUid(), Optional.of(message.getUid()), FetchDataItemType.UID,
-        FetchDataItemType.ENVELOPE);
+    CompletableFuture<FetchResponse> uidfetchFuture = client.uidfetch(
+      message.getUid(),
+      Optional.of(message.getUid()),
+      FetchDataItemType.UID,
+      FetchDataItemType.ENVELOPE
+    );
     FetchResponse uidresponse = uidfetchFuture.get();
 
     assertThat(uidresponse.getMessages().size()).isEqualTo(1);
-    assertThat(uidresponse.getMessages().iterator().next().getUid()).isEqualTo(message.getUid());
+    assertThat(uidresponse.getMessages().iterator().next().getUid())
+      .isEqualTo(message.getUid());
   }
 
   @Test
   public void testStreamingFetch_doesExecuteConsumerForAllMessages() throws Exception {
     Set<Long> uids = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-    CompletableFuture<StreamingFetchResponse<Void>> fetchResponseFuture = client.fetch(1, Optional.empty(), message -> {
-      try {
-        uids.add(message.getUid());
-      } catch (UnfetchedFieldException e) {
-        throw Throwables.propagate(e);
-      }
+    CompletableFuture<StreamingFetchResponse<Void>> fetchResponseFuture = client.fetch(
+      1,
+      Optional.empty(),
+      message -> {
+        try {
+          uids.add(message.getUid());
+        } catch (UnfetchedFieldException e) {
+          throw Throwables.propagate(e);
+        }
 
-      return (Void) null;
-    }, FetchDataItemType.UID);
+        return (Void) null;
+      },
+      FetchDataItemType.UID
+    );
 
     StreamingFetchResponse<Void> fetchResponse = fetchResponseFuture.get();
 
@@ -291,43 +341,84 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
   @Test
   public void testStore() throws Exception {
-    CompletableFuture<FetchResponse> responseFuture = client.fetch(openResponse.getExists(), Optional.<Long>empty(),
-        FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    CompletableFuture<FetchResponse> responseFuture = client.fetch(
+      openResponse.getExists(),
+      Optional.<Long>empty(),
+      FetchDataItemType.FLAGS,
+      FetchDataItemType.UID
+    );
     FetchResponse fetchResponse = responseFuture.get();
     ImapMessage message = fetchResponse.getMessages().iterator().next();
 
-    TaggedResponse storeResponse = client.send(new UidCommand(
-        ImapCommandType.STORE,
-        new SilentStoreCommand(StoreAction.ADD_FLAGS, message.getUid(), message.getUid(), StandardMessageFlag.FLAGGED)
-    )).get();
+    TaggedResponse storeResponse = client
+      .send(
+        new UidCommand(
+          ImapCommandType.STORE,
+          new SilentStoreCommand(
+            StoreAction.ADD_FLAGS,
+            message.getUid(),
+            message.getUid(),
+            StandardMessageFlag.FLAGGED
+          )
+        )
+      )
+      .get();
 
     assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    responseFuture = client.fetch(openResponse.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS,
-        FetchDataItemType.UID);
+    responseFuture =
+      client.fetch(
+        openResponse.getExists(),
+        Optional.<Long>empty(),
+        FetchDataItemType.FLAGS,
+        FetchDataItemType.UID
+      );
     fetchResponse = responseFuture.get();
     ImapMessage messageWithFlagged = fetchResponse.getMessages().iterator().next();
 
     assertThat(messageWithFlagged.getFlags()).contains(StandardMessageFlag.FLAGGED);
 
-    storeResponse = client.send(new UidCommand(
-        ImapCommandType.STORE,
-        new SilentStoreCommand(StoreAction.REMOVE_FLAGS, message.getUid(), message.getUid(), StandardMessageFlag.FLAGGED)
-    )).get();
+    storeResponse =
+      client
+        .send(
+          new UidCommand(
+            ImapCommandType.STORE,
+            new SilentStoreCommand(
+              StoreAction.REMOVE_FLAGS,
+              message.getUid(),
+              message.getUid(),
+              StandardMessageFlag.FLAGGED
+            )
+          )
+        )
+        .get();
 
     assertThat(storeResponse.getCode()).isEqualTo(ResponseCode.OK);
 
-    responseFuture = client.fetch(openResponse.getExists(), Optional.<Long>empty(), FetchDataItemType.FLAGS,
-        FetchDataItemType.UID);
+    responseFuture =
+      client.fetch(
+        openResponse.getExists(),
+        Optional.<Long>empty(),
+        FetchDataItemType.FLAGS,
+        FetchDataItemType.UID
+      );
     fetchResponse = responseFuture.get();
     ImapMessage messageNotFlagged = fetchResponse.getMessages().iterator().next();
 
-    assertThat(messageNotFlagged.getFlags().stream()
-                                .map(MessageFlag::getString)
-                                .collect(Collectors.toList()))
-        .containsOnlyElementsOf(message.getFlags().stream()
-                                       .map(MessageFlag::getString)
-                                       .collect(Collectors.toList()));
+    assertThat(
+      messageNotFlagged
+        .getFlags()
+        .stream()
+        .map(MessageFlag::getString)
+        .collect(Collectors.toList())
+    )
+      .containsOnlyElementsOf(
+        message
+          .getFlags()
+          .stream()
+          .map(MessageFlag::getString)
+          .collect(Collectors.toList())
+      );
   }
 
   @Test
@@ -336,30 +427,54 @@ public class ImapClientTest extends BaseGreenMailServerTest {
 
     // Reopen folder to get correct EXISTS
     openResponse = client.open(DEFAULT_FOLDER, FolderOpenMode.WRITE).get();
-    CompletableFuture<FetchResponse> responseFuture = client.fetch(openResponse.getExists() - 2, Optional.empty(),
-        FetchDataItemType.FLAGS, FetchDataItemType.UID);
+    CompletableFuture<FetchResponse> responseFuture = client.fetch(
+      openResponse.getExists() - 2,
+      Optional.empty(),
+      FetchDataItemType.FLAGS,
+      FetchDataItemType.UID
+    );
     FetchResponse fetchResponse = responseFuture.get();
-    ImapMessage message = fetchResponse.getMessages()
-                                       .stream()
-                                       .collect(Collectors.minBy(Comparator.comparing(TestUtils::msgToUid)))
-                                       .get();
+    ImapMessage message = fetchResponse
+      .getMessages()
+      .stream()
+      .collect(Collectors.minBy(Comparator.comparing(TestUtils::msgToUid)))
+      .get();
 
-    SearchResponse response = client.search(
-        new UidSearchKey(String.valueOf(message.getUid()) + ":" + openResponse.getUidNext())).get();
-    assertThat(response.getMessageIds().size()).isEqualTo(fetchResponse.getMessages().size());
+    SearchResponse response = client
+      .search(
+        new UidSearchKey(
+          String.valueOf(message.getUid()) + ":" + openResponse.getUidNext()
+        )
+      )
+      .get();
+    assertThat(response.getMessageIds().size())
+      .isEqualTo(fetchResponse.getMessages().size());
 
-    List<Long> expectedUids = fetchResponse.getMessages().stream().map(TestUtils::msgToUid).collect(Collectors.toList());
+    List<Long> expectedUids = fetchResponse
+      .getMessages()
+      .stream()
+      .map(TestUtils::msgToUid)
+      .collect(Collectors.toList());
 
     Set<ImapMessage> responseMessages = new HashSet<>();
     for (long messasgeId : response.getMessageIds()) {
       responseMessages.addAll(
-          client.fetch(messasgeId, Optional.empty(), FetchDataItemType.FLAGS, FetchDataItemType.UID).get().getMessages());
+        client
+          .fetch(
+            messasgeId,
+            Optional.empty(),
+            FetchDataItemType.FLAGS,
+            FetchDataItemType.UID
+          )
+          .get()
+          .getMessages()
+      );
     }
 
-    assertThat(responseMessages.stream()
-                               .map(TestUtils::msgToUid)
-                               .collect(Collectors.toList()))
-        .containsOnlyElementsOf(expectedUids);
+    assertThat(
+      responseMessages.stream().map(TestUtils::msgToUid).collect(Collectors.toList())
+    )
+      .containsOnlyElementsOf(expectedUids);
   }
 
   @Test
@@ -372,7 +487,9 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     Thread.sleep(100);
     deliverRandomMessages(1);
 
-    SearchResponse searchResponse = client.uidsearch(DateSearches.searchBefore(before)).get();
+    SearchResponse searchResponse = client
+      .uidsearch(DateSearches.searchBefore(before))
+      .get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
     assertThat(searchResponse.getMessageIds().size()).isEqualTo(2);
@@ -388,7 +505,9 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     Thread.sleep(100);
     deliverRandomMessages(2);
 
-    SearchResponse searchResponse = client.uidsearch(DateSearches.searchAfter(after)).get();
+    SearchResponse searchResponse = client
+      .uidsearch(DateSearches.searchAfter(after))
+      .get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
     assertThat(searchResponse.getMessageIds().size()).isEqualTo(2);
@@ -408,7 +527,9 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     Thread.sleep(100);
     deliverRandomMessages(1);
 
-    SearchResponse searchResponse = client.uidsearch(DateSearches.searchBetween(after, before)).get();
+    SearchResponse searchResponse = client
+      .uidsearch(DateSearches.searchBetween(after, before))
+      .get();
     assertThat(searchResponse.getCode()).isEqualTo(ResponseCode.OK);
 
     assertThat(searchResponse.getMessageIds().size()).isEqualTo(3);
@@ -423,7 +544,8 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     header.addField(DefaultFieldParser.parse("Date: 10-MAY-1994 00:00:00 -0000 (UTC)"));
     header.addField(DefaultFieldParser.parse("Message-ID: 12345"));
 
-    Envelope envelope = new Envelope.Builder().setDate(ZonedDateTime.of(1994, 5, 10, 0, 0, 0, 0, ZoneId.of("UTC")));
+    Envelope envelope = new Envelope.Builder()
+      .setDate(ZonedDateTime.of(1994, 5, 10, 0, 0, 0, 0, ZoneId.of("UTC")));
 
     Body body = BasicBodyFactory.INSTANCE.textBody("This is a test");
 
@@ -432,45 +554,89 @@ public class ImapClientTest extends BaseGreenMailServerTest {
     message.setHeader(header);
 
     ImapMessage imapMessage = new ImapMessage.Builder()
-        .setFlags(ImmutableSet.of(StandardMessageFlag.SEEN, StandardMessageFlag.RECENT))
-        .setEnvelope(envelope)
-        .setBody(message);
+      .setFlags(ImmutableSet.of(StandardMessageFlag.SEEN, StandardMessageFlag.RECENT))
+      .setEnvelope(envelope)
+      .setBody(message);
 
-    FetchResponse preAppendFetchAll = client.fetch(1, Optional.empty(), FetchDataItemType.UID, FetchDataItemType.FLAGS, FetchDataItemType.ENVELOPE, new BodyPeekFetchDataItem()).get();
+    FetchResponse preAppendFetchAll = client
+      .fetch(
+        1,
+        Optional.empty(),
+        FetchDataItemType.UID,
+        FetchDataItemType.FLAGS,
+        FetchDataItemType.ENVELOPE,
+        new BodyPeekFetchDataItem()
+      )
+      .get();
     assertThat(preAppendFetchAll.getMessages().size()).isEqualTo(1);
 
-    TaggedResponse appendResponse = client.append(DEFAULT_FOLDER, imapMessage.getFlags(), imapMessage.getEnvelope().getDate(), imapMessage).get();
+    TaggedResponse appendResponse = client
+      .append(
+        DEFAULT_FOLDER,
+        imapMessage.getFlags(),
+        imapMessage.getEnvelope().getDate(),
+        imapMessage
+      )
+      .get();
     assertThat(appendResponse.getCode()).isEqualTo(ResponseCode.OK);
     long uid = Long.parseLong(appendResponse.getMessage().substring(25, 26));
 
-    FetchResponse postAppendFetchAll = client.fetch(1, Optional.empty(), FetchDataItemType.UID, FetchDataItemType.ENVELOPE, new BodyPeekFetchDataItem()).get();
+    FetchResponse postAppendFetchAll = client
+      .fetch(
+        1,
+        Optional.empty(),
+        FetchDataItemType.UID,
+        FetchDataItemType.ENVELOPE,
+        new BodyPeekFetchDataItem()
+      )
+      .get();
     assertThat(postAppendFetchAll.getMessages().size()).isEqualTo(2);
 
-    FetchResponse postAppendFetchUid = client.uidfetch(uid, Optional.of(uid), FetchDataItemType.UID, FetchDataItemType.ENVELOPE, new BodyPeekFetchDataItem()).get();
+    FetchResponse postAppendFetchUid = client
+      .uidfetch(
+        uid,
+        Optional.of(uid),
+        FetchDataItemType.UID,
+        FetchDataItemType.ENVELOPE,
+        new BodyPeekFetchDataItem()
+      )
+      .get();
     assertThat(postAppendFetchUid.getMessages().size()).isEqualTo(1);
-    assertThat(postAppendFetchUid.getMessages().iterator().next().getBody().getSubject()).isEqualToIgnoringCase("This is the subject");
-    assertThat(postAppendFetchUid.getMessages().iterator().next().getEnvelope().getMessageId()).isEqualToIgnoringCase("12345");
+    assertThat(postAppendFetchUid.getMessages().iterator().next().getBody().getSubject())
+      .isEqualToIgnoringCase("This is the subject");
+    assertThat(
+      postAppendFetchUid.getMessages().iterator().next().getEnvelope().getMessageId()
+    )
+      .isEqualToIgnoringCase("12345");
   }
-
-
 
   @Test(expected = CompletionException.class)
   public void itShouldTryProxy() throws Exception {
     // we expect a read timeout because that's how the client handles RESET commands
     // TODO - if we get a RESET on the response of a command, we should return the failure that we get back.
-    ImapClient client = getLoggedInClient(ImapClientConfiguration.builder()
-        .hostAndPort(HostAndPort.fromParts("localhost", greenMail.getImap().getPort() + 1))
+    ImapClient client = getLoggedInClient(
+      ImapClientConfiguration
+        .builder()
+        .hostAndPort(
+          HostAndPort.fromParts("localhost", greenMail.getImap().getPort() + 1)
+        )
         .useSsl(false)
-        .proxyConfig(Optional.of(ProxyConfig.builder()
-            .proxyHost(HostAndPort.fromParts("localhost", greenMail.getImap().getPort()))
-            .proxyLocalIpAddress(Optional.of("127.0.0.10"))
-            .build()
-        ))
+        .proxyConfig(
+          Optional.of(
+            ProxyConfig
+              .builder()
+              .proxyHost(
+                HostAndPort.fromParts("localhost", greenMail.getImap().getPort())
+              )
+              .proxyLocalIpAddress(Optional.of("127.0.0.10"))
+              .build()
+          )
+        )
         .socketTimeoutMs(500)
         .connectTimeoutMillis(500)
         .closeTimeoutSec(500)
         .tracingEnabled(true)
-        .build());
+        .build()
+    );
   }
-
 }

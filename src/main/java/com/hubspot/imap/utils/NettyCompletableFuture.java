@@ -1,16 +1,18 @@
 package com.hubspot.imap.utils;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import java.util.concurrent.CompletableFuture;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
+public class NettyCompletableFuture<T>
+  extends CompletableFuture<T>
+  implements FutureListener<T> {
 
-
-public class NettyCompletableFuture<T> extends CompletableFuture<T> implements FutureListener<T> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(NettyCompletableFuture.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(
+    NettyCompletableFuture.class
+  );
 
   private NettyCompletableFuture(Future<T> future) {
     future.addListener(this);

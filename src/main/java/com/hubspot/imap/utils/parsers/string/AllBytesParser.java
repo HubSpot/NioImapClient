@@ -1,14 +1,15 @@
 package com.hubspot.imap.utils.parsers.string;
 
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.Signal;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class AllBytesParser extends BaseStringParser {
+
   private static final Signal REPLAYING_SIGNAL;
+
   static {
     REPLAYING_SIGNAL = Signal.valueOf(ReplayingDecoder.class, "REPLAY");
   }
@@ -19,7 +20,7 @@ public class AllBytesParser extends BaseStringParser {
 
   @Override
   public boolean process(byte b) throws Exception {
-    seq.append((char)(short) (b & 255));
+    seq.append((char) (short) (b & 255));
     size++;
 
     return true;

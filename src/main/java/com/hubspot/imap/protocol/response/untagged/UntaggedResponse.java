@@ -5,6 +5,7 @@ public interface UntaggedResponse {
   String getMessage();
 
   class Builder implements UntaggedResponse {
+
     private UntaggedResponseType type;
     private String message;
 
@@ -29,6 +30,5 @@ public interface UntaggedResponse {
     public UntaggedResponse build() {
       return this;
     }
-
   }
 }

@@ -1,10 +1,10 @@
 package com.hubspot.imap.utils.parsers.string;
 
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
-
 import io.netty.handler.codec.TooLongFrameException;
 
 public class WordParser extends BaseStringParser {
+
   private final int maxWordLength;
 
   public WordParser(SoftReferencedAppendableCharSequence seq, int maxWordLength) {
@@ -20,8 +20,8 @@ public class WordParser extends BaseStringParser {
     } else {
       if (size >= maxWordLength) {
         throw new TooLongFrameException(
-            "Word is larger than " + maxWordLength +
-                " bytes.");
+          "Word is larger than " + maxWordLength + " bytes."
+        );
       }
       size++;
       seq.append(nextByte);

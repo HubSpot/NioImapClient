@@ -2,6 +2,12 @@ package com.hubspot.imap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hubspot.imap.client.FolderOpenMode;
+import com.hubspot.imap.client.ImapClient;
+import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
+import com.hubspot.imap.protocol.response.ResponseCode;
+import com.hubspot.imap.protocol.response.tagged.OpenResponse;
+import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -10,17 +16,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.hubspot.imap.client.FolderOpenMode;
-import com.hubspot.imap.client.ImapClient;
-import com.hubspot.imap.protocol.command.fetch.items.FetchDataItem.FetchDataItemType;
-import com.hubspot.imap.protocol.response.ResponseCode;
-import com.hubspot.imap.protocol.response.tagged.OpenResponse;
-import com.hubspot.imap.protocol.response.tagged.StreamingFetchResponse;
 
 public class StreamingFetchCommandTest extends BaseGreenMailServerTest {
 
@@ -37,7 +35,10 @@ public class StreamingFetchCommandTest extends BaseGreenMailServerTest {
     super.setUp();
     client = getLoggedInClient();
     deliverRandomMessage();
-    CompletableFuture<OpenResponse> openFuture = client.open(DEFAULT_FOLDER, FolderOpenMode.READ);
+    CompletableFuture<OpenResponse> openFuture = client.open(
+      DEFAULT_FOLDER,
+      FolderOpenMode.READ
+    );
     uidNext = openFuture.join().getUidNext();
   }
 
@@ -46,13 +47,14 @@ public class StreamingFetchCommandTest extends BaseGreenMailServerTest {
     CountDownLatch countDownLatch = new CountDownLatch(1);
 
     CompletableFuture<StreamingFetchResponse<Void>> fetchFuture = client.uidfetch(
-        uidNext,
-        Optional.empty(),
-        (imapMessage) -> {
-          countDownLatch.countDown();
-          return null;
-        },
-        FetchDataItemType.ENVELOPE);
+      uidNext,
+      Optional.empty(),
+      imapMessage -> {
+        countDownLatch.countDown();
+        return null;
+      },
+      FetchDataItemType.ENVELOPE
+    );
     fetchFuture.join();
     assertThat(fetchFuture.isDone()).isTrue();
     assertThat(fetchFuture.isCompletedExceptionally()).isFalse();

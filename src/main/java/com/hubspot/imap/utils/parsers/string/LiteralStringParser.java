@@ -2,11 +2,11 @@ package com.hubspot.imap.utils.parsers.string;
 
 import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
 import com.hubspot.imap.utils.parsers.ByteBufParser;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class LiteralStringParser implements ByteBufParser<String> {
+
   private final SoftReferencedAppendableCharSequence sequenceRef;
   private final AtomOrStringParser stringParser;
   private final LiteralStringSizeParser sizeParser;
@@ -14,7 +14,10 @@ public class LiteralStringParser implements ByteBufParser<String> {
   private int expectedSize;
   private int size;
 
-  public LiteralStringParser(SoftReferencedAppendableCharSequence sequenceRef, int maxLineLength) {
+  public LiteralStringParser(
+    SoftReferencedAppendableCharSequence sequenceRef,
+    int maxLineLength
+  ) {
     this.sequenceRef = sequenceRef;
     this.stringParser = new AtomOrStringParser(sequenceRef, maxLineLength);
     this.sizeParser = new LiteralStringSizeParser(sequenceRef);
@@ -57,5 +60,4 @@ public class LiteralStringParser implements ByteBufParser<String> {
       }
     }
   }
-
 }

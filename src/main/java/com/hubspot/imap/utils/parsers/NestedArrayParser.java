@@ -2,7 +2,6 @@ package com.hubspot.imap.utils.parsers;
 
 import com.hubspot.imap.utils.NilMarker;
 import io.netty.buffer.ByteBuf;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +16,11 @@ public class NestedArrayParser<T> {
   private final Recycler<T> recycler;
   private final io.netty.util.Recycler.Handle handle;
 
-  public NestedArrayParser(ByteBufParser<T> itemParser, Recycler<T> recycler, io.netty.util.Recycler.Handle handle) {
+  public NestedArrayParser(
+    ByteBufParser<T> itemParser,
+    Recycler<T> recycler,
+    io.netty.util.Recycler.Handle handle
+  ) {
     this.itemParser = itemParser;
     this.recycler = recycler;
     this.handle = handle;
@@ -43,8 +46,7 @@ public class NestedArrayParser<T> {
         }
       } else if (nextByte == RPAREN) {
         return values;
-      } else if (Character.isWhitespace(nextByte)) {
-      } else if (nextByte == 'N') {
+      } else if (Character.isWhitespace(nextByte)) {} else if (nextByte == 'N') {
         int read = 2;
         nextByte = ((char) buffer.readUnsignedByte());
         if (nextByte == 'I') {

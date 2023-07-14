@@ -3,10 +3,10 @@ package com.hubspot.imap.protocol.command;
 import java.nio.charset.Charset;
 
 public class StringLiteralCommand extends BaseImapCommand {
+
   private final String stringLiteral;
   private final Charset charset;
   private final int size;
-
 
   public StringLiteralCommand(String stringLiteral, Charset charset) {
     super(ImapCommandType.BLANK, false);

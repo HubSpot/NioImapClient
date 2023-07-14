@@ -1,5 +1,13 @@
 package com.hubspot.imap.utils.parsers.fetch;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.hubspot.imap.protocol.message.Envelope;
+import com.hubspot.imap.protocol.message.ImapAddress;
+import com.hubspot.imap.protocol.message.ImapAddress.Builder;
+import com.hubspot.imap.utils.NilMarker;
+import com.hubspot.imap.utils.enums.EnvelopeField;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -14,29 +22,30 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import org.apache.james.mime4j.dom.Header;
 import org.apache.james.mime4j.stream.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.hubspot.imap.protocol.message.Envelope;
-import com.hubspot.imap.protocol.message.ImapAddress;
-import com.hubspot.imap.protocol.message.ImapAddress.Builder;
-import com.hubspot.imap.utils.NilMarker;
-import com.hubspot.imap.utils.enums.EnvelopeField;
-
 public class EnvelopeParser {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EnvelopeParser.class);
-  private static final Splitter COMMA_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
-  private static final Splitter PARAMETER_COMMA_SPLITTER = Splitter.onPattern("(\\>,)").omitEmptyStrings().trimResults();
-  private static final Splitter ADDRESS_SPLITTER = Splitter.onPattern("[\\<\\>]").omitEmptyStrings().trimResults();
+  private static final Splitter COMMA_SPLITTER = Splitter
+    .on(",")
+    .omitEmptyStrings()
+    .trimResults();
+  private static final Splitter PARAMETER_COMMA_SPLITTER = Splitter
+    .onPattern("(\\>,)")
+    .omitEmptyStrings()
+    .trimResults();
+  private static final Splitter ADDRESS_SPLITTER = Splitter
+    .onPattern("[\\<\\>]")
+    .omitEmptyStrings()
+    .trimResults();
 
-  static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter.ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]").withLocale(Locale.US);
+  static final DateTimeFormatter RFC2822_FORMATTER = DateTimeFormatter
+    .ofPattern("[EEE, ]d MMM yyyy H:m:s[ zzz][ Z][ (z)]")
+    .withLocale(Locale.US);
 
   /**
    * This parses an envelope response according to RFC3501:
@@ -68,16 +77,16 @@ public class EnvelopeParser {
     String messageId = castToString(in.get(9));
 
     Envelope.Builder envelope = new Envelope.Builder()
-        .setDateString(dateString)
-        .setSubject(subject)
-        .setFrom(from)
-        .setSender(sender)
-        .setReplyTo(replyTo)
-        .setTo(to)
-        .setCc(cc)
-        .setBcc(bcc)
-        .setInReplyTo(inReplyTo)
-        .setMessageId(messageId);
+      .setDateString(dateString)
+      .setSubject(subject)
+      .setFrom(from)
+      .setSender(sender)
+      .setReplyTo(replyTo)
+      .setTo(to)
+      .setCc(cc)
+      .setBcc(bcc)
+      .setInReplyTo(inReplyTo)
+      .setMessageId(messageId);
 
     try {
       if (!Strings.isNullOrEmpty(dateString) && !dateString.equalsIgnoreCase("nil")) {
@@ -91,25 +100,50 @@ public class EnvelopeParser {
   }
 
   public static Envelope parseHeader(Header header) {
-    Map<String, String> envelopeFields = header.getFields().stream()
-        .filter(f -> EnvelopeField.NAME_INDEX.containsKey(f.getName().toLowerCase()))
-        .collect(Collectors.groupingBy(field -> field.getName().toLowerCase(),
-            Collectors.mapping(Field::getBody, Collectors.joining(","))));
+    Map<String, String> envelopeFields = header
+      .getFields()
+      .stream()
+      .filter(f -> EnvelopeField.NAME_INDEX.containsKey(f.getName().toLowerCase()))
+      .collect(
+        Collectors.groupingBy(
+          field -> field.getName().toLowerCase(),
+          Collectors.mapping(Field::getBody, Collectors.joining(","))
+        )
+      );
 
     Envelope.Builder envelope = new Envelope.Builder();
 
     String dateString = envelopeFields.get(EnvelopeField.DATE.getFieldName());
-    List<ImapAddress> fromAddress = emailAddressesFromStringList(envelopeFields.get(EnvelopeField.FROM.getFieldName()));
-    envelope.setDateString(dateString)
-        .setSubject(envelopeFields.get(EnvelopeField.SUBJECT.getFieldName()))
-        .setFrom(fromAddress)
-        .setSender(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.SENDER.getFieldName()), fromAddress))
-        .setReplyTo(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.REPLY_TO.getFieldName()), fromAddress))
-        .setTo(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.TO.getFieldName())))
-        .setCc(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.CC.getFieldName())))
-        .setBcc(emailAddressesFromStringList(envelopeFields.get(EnvelopeField.BCC.getFieldName())))
-        .setInReplyTo(envelopeFields.get(EnvelopeField.IN_REPLY_TO.getFieldName()))
-        .setMessageId(envelopeFields.get(EnvelopeField.MESSAGE_ID.getFieldName()));
+    List<ImapAddress> fromAddress = emailAddressesFromStringList(
+      envelopeFields.get(EnvelopeField.FROM.getFieldName())
+    );
+    envelope
+      .setDateString(dateString)
+      .setSubject(envelopeFields.get(EnvelopeField.SUBJECT.getFieldName()))
+      .setFrom(fromAddress)
+      .setSender(
+        emailAddressesFromStringList(
+          envelopeFields.get(EnvelopeField.SENDER.getFieldName()),
+          fromAddress
+        )
+      )
+      .setReplyTo(
+        emailAddressesFromStringList(
+          envelopeFields.get(EnvelopeField.REPLY_TO.getFieldName()),
+          fromAddress
+        )
+      )
+      .setTo(
+        emailAddressesFromStringList(envelopeFields.get(EnvelopeField.TO.getFieldName()))
+      )
+      .setCc(
+        emailAddressesFromStringList(envelopeFields.get(EnvelopeField.CC.getFieldName()))
+      )
+      .setBcc(
+        emailAddressesFromStringList(envelopeFields.get(EnvelopeField.BCC.getFieldName()))
+      )
+      .setInReplyTo(envelopeFields.get(EnvelopeField.IN_REPLY_TO.getFieldName()))
+      .setMessageId(envelopeFields.get(EnvelopeField.MESSAGE_ID.getFieldName()));
 
     try {
       if (!Strings.isNullOrEmpty(dateString)) {
@@ -126,17 +160,22 @@ public class EnvelopeParser {
   }
 
   @VisibleForTesting
-  public static List<ImapAddress> emailAddressesFromStringList(String addresses, List<ImapAddress> defaults) {
+  public static List<ImapAddress> emailAddressesFromStringList(
+    String addresses,
+    List<ImapAddress> defaults
+  ) {
     if (Strings.isNullOrEmpty(addresses)) {
       return defaults;
     }
 
-    return getSplitter(addresses).splitToList(addresses).stream()
-        .map(ADDRESS_SPLITTER::splitToList)
-        .map(EnvelopeParser::imapAddressFromParts)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .collect(Collectors.toList());
+    return getSplitter(addresses)
+      .splitToList(addresses)
+      .stream()
+      .map(ADDRESS_SPLITTER::splitToList)
+      .map(EnvelopeParser::imapAddressFromParts)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .collect(Collectors.toList());
   }
 
   private static Splitter getSplitter(String addresses) {
@@ -151,7 +190,10 @@ public class EnvelopeParser {
       return Optional.empty();
     }
 
-    Optional<String> emailAddressMaybe = addressParts.stream().filter(part -> part.contains("@")).findFirst();
+    Optional<String> emailAddressMaybe = addressParts
+      .stream()
+      .filter(part -> part.contains("@"))
+      .findFirst();
 
     if (!emailAddressMaybe.isPresent()) {
       return Optional.empty();
@@ -163,7 +205,11 @@ public class EnvelopeParser {
     int emailIndex = addressParts.indexOf(emailAddress);
 
     if (addressParts.size() > 2) {
-      LOGGER.warn("Expected two address parts but found {} - {}", addressParts.size(), addressParts);
+      LOGGER.warn(
+        "Expected two address parts but found {} - {}",
+        addressParts.size(),
+        addressParts
+      );
     }
 
     if (emailIndex > 0) {
@@ -181,7 +227,9 @@ public class EnvelopeParser {
         return new ArrayList<>();
       } else {
         LOGGER.debug("Failed to cast object to list: {} ", string);
-        throw new IllegalStateException("A list cannot have string value other than \"NIL\"");
+        throw new IllegalStateException(
+          "A list cannot have string value other than \"NIL\""
+        );
       }
     } else if (object instanceof NilMarker) {
       return Collections.emptyList();
@@ -197,7 +245,12 @@ public class EnvelopeParser {
     } else if (object instanceof NilMarker) {
       return null;
     } else {
-      throw new IllegalStateException(String.format("Cannot use instance of type %s as string", object.getClass().getName()));
+      throw new IllegalStateException(
+        String.format(
+          "Cannot use instance of type %s as string",
+          object.getClass().getName()
+        )
+      );
     }
   }
 
@@ -207,26 +260,34 @@ public class EnvelopeParser {
       return new ArrayList<>();
     }
 
-    return in.stream()
-        .filter(o -> !(o instanceof NilMarker))
-        .map(o -> ((List<Object>) o).stream()
-            .map(e -> {
-              if (e instanceof NilMarker) {
-                return null;
-              } else {
-                return ((String) e);
-              }
-            })
-            .collect(Collectors.toList()))
-        .map(o -> new Builder().parseFrom(o).build())
-        .collect(Collectors.toList());
+    return in
+      .stream()
+      .filter(o -> !(o instanceof NilMarker))
+      .map(o ->
+        ((List<Object>) o).stream()
+          .map(e -> {
+            if (e instanceof NilMarker) {
+              return null;
+            } else {
+              return ((String) e);
+            }
+          })
+          .collect(Collectors.toList())
+      )
+      .map(o -> new Builder().parseFrom(o).build())
+      .collect(Collectors.toList());
   }
 
   @VisibleForTesting
   public static ZonedDateTime parseDate(String in) {
     in = in.replaceAll("\\s+", " ");
 
-    TemporalAccessor temporalAccessor = RFC2822_FORMATTER.parseBest(in, ZonedDateTime::from, LocalDateTime::from, LocalDate::from);
+    TemporalAccessor temporalAccessor = RFC2822_FORMATTER.parseBest(
+      in,
+      ZonedDateTime::from,
+      LocalDateTime::from,
+      LocalDate::from
+    );
     if (temporalAccessor instanceof LocalDateTime) {
       return ((LocalDateTime) temporalAccessor).atZone(ZoneId.of("UTC"));
     } else if (temporalAccessor instanceof LocalDate) {

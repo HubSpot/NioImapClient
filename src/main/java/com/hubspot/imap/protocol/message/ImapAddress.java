@@ -1,11 +1,10 @@
 package com.hubspot.imap.protocol.message;
 
-import java.util.List;
-import java.util.Optional;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import java.util.List;
+import java.util.Optional;
 
 public interface ImapAddress {
   String getPersonal();
@@ -13,6 +12,7 @@ public interface ImapAddress {
   String getAddress();
 
   class Builder implements ImapAddress {
+
     private static final String NIL = "NIL";
     private static final Joiner AT_JOINER = Joiner.on("@").skipNulls();
     private Optional<String> personal = Optional.empty();
@@ -71,10 +71,11 @@ public interface ImapAddress {
 
     @Override
     public String toString() {
-      return MoreObjects.toStringHelper(this)
-          .add("personal", personal)
-          .add("address", address)
-          .toString();
+      return MoreObjects
+        .toStringHelper(this)
+        .add("personal", personal)
+        .add("address", address)
+        .toString();
     }
 
     @Override
@@ -86,8 +87,10 @@ public interface ImapAddress {
         return false;
       }
       Builder builder = (Builder) o;
-      return Objects.equal(getPersonal(), builder.getPersonal()) &&
-          Objects.equal(getAddress(), builder.getAddress());
+      return (
+        Objects.equal(getPersonal(), builder.getPersonal()) &&
+        Objects.equal(getAddress(), builder.getAddress())
+      );
     }
 
     @Override

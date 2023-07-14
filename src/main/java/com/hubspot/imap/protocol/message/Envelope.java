@@ -1,6 +1,5 @@
 package com.hubspot.imap.protocol.message;
 
-
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -135,7 +134,5 @@ public interface Envelope {
       this.messageId = messageId;
       return this;
     }
-
-
   }
 }

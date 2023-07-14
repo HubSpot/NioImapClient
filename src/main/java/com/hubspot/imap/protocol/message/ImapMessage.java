@@ -1,20 +1,17 @@
 package com.hubspot.imap.protocol.message;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
+import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
+import com.hubspot.imap.utils.formats.ImapDateFormat;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.james.mime4j.dom.Message;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
-import com.hubspot.imap.protocol.extension.gmail.GMailLabel;
-import com.hubspot.imap.utils.formats.ImapDateFormat;
-
 public interface ImapMessage {
-
   Set<MessageFlag> getFlags() throws UnfetchedFieldException;
   long getMessageNumber();
   long getUid() throws UnfetchedFieldException;
@@ -48,11 +45,15 @@ public interface ImapMessage {
     }
 
     public Builder setFlagStrings(Collection<String> flags) {
-      this.flags = Optional.of(flags.stream()
-          .map(StandardMessageFlag::getFlag)
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .collect(Collectors.toSet()));
+      this.flags =
+        Optional.of(
+          flags
+            .stream()
+            .map(StandardMessageFlag::getFlag)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toSet())
+        );
       return this;
     }
 
@@ -80,11 +81,14 @@ public interface ImapMessage {
     }
 
     public ZonedDateTime getInternalDate() throws UnfetchedFieldException {
-      return this.internalDate.orElseThrow(() -> new UnfetchedFieldException("internaldate"));
+      return this.internalDate.orElseThrow(() ->
+          new UnfetchedFieldException("internaldate")
+        );
     }
 
     public Builder setInternalDate(String internalDate) {
-      this.internalDate = Optional.of(ImapDateFormat.fromStringToZonedDateTime(internalDate));
+      this.internalDate =
+        Optional.of(ImapDateFormat.fromStringToZonedDateTime(internalDate));
       return this;
     }
 
@@ -107,7 +111,9 @@ public interface ImapMessage {
     }
 
     public long getGmailMessageId() throws UnfetchedFieldException {
-      return gmailMessageId.orElseThrow(() -> new UnfetchedFieldException("gmail message id"));
+      return gmailMessageId.orElseThrow(() ->
+        new UnfetchedFieldException("gmail message id")
+      );
     }
 
     public Builder setGmailMessageId(long msgId) {
@@ -116,7 +122,9 @@ public interface ImapMessage {
     }
 
     public long getGmailThreadId() throws UnfetchedFieldException {
-      return gmailThreadId.orElseThrow(() -> new UnfetchedFieldException("gmail thread id"));
+      return gmailThreadId.orElseThrow(() ->
+        new UnfetchedFieldException("gmail thread id")
+      );
     }
 
     public Builder setGmailThreadId(long msgId) {
@@ -144,7 +152,8 @@ public interface ImapMessage {
 
     @Override
     public String toString() {
-      return MoreObjects.toStringHelper(this)
+      return MoreObjects
+        .toStringHelper(this)
         .add("flags", flags)
         .add("messageNumber", messageNumber)
         .add("uid", uid)
@@ -167,21 +176,34 @@ public interface ImapMessage {
         return false;
       }
       Builder builder = (Builder) o;
-      return Objects.equal(messageNumber, builder.messageNumber) &&
-          Objects.equal(flags, builder.flags) &&
-          Objects.equal(uid, builder.uid) &&
-          Objects.equal(internalDate, builder.internalDate) &&
-          Objects.equal(size, builder.size) &&
-          Objects.equal(envelope, builder.envelope) &&
-          Objects.equal(gmailMessageId, builder.gmailMessageId) &&
-          Objects.equal(gmailThreadId, builder.gmailThreadId) &&
-          Objects.equal(gMailLabels, builder.gMailLabels) &&
-          Objects.equal(body, builder.body);
+      return (
+        Objects.equal(messageNumber, builder.messageNumber) &&
+        Objects.equal(flags, builder.flags) &&
+        Objects.equal(uid, builder.uid) &&
+        Objects.equal(internalDate, builder.internalDate) &&
+        Objects.equal(size, builder.size) &&
+        Objects.equal(envelope, builder.envelope) &&
+        Objects.equal(gmailMessageId, builder.gmailMessageId) &&
+        Objects.equal(gmailThreadId, builder.gmailThreadId) &&
+        Objects.equal(gMailLabels, builder.gMailLabels) &&
+        Objects.equal(body, builder.body)
+      );
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(flags, messageNumber, uid, internalDate, size, envelope, gmailMessageId, gmailThreadId, gMailLabels, body);
+      return Objects.hashCode(
+        flags,
+        messageNumber,
+        uid,
+        internalDate,
+        size,
+        envelope,
+        gmailMessageId,
+        gmailThreadId,
+        gMailLabels,
+        body
+      );
     }
   }
 }

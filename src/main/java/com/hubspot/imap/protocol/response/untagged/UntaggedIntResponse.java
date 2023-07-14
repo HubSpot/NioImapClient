@@ -5,6 +5,7 @@ public interface UntaggedIntResponse {
   long getValue();
 
   class Builder implements UntaggedIntResponse {
+
     private UntaggedResponseType type;
     private long value;
 

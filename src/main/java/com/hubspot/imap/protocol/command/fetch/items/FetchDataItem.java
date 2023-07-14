@@ -4,7 +4,6 @@ import com.googlecode.concurrenttrees.common.KeyValuePair;
 import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;
 import com.googlecode.concurrenttrees.radix.RadixTree;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultByteArrayNodeFactory;
-
 import java.util.Iterator;
 
 public interface FetchDataItem {
@@ -41,7 +40,9 @@ public interface FetchDataItem {
 
     public static FetchDataItemType getFetchType(String word) {
       TREE.getKeyValuePairsForClosestKeys(word);
-      Iterator<KeyValuePair<FetchDataItemType>> responseType = TREE.getKeyValuePairsForClosestKeys(word).iterator();
+      Iterator<KeyValuePair<FetchDataItemType>> responseType = TREE
+        .getKeyValuePairsForClosestKeys(word)
+        .iterator();
       if (!responseType.hasNext()) {
         return INVALID;
       }
@@ -65,7 +66,7 @@ public interface FetchDataItem {
     static {
       int maxLength = -1;
       TREE = new ConcurrentRadixTree<>(new DefaultByteArrayNodeFactory());
-      for (FetchDataItemType type: FetchDataItemType.values()) {
+      for (FetchDataItemType type : FetchDataItemType.values()) {
         TREE.put(type.toString(), type);
         maxLength = Math.max(maxLength, type.toString().length());
       }

@@ -3,6 +3,7 @@ package com.hubspot.imap.protocol.folder;
 import com.hubspot.imap.client.ImapClient;
 
 public class Folder {
+
   private final FolderMetadata metadata;
   private final ImapClient imapClient;
 
@@ -11,12 +12,10 @@ public class Folder {
     this.imapClient = imapClient;
   }
 
-  public void open(Mode mode) {
-
-  }
+  public void open(Mode mode) {}
 
   public enum Mode {
     READ_WRITE,
-    READ_ONLY;
+    READ_ONLY,
   }
 }

@@ -1,9 +1,8 @@
 package com.hubspot.imap.protocol.command;
 
-import java.util.List;
-
 import com.google.common.collect.Lists;
 import com.hubspot.imap.protocol.message.MessageFlag;
+import java.util.List;
 
 public class StoreCommand extends BaseImapCommand {
 
@@ -29,9 +28,13 @@ public class StoreCommand extends BaseImapCommand {
 
   private List<MessageFlag> flags;
 
-  public StoreCommand(StoreAction action, long startId, long stopId, MessageFlag... args) {
+  public StoreCommand(
+    StoreAction action,
+    long startId,
+    long stopId,
+    MessageFlag... args
+  ) {
     super(ImapCommandType.STORE);
-
     this.action = action;
     this.startId = startId;
     this.stopId = stopId;

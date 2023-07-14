@@ -1,12 +1,5 @@
 package com.hubspot.imap.client;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
 import com.hubspot.imap.client.listener.ConnectionListener;
 import com.hubspot.imap.client.listener.MessageAddConsumer;
 import com.hubspot.imap.protocol.command.ImapCommand;
@@ -14,14 +7,20 @@ import com.hubspot.imap.protocol.response.events.ExistsEvent;
 import com.hubspot.imap.protocol.response.events.ExpungeEvent;
 import com.hubspot.imap.protocol.response.events.OpenEvent;
 import com.hubspot.imap.protocol.response.tagged.OpenResponse;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class ImapClientState extends ChannelInboundHandlerAdapter {
+
   private final String clientName;
   private final EventExecutorGroup executorGroup;
 
@@ -70,7 +69,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       long lastMessageCount = messageNumber.getAndSet(exists.getValue());
       long currentCount = messageNumber.get();
       if (currentCount > lastMessageCount) {
-        for (BiConsumer<Long, Long> listener: messageAddListeners) {
+        for (BiConsumer<Long, Long> listener : messageAddListeners) {
           executorGroup.submit(() -> listener.accept(lastMessageCount, currentCount));
         }
       }
@@ -80,7 +79,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
       messageNumber.set(response.getExists());
       uidValidity.set(response.getUidValidity());
 
-      for (Consumer<OpenEvent> listener: openEventListeners) {
+      for (Consumer<OpenEvent> listener : openEventListeners) {
         executorGroup.submit(() -> listener.accept(event));
       }
     }
@@ -132,5 +131,7 @@ public class ImapClientState extends ChannelInboundHandlerAdapter {
     return clientName;
   }
 
-  public long getUidValidity() {return uidValidity.get(); }
+  public long getUidValidity() {
+    return uidValidity.get();
+  }
 }

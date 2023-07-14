@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class QuotedImapCommand extends BaseImapCommand {
+
   private static final String QUOTE = "\"";
 
   public QuotedImapCommand(ImapCommandType type, String... args) {
@@ -12,9 +13,11 @@ public class QuotedImapCommand extends BaseImapCommand {
 
   @Override
   public List<String> getArgs() {
-    return super.getArgs().stream()
-        .map(QuotedImapCommand::quote)
-        .collect(Collectors.toList());
+    return super
+      .getArgs()
+      .stream()
+      .map(QuotedImapCommand::quote)
+      .collect(Collectors.toList());
   }
 
   private static String quote(String in) {

@@ -1,21 +1,20 @@
 package com.hubspot.imap.utils.parsers.string;
 
+import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
+import com.hubspot.imap.utils.parsers.ByteBufParser;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.handler.codec.ReplayingDecoder;
+import io.netty.util.Signal;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-import com.hubspot.imap.utils.SoftReferencedAppendableCharSequence;
-import com.hubspot.imap.utils.parsers.ByteBufParser;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.handler.codec.ReplayingDecoder;
-import io.netty.util.Signal;
-
 public class BufferedBodyParser implements ByteBufParser<Optional<byte[]>>, Closeable {
 
   private static final Signal REPLAYING_SIGNAL;
+
   static {
     REPLAYING_SIGNAL = Signal.valueOf(ReplayingDecoder.class, "REPLAY");
   }
@@ -86,7 +85,6 @@ public class BufferedBodyParser implements ByteBufParser<Optional<byte[]>>, Clos
           return Optional.of(result);
       }
     }
-
   }
 
   private void reset() {
@@ -118,7 +116,6 @@ public class BufferedBodyParser implements ByteBufParser<Optional<byte[]>>, Clos
     START,
     SKIP_CRLF,
     PARSE_SIZE,
-    PARSE_STRING
-    ;
+    PARSE_STRING,
   }
 }

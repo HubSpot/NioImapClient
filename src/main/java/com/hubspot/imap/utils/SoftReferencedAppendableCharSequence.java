@@ -1,10 +1,10 @@
 package com.hubspot.imap.utils;
 
+import io.netty.util.internal.AppendableCharSequence;
 import java.lang.ref.SoftReference;
 
-import io.netty.util.internal.AppendableCharSequence;
-
 public class SoftReferencedAppendableCharSequence {
+
   private SoftReference<AppendableCharSequence> reference;
 
   private final int defaultResponseBufferSize;

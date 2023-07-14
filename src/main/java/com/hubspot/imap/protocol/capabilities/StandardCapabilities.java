@@ -1,10 +1,9 @@
 package com.hubspot.imap.protocol.capabilities;
 
+import com.google.common.collect.Maps;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
-
-import com.google.common.collect.Maps;
 
 public enum StandardCapabilities implements Capability {
   ACL,
@@ -62,8 +61,7 @@ public enum StandardCapabilities implements Capability {
   URLAUTH,
   UTF8_ACCEPT("UTF8=ACCEPT"),
   UTF8_ONLY("UTF8=ONLY"),
-  WITHIN,
-  ;
+  WITHIN;
 
   private final String capability;
 
@@ -84,7 +82,10 @@ public enum StandardCapabilities implements Capability {
     return capability;
   }
 
-  private static final Map<String, StandardCapabilities> INDEX = Maps.uniqueIndex(Arrays.asList(StandardCapabilities.values()), StandardCapabilities::getCapability);
+  private static final Map<String, StandardCapabilities> INDEX = Maps.uniqueIndex(
+    Arrays.asList(StandardCapabilities.values()),
+    StandardCapabilities::getCapability
+  );
 
   public static Optional<Capability> fromString(String capability) {
     return Optional.ofNullable(INDEX.get(capability));

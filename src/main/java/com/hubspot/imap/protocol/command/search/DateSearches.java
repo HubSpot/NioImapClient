@@ -5,6 +5,7 @@ import com.hubspot.imap.protocol.command.search.keys.SinceSearchKey;
 import java.time.ZonedDateTime;
 
 public class DateSearches {
+
   /**
    * Caveat: SEARCH BEFORE uses only date (no time) - you may get some surprising results on the boundaries
    * (which are exclusive)
@@ -26,7 +27,6 @@ public class DateSearches {
    * (which are exclusive)
    */
   public static SearchCommand searchBetween(ZonedDateTime start, ZonedDateTime end) {
-    return new SearchCommand(new SinceSearchKey(start),
-                             new BeforeSearchKey(end));
+    return new SearchCommand(new SinceSearchKey(start), new BeforeSearchKey(end));
   }
 }

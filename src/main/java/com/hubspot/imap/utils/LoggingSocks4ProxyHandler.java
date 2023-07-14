@@ -1,10 +1,5 @@
 package com.hubspot.imap.utils;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-
-import org.slf4j.Logger;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.socksx.v4.DefaultSocks4CommandRequest;
@@ -15,6 +10,9 @@ import io.netty.handler.codec.socksx.v4.Socks4CommandStatus;
 import io.netty.handler.codec.socksx.v4.Socks4CommandType;
 import io.netty.handler.proxy.ProxyConnectException;
 import io.netty.handler.proxy.ProxyHandler;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import org.slf4j.Logger;
 
 /**
  * This is basically a copy of the netty Socks4ProxyHandler that simply logs the IP address
@@ -25,6 +23,7 @@ import io.netty.handler.proxy.ProxyHandler;
  * available.
  */
 public final class LoggingSocks4ProxyHandler extends ProxyHandler {
+
   static final String AUTH_NONE = "none";
 
   private static final String PROTOCOL = "socks4";
@@ -40,7 +39,11 @@ public final class LoggingSocks4ProxyHandler extends ProxyHandler {
     this(logContext, proxyAddress, null);
   }
 
-  public LoggingSocks4ProxyHandler(String logContext, SocketAddress proxyAddress, String username) {
+  public LoggingSocks4ProxyHandler(
+    String logContext,
+    SocketAddress proxyAddress,
+    String username
+  ) {
     super(proxyAddress);
     if (username != null && username.length() == 0) {
       username = null;
@@ -56,7 +59,7 @@ public final class LoggingSocks4ProxyHandler extends ProxyHandler {
 
   @Override
   public String authScheme() {
-    return username != null? AUTH_USERNAME : AUTH_NONE;
+    return username != null ? AUTH_USERNAME : AUTH_NONE;
   }
 
   public String username() {
@@ -99,11 +102,16 @@ public final class LoggingSocks4ProxyHandler extends ProxyHandler {
       rhost = raddr.getAddress().getHostAddress();
     }
     return new DefaultSocks4CommandRequest(
-        Socks4CommandType.CONNECT, rhost, raddr.getPort(), username != null? username : "");
+      Socks4CommandType.CONNECT,
+      rhost,
+      raddr.getPort(),
+      username != null ? username : ""
+    );
   }
 
   @Override
-  protected boolean handleResponse(ChannelHandlerContext ctx, Object response) throws Exception {
+  protected boolean handleResponse(ChannelHandlerContext ctx, Object response)
+    throws Exception {
     final Socks4CommandResponse res = (Socks4CommandResponse) response;
     final Socks4CommandStatus status = res.status();
     if (status == Socks4CommandStatus.SUCCESS) {

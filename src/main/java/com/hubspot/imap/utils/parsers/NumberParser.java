@@ -7,6 +7,7 @@ import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.internal.AppendableCharSequence;
 
 public class NumberParser implements ByteBufProcessor {
+
   private final int maxLength;
   private final SoftReferencedAppendableCharSequence sequenceRef;
   private int size = 0;
@@ -41,9 +42,7 @@ public class NumberParser implements ByteBufProcessor {
       return false;
     } else {
       if (size >= maxLength) {
-        throw new TooLongFrameException(
-            "Number is larger than " + maxLength +
-                " bytes.");
+        throw new TooLongFrameException("Number is larger than " + maxLength + " bytes.");
       }
 
       seq.append(nextByte);

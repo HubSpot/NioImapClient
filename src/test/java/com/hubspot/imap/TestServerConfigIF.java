@@ -1,18 +1,17 @@
 package com.hubspot.imap;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style.ImplementationVisibility;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 @Immutable
 @Value.Style(
-    typeAbstract = {"*IF"},
-    typeImmutable = "*",
-    visibility = ImplementationVisibility.SAME
+  typeAbstract = { "*IF" },
+  typeImmutable = "*",
+  visibility = ImplementationVisibility.SAME
 )
 @JsonSerialize(as = TestServerConfig.class)
 @JsonDeserialize(as = TestServerConfig.class)

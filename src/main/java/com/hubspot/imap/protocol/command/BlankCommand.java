@@ -1,6 +1,7 @@
 package com.hubspot.imap.protocol.command;
 
 public class BlankCommand extends BaseImapCommand {
+
   public static final BlankCommand INSTANCE = new BlankCommand();
 
   public BlankCommand() {

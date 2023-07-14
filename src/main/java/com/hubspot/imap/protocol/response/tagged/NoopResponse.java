@@ -7,6 +7,7 @@ public interface NoopResponse extends TaggedResponse {
   long getExists();
 
   class Builder extends TaggedResponse.Builder implements NoopResponse {
+
     private long exists;
 
     public NoopResponse fromResponse(TaggedResponse input) {

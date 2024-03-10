@@ -8,9 +8,6 @@ public class ConfigDefaults {
 
   private ConfigDefaults() {}
 
-  public static final List<AuthMechanism> DEFAULT_ALLOWED_AUTH_MECHANISMS = ImmutableList.of(
-    AuthMechanism.XOAUTH2,
-    AuthMechanism.PLAIN,
-    AuthMechanism.LOGIN
-  );
+  public static final List<AuthMechanism> DEFAULT_ALLOWED_AUTH_MECHANISMS =
+    ImmutableList.of(AuthMechanism.XOAUTH2, AuthMechanism.PLAIN, AuthMechanism.LOGIN);
 }

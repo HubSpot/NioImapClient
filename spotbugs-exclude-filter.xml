@@ -1,0 +1,12 @@
+<FindBugsFilter>
+    <Match>
+        <!-- New check to investigate -->
+        <Class name="com.hubspot.imap.protocol.ResponseDecoder"/>
+        <Bug pattern="DCN_NULLPOINTER_EXCEPTION"/>
+    </Match>
+    <Match>
+        <!-- New noisy checks introduced in spotbugs -->
+        <Bug pattern="CT_CONSTRUCTOR_THROW,EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>
+

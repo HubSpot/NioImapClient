@@ -45,6 +45,7 @@ import com.hubspot.imap.utils.parsers.string.BufferedBodyParser;
 import com.hubspot.imap.utils.parsers.string.LineParser;
 import com.hubspot.imap.utils.parsers.string.LiteralStringParser;
 import com.hubspot.imap.utils.parsers.string.WordParser;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
@@ -560,6 +561,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
     checkpoint(State.FETCH_BODY);
   }
 
+  @SuppressFBWarnings("DCN_NULLPOINTER_EXCEPTION")
   @Timed
   Optional<Message> parseBodyContent(ByteBuf in) throws ResponseParseException {
     Optional<byte[]> body = bufferedBodyParser.parse(in);

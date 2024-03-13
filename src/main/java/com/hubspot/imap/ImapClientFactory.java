@@ -5,6 +5,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.net.HostAndPort;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.command.ProxyCommand;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -33,10 +34,12 @@ public class ImapClientFactory implements Closeable {
     this(ImapClientFactoryConfiguration.builder().build());
   }
 
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   public ImapClientFactory(ImapClientFactoryConfiguration configuration) {
     this(configuration, (KeyStore) null);
   }
 
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   public ImapClientFactory(
     ImapClientFactoryConfiguration configuration,
     KeyStore keyStore

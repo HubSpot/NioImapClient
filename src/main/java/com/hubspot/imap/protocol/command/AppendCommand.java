@@ -12,6 +12,7 @@ import com.hubspot.imap.protocol.response.ImapResponse;
 import com.hubspot.imap.protocol.response.tagged.TaggedResponse;
 import com.hubspot.imap.utils.GmailUtils;
 import com.hubspot.imap.utils.ImapMessageWriterUtils;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.ZonedDateTime;
@@ -29,6 +30,7 @@ public class AppendCommand extends ContinuableCommand<TaggedResponse> {
   private final Optional<ZonedDateTime> dateTime;
   private final StringLiteralCommand stringLiteralCommand;
 
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   public AppendCommand(
     ImapClient imapClient,
     String folderName,

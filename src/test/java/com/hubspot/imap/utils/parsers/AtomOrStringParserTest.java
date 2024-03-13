@@ -11,9 +11,8 @@ import org.junit.Test;
 
 public class AtomOrStringParserTest {
 
-  private static final SoftReferencedAppendableCharSequence SEQUENCE_REF = new SoftReferencedAppendableCharSequence(
-    1000
-  );
+  private static final SoftReferencedAppendableCharSequence SEQUENCE_REF =
+    new SoftReferencedAppendableCharSequence(1000);
   private static final AtomOrStringParser PARSER = new AtomOrStringParser(
     SEQUENCE_REF,
     1000

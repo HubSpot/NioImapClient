@@ -3,6 +3,7 @@ package com.hubspot.imap.protocol.command;
 import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
 import com.hubspot.imap.ProxyConfig;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
@@ -11,10 +12,12 @@ public class ProxyCommand extends BaseImapCommand {
 
   private static final String ANY = "any";
 
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   public ProxyCommand(ProxyConfig proxyConfig) {
     this(proxyConfig.proxyHost(), proxyConfig.proxyLocalIpAddress());
   }
 
+  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   public ProxyCommand(HostAndPort destination, Optional<String> proxyLocalIp) {
     super(ImapCommandType.PROXY, false, buildProxyArg(destination, proxyLocalIp));
   }

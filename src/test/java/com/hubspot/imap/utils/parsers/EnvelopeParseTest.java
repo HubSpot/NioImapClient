@@ -39,9 +39,10 @@ public class EnvelopeParseTest {
   private static final Mailbox ADDRESS1 = new Mailbox("bcox5021", "gmail.com");
   private static final Mailbox ADDRESS2 = new Mailbox("bcox", "hubspot.com");
   private static final Mailbox ADDRESS3 = new Mailbox("brian", "itscharlieb.com");
-  private static final NestedArrayParser.Recycler<String> ARRAY_PARSER_RECYCLER = new Recycler<>(
-    new LiteralStringParser(new SoftReferencedAppendableCharSequence(1000), 100000)
-  );
+  private static final NestedArrayParser.Recycler<String> ARRAY_PARSER_RECYCLER =
+    new Recycler<>(
+      new LiteralStringParser(new SoftReferencedAppendableCharSequence(1000), 100000)
+    );
 
   private Header header;
 

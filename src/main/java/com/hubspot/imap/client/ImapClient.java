@@ -732,12 +732,13 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
 
   private static final class PendingCommand {
 
-    private static final Recycler<PendingCommand> RECYCLER = new Recycler<PendingCommand>() {
-      @Override
-      protected PendingCommand newObject(Handle<PendingCommand> handle) {
-        return new PendingCommand(handle);
-      }
-    };
+    private static final Recycler<PendingCommand> RECYCLER =
+      new Recycler<PendingCommand>() {
+        @Override
+        protected PendingCommand newObject(Handle<PendingCommand> handle) {
+          return new PendingCommand(handle);
+        }
+      };
 
     private final Recycler.Handle<PendingCommand> handle;
 

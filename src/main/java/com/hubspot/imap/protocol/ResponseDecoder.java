@@ -365,11 +365,7 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
       StreamingFetchCommand fetchCommand;
       if (clientState.getCurrentCommand() instanceof UidCommand) {
         fetchCommand =
-          (
-            (StreamingFetchCommand) (
-              (UidCommand) clientState.getCurrentCommand()
-            ).getWrappedCommand()
-          );
+          ((StreamingFetchCommand) ((UidCommand) clientState.getCurrentCommand()).getWrappedCommand());
       } else {
         fetchCommand = ((StreamingFetchCommand) clientState.getCurrentCommand());
       }

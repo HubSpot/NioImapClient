@@ -618,10 +618,8 @@ public class ImapClient extends ChannelDuplexHandler implements AutoCloseable, C
     } else if (evt instanceof ByeEvent) {
       if (
         channel.isOpen() &&
-        (
-          clientState.getCurrentCommand() == null ||
-          clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT
-        )
+        (clientState.getCurrentCommand() == null ||
+          clientState.getCurrentCommand().getCommandType() != ImapCommandType.LOGOUT)
       ) {
         closeNow();
       }

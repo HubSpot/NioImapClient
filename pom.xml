@@ -154,6 +154,16 @@
       <artifactId>greenmail</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.icegreen</groupId>
+      <artifactId>greenmail-junit4</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-guava</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

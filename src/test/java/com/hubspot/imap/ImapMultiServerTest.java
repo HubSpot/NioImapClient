@@ -3,6 +3,7 @@ package com.hubspot.imap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.hubspot.imap.client.ImapClient;
 import com.hubspot.imap.protocol.exceptions.ConnectionClosedException;
 import java.io.IOException;
@@ -25,12 +26,10 @@ public abstract class ImapMultiServerTest {
       .getContextClassLoader()
       .getResourceAsStream("profiles.yaml");
 
-    ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+    ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory())
+      .registerModule(new GuavaModule());
 
-    return objectMapper.readValue(
-      inputStream,
-      new TypeReference<List<TestServerConfig>>() {}
-    );
+    return objectMapper.readValue(inputStream, new TypeReference<>() {});
   }
 
   @Parameters(name = "{0}")

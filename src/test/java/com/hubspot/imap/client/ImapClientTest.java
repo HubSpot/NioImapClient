@@ -579,7 +579,7 @@ public class ImapClientTest extends BaseGreenMailServerTest {
       )
       .get();
     assertThat(appendResponse.getCode()).isEqualTo(ResponseCode.OK);
-    long uid = Long.parseLong(appendResponse.getMessage().substring(25, 26));
+    long uid = Long.parseLong(appendResponse.getMessage().substring(22, 23));
 
     FetchResponse postAppendFetchAll = client
       .fetch(

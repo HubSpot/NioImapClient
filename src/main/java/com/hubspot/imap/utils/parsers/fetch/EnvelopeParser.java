@@ -63,6 +63,14 @@ public class EnvelopeParser {
   public static Envelope parse(List<Object> in) {
     LOGGER.debug("Parsing envelope response: {}", in);
 
+    if (in.size() < 10) {
+      LOGGER.warn(
+        "Envelope response must have at least 10 elements, but found {}. The response is: {}",
+        in.size(),
+        in
+      );
+    }
+
     String dateString = castToString(in.get(0));
     String subject = castToString(in.get(1));
 

@@ -7,6 +7,7 @@ import com.hubspot.imap.protocol.capabilities.AuthMechanism;
 import com.hubspot.imap.utils.ConfigDefaults;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.net.ssl.TrustManagerFactory;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Derived;
@@ -34,6 +35,11 @@ public interface ImapClientConfigurationIF {
   @Default
   default boolean useSsl() {
     return true;
+  }
+
+  @Default
+  default Set<String> sslProtocols() {
+    return Set.of();
   }
 
   @Default

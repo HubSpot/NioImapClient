@@ -132,10 +132,15 @@ public class ImapClientFactory implements Closeable {
       return sslContext;
     }
     try {
-      return SslContextBuilder
+      SslContextBuilder sslContextBuilder = SslContextBuilder
         .forClient()
-        .trustManager(clientConfiguration.trustManagerFactory().get())
-        .build();
+        .trustManager(clientConfiguration.trustManagerFactory().get());
+
+      if (!clientConfiguration.sslProtocols().isEmpty()) {
+        sslContextBuilder.protocols(clientConfiguration.sslProtocols());
+      }
+
+      return sslContextBuilder.build();
     } catch (SSLException e) {
       throw new RuntimeException(e);
     }

@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>NioImapClient</artifactId>
-  <version>0.6.2-SNAPSHOT</version>
+  <version>0.6.3-SNAPSHOT</version>
 
   <properties>
     <basepom.javadoc.skip>false</basepom.javadoc.skip>

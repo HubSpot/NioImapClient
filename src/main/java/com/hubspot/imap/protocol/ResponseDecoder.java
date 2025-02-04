@@ -414,7 +414,8 @@ public class ResponseDecoder extends ReplayingDecoder<State> {
         codeString,
         message
       );
-      throw e;
+      message = codeString + " " + message;
+      responseBuilder.setCode(ResponseCode.NONE);
     }
 
     responseBuilder.setTag(tag);

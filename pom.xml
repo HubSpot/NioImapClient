@@ -4,11 +4,14 @@
   <parent>
     <groupId>com.hubspot</groupId>
     <artifactId>basepom</artifactId>
-    <version>62.1</version>
+    <version>63.0</version>
   </parent>
 
   <artifactId>NioImapClient</artifactId>
   <version>0.6.4-SNAPSHOT</version>
+
+  <name>${project.groupId}:${project.artifactId}</name>
+  <description>High performance, async IMAP client implementation</description>
 
   <properties>
     <basepom.javadoc.skip>false</basepom.javadoc.skip>
@@ -176,6 +179,8 @@
     </extensions>
   </build>
 
+  <url>https://github.com/HubSpot/NioImapClient</url>
+
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -183,6 +188,13 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <name>Jared Stehler</name>
+      <email>jstehler@hubspot.com</email>
+    </developer>
+  </developers>
 
   <scm>
     <connection>scm:git:git@github.com:HubSpot/NioImapClient.git</connection>

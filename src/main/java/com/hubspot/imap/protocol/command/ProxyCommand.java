@@ -17,7 +17,6 @@ public class ProxyCommand extends BaseImapCommand {
     this(proxyConfig.proxyHost(), proxyConfig.proxyLocalIpAddress());
   }
 
-  @SuppressFBWarnings("CT_CONSTRUCTOR_THROW")
   public ProxyCommand(HostAndPort destination, Optional<String> proxyLocalIp) {
     super(ImapCommandType.PROXY, false, buildProxyArg(destination, proxyLocalIp));
   }

@@ -93,6 +93,11 @@ public interface ImapClientConfigurationIF {
   }
 
   @Default
+  default boolean allowSha1Certificates() {
+    return false;
+  }
+
+  @Default
   default Optional<TrustManagerFactory> trustManagerFactory() {
     return Optional.empty();
   }

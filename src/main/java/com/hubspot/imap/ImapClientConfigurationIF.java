@@ -43,6 +43,11 @@ public interface ImapClientConfigurationIF {
   }
 
   @Default
+  default Set<String> sslCipherSuites() {
+    return Set.of();
+  }
+
+  @Default
   default int noopKeepAliveIntervalSec() {
     return -1;
   }
@@ -90,6 +95,11 @@ public interface ImapClientConfigurationIF {
   @Default
   default int maxHeaderCount() {
     return 10000;
+  }
+
+  @Default
+  default boolean allowSha1Certificates() {
+    return false;
   }
 
   @Default

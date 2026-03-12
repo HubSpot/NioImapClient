@@ -43,6 +43,11 @@ public interface ImapClientConfigurationIF {
   }
 
   @Default
+  default Set<String> sslCipherSuites() {
+    return Set.of();
+  }
+
+  @Default
   default int noopKeepAliveIntervalSec() {
     return -1;
   }

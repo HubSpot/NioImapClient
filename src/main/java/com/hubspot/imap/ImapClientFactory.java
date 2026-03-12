@@ -144,7 +144,9 @@ public class ImapClientFactory implements Closeable {
   private SslContext getSslContext(ImapClientConfiguration clientConfiguration) {
     if (
       !clientConfiguration.trustManagerFactory().isPresent() &&
-      !clientConfiguration.allowSha1Certificates()
+      !clientConfiguration.allowSha1Certificates() &&
+      clientConfiguration.sslCipherSuites().isEmpty() &&
+      clientConfiguration.sslProtocols().isEmpty()
     ) {
       return sslContext;
     }
@@ -163,6 +165,10 @@ public class ImapClientFactory implements Closeable {
 
       if (!clientConfiguration.sslProtocols().isEmpty()) {
         sslContextBuilder.protocols(clientConfiguration.sslProtocols());
+      }
+
+      if (!clientConfiguration.sslCipherSuites().isEmpty()) {
+        sslContextBuilder.ciphers(clientConfiguration.sslCipherSuites());
       }
 
       return sslContextBuilder.build();

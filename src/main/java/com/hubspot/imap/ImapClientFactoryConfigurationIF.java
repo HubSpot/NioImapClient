@@ -5,8 +5,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.epoll.EpollMode;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -24,7 +25,7 @@ import org.slf4j.LoggerFactory;
 public interface ImapClientFactoryConfigurationIF {
   @Default
   default EventLoopGroup eventLoopGroup() {
-    return new NioEventLoopGroup();
+    return new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
   }
 
   @Default
